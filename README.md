@@ -5,6 +5,10 @@
 **Periodo:** Cuatrimestre I - 2026
 **Modalidad:** Presencial - Panama
 
+## Documentacion
+
+- [Planificacion Academica (PDF)](planificacion-academica.pdf) - Syllabus oficial del curso
+
 ## Descripcion
 
 Taller de Tecnologia Aplicada es una asignatura de aplicacion practica que desarrolla competencias en **Business Intelligence (BI)** y **analisis de datos** para la toma de decisiones empresariales. El curso aborda el ciclo completo de BI: fundamentos conceptuales, diseno de Data Warehouses, tecnicas de Data Mining, implementacion de dashboards y estrategias de adopcion organizacional.
