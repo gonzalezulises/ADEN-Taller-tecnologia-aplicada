@@ -1,0 +1,497 @@
+# COURSE_STATE.yaml - Taller de Tecnologia Aplicada
+# Este archivo mantiene el estado del curso para continuidad entre sesiones de Claude Code
+# LEER ANTES de crear o modificar contenido
+
+meta:
+  course_id: aden-taller-tecnologia-aplicada
+  course_code: CT ING 027
+  institution: ADEN University
+  last_updated: 2026-01-15
+  last_session_worked: session-14
+  total_sessions: 14
+  sessions_with_content: 14
+  project_phases_defined: 4
+
+# Fechas del calendario academico
+calendar:
+  start_date: 2026-01-16
+  end_date: TBD
+  sessions:
+    - id: sesion-01
+      date: 2026-01-16
+      status: planned
+    - id: sesion-02
+      date: 2026-01-23
+      status: planned
+    - id: sesion-03
+      date: 2026-01-30
+      status: planned
+    - id: sesion-04
+      date: 2026-02-06
+      status: planned
+    - id: sesion-05
+      date: 2026-02-13
+      status: planned
+    - id: sesion-06
+      date: 2026-02-27
+      status: planned
+    - id: sesion-07
+      date: 2026-03-06
+      status: planned
+    - id: sesion-08
+      date: 2026-03-13
+      status: planned
+    - id: sesion-09
+      date: 2026-03-20
+      status: planned
+    - id: sesion-10
+      date: 2026-03-27
+      status: planned
+    - id: sesion-11
+      date: 2026-04-03
+      status: planned
+    - id: sesion-12
+      date: 2026-04-11
+      status: planned
+    - id: sesion-13
+      date: TBD
+      status: planned
+    - id: sesion-14
+      date: TBD
+      status: planned
+
+# Progresion pedagogica explicita - que se ensena en cada sesion
+learning_progression:
+  concepts_introduced:
+    sesion-01:
+      - business_intelligence_definicion
+      - ciclo_bi
+      - roles_bi
+      - tipos_datos_estructurados
+      - inteligencia_artificial_conceptos
+    sesion-02:
+      - arquitectura_bi
+      - capas_bi
+      - fuentes_datos
+      - staging_area
+      - data_warehouse_concepto
+      - data_mart
+      - herramientas_bi
+    sesion-03:
+      - kpis_definicion
+      - metricas_vs_kpis
+      - smart_criteria
+      - kpi_canvas
+      - benchmark_competitivo
+    sesion-04:
+      - modelado_dimensional
+      - tablas_hechos
+      - tablas_dimensiones
+      - esquema_estrella
+      - esquema_copo_nieve
+      - claves_sustitutas
+      - granularidad
+    sesion-05:
+      - olap_vs_oltp
+      - operaciones_olap
+      - slice_dice_drill
+      - etl_concepto
+      - extract_transform_load
+      - data_quality
+    sesion-06:
+      - pentaho_data_integration
+      - transformaciones_etl
+      - jobs_pdi
+      - conectores_bd
+      - mapeo_datos
+    sesion-07:
+      - data_mining_concepto
+      - crisp_dm
+      - eda_exploratorio
+      - tipos_analisis
+      - descriptivo_predictivo_prescriptivo
+    sesion-08:
+      - algoritmos_clustering
+      - kmeans
+      - algoritmos_clasificacion
+      - decision_tree
+      - scikit_learn
+      - train_test_split
+    sesion-09:
+      - big_data_concepto
+      - cinco_vs
+      - hadoop_ecosistema
+      - spark_concepto
+      - arquitecturas_distribuidas
+      - data_lake_vs_warehouse
+    sesion-10:
+      - principios_visualizacion
+      - gestalt_visual
+      - chartjunk
+      - data_ink_ratio
+      - seleccion_graficos
+      - dashboard_design
+    sesion-11:
+      - power_bi_desktop
+      - medidas_dax
+      - slicers_filtros
+      - drill_down
+      - drill_through
+      - power_bi_service
+    sesion-12:
+      - data_storytelling
+      - narrativa_visual
+      - presentaciones_ejecutivas
+      - comunicacion_insights
+    sesion-13:
+      - madurez_bi
+      - niveles_adopcion
+      - gobernanza_datos
+      - dama_framework
+      - change_management
+      - tendencias_bi_cloud
+    sesion-14:
+      - roadmap_implementacion
+      - calculo_roi
+      - pitch_ejecutivo
+      - integracion_proyecto
+
+  # Prerequisitos por sesion - que debe saber el estudiante antes
+  skills_assumed:
+    sesion-01: [conocimientos_basicos_excel, conceptos_basicos_bases_datos]
+    sesion-02: [business_intelligence_definicion, ciclo_bi]
+    sesion-03: [arquitectura_bi, data_warehouse_concepto]
+    sesion-04: [kpis_definicion, metricas_vs_kpis]
+    sesion-05: [modelado_dimensional, esquema_estrella]
+    sesion-06: [etl_concepto, data_quality]
+    sesion-07: [operaciones_etl_basicas]
+    sesion-08: [eda_exploratorio, crisp_dm]
+    sesion-09: [algoritmos_clustering, algoritmos_clasificacion]
+    sesion-10: [big_data_concepto]
+    sesion-11: [principios_visualizacion, dashboard_design]
+    sesion-12: [power_bi_desktop, medidas_dax]
+    sesion-13: [data_storytelling, proyecto_completo]
+    sesion-14: [madurez_bi, gobernanza_datos]
+
+  # Complejidad creciente por sesion
+  complexity_trajectory:
+    sesion-01:
+      theory_hours: 3
+      practice_hours: 1
+      tools_introduced: []
+      deliverables: []
+    sesion-02:
+      theory_hours: 2.5
+      practice_hours: 1.5
+      tools_introduced: []
+      deliverables: []
+    sesion-03:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: []
+      deliverables: []
+    sesion-04:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: [sql_ddl]
+      deliverables: [proyecto_fase_1]
+    sesion-05:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: []
+      deliverables: [quiz_unidad_2]
+    sesion-06:
+      theory_hours: 1.5
+      practice_hours: 2.5
+      tools_introduced: [pentaho_pdi]
+      deliverables: [laboratorio_etl]
+    sesion-07:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: [python_pandas, jupyter]
+      deliverables: [quiz_unidad_3]
+    sesion-08:
+      theory_hours: 1.5
+      practice_hours: 2.5
+      tools_introduced: [scikit_learn]
+      deliverables: [proyecto_fase_2]
+    sesion-09:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: [google_colab]
+      deliverables: []
+    sesion-10:
+      theory_hours: 2
+      practice_hours: 2
+      tools_introduced: [power_bi_desktop]
+      deliverables: [quiz_unidad_4]
+    sesion-11:
+      theory_hours: 1
+      practice_hours: 3
+      tools_introduced: [dax, power_bi_service]
+      deliverables: []
+    sesion-12:
+      theory_hours: 1
+      practice_hours: 3
+      tools_introduced: []
+      deliverables: [proyecto_fase_3, quiz_unidad_4]
+    sesion-13:
+      theory_hours: 2.5
+      practice_hours: 1.5
+      tools_introduced: []
+      deliverables: []
+    sesion-14:
+      theory_hours: 1
+      practice_hours: 3
+      tools_introduced: []
+      deliverables: [proyecto_fase_4, ensayo_investigacion, quiz_unidad_5]
+
+# Convenciones de codigo - RESPETAR EN TODO EL CURSO
+code_conventions:
+  sql:
+    naming:
+      fact_tables: "fact_[nombre]"
+      dimension_tables: "dim_[nombre]"
+      surrogate_keys: "[tabla]_key"
+      business_keys: "[tabla]_id"
+      date_column: "fecha"
+    style: |
+      -- Keywords en MAYUSCULAS
+      -- Nombres de tablas/columnas en minusculas con snake_case
+      -- Indent de 4 espacios
+      -- Comentarios antes de cada bloque logico
+
+  python:
+    variable_names:
+      dataframe: df
+      features: X
+      target: y
+      train_sets: X_train, y_train
+      test_sets: X_test, y_test
+      model: model
+      scaler: scaler
+    import_style: |
+      # Orden de imports
+      # 1. Standard library
+      # 2. Third party (pandas, numpy, sklearn)
+      # 3. Local
+
+      import pandas as pd
+      import numpy as np
+      import matplotlib.pyplot as plt
+      from sklearn.model_selection import train_test_split
+      from sklearn.preprocessing import StandardScaler
+    docstring_style: "google"
+
+  dax:
+    measure_naming: "Nombre descriptivo sin prefijo"
+    variable_prefix: "_"
+    style: |
+      // Medidas comienzan con mayuscula
+      // Variables internas con _ prefix
+      // CALCULATE siempre formateado en multiples lineas
+
+# Registro de materiales creados por sesion
+materials_registry:
+  sesion-01:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-02:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-03:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-04:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-05:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-06:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-07:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-08:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-09:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-10:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-11:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-12:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-13:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+  sesion-14:
+    readme: true
+    slides: false
+    exercises: false
+    datasets: false
+    quiz: false
+
+# Proyecto integrador - estado por fase
+project_phases:
+  fase_1:
+    title: "Analisis de necesidades + Diseno DW"
+    weight: 15%
+    delivery_session: sesion-04
+    status: defined
+    deliverables:
+      - documento_analisis_necesidades
+      - modelo_dimensional_estrella
+      - diccionario_datos
+  fase_2:
+    title: "Implementacion ETL + Data Mining"
+    weight: 15%
+    delivery_session: sesion-08
+    status: defined
+    deliverables:
+      - notebook_python
+      - resultados_clustering
+      - resultados_clasificacion
+  fase_3:
+    title: "Dashboard interactivo Power BI"
+    weight: 20%
+    delivery_session: sesion-12
+    status: defined
+    deliverables:
+      - dashboard_pbix
+      - presentacion_oral
+      - documento_visualizaciones
+  fase_4:
+    title: "Roadmap de implementacion BI"
+    weight: 15%
+    delivery_session: sesion-14
+    status: defined
+    deliverables:
+      - roadmap_documento
+      - calculo_roi
+      - plan_gobernanza
+      - presentacion_ejecutiva
+
+# Estilo pedagogico - MANTENER CONSISTENTE
+pedagogical_style:
+  session_structure:
+    - "Caso introductorio o pregunta detonadora (10 min)"
+    - "Conexion con sesion anterior (5 min)"
+    - "Exposicion teorica con ejemplos (60 min)"
+    - "Lecturas en ingles por grupos (30 min)"
+    - "Actividad practica/laboratorio (90 min)"
+    - "Retroalimentacion entre pares (15 min)"
+    - "Sintesis y cierre (15 min)"
+    - "Quiz formativo (15 min)"
+
+  bloom_verbs_by_unit:
+    unidad_1: [IDENTIFICAR, EXPLICAR, COMPARAR]
+    unidad_2: [DISENAR, CONSTRUIR, EJECUTAR]
+    unidad_3: [IMPLEMENTAR, CLASIFICAR, SEGMENTAR]
+    unidad_4: [EVALUAR, CREAR, PRESENTAR]
+    unidad_5: [PROPONER, DEFENDER, INTEGRAR]
+
+  feedback_policy:
+    tone: "Directo, sin condescendencia"
+    focus: "Mejora, no error"
+    connection: "Aplicacion profesional real"
+    celebration: "Breve, no exceso de elogios"
+
+  english_reading_policy:
+    frequency: "Una lectura por sesion minimo"
+    format: "Grupos paralelos con presentacion cruzada"
+    sources: [Microsoft Docs, Gartner, Forrester, DAMA, Academic Papers]
+
+# Datasets planificados para el curso
+datasets:
+  ventas_retail:
+    sessions: [3, 4, 5, 6, 10, 11, 12]
+    columns: [fecha, producto_id, cliente_id, cantidad, monto, region]
+    purpose: "KPIs, modelado dimensional, dashboards"
+
+  clientes_segmentacion:
+    sessions: [7, 8]
+    columns: [cliente_id, edad, ingresos, frecuencia_compra, ticket_promedio]
+    purpose: "Clustering K-means"
+
+  productos_clasificacion:
+    sessions: [8]
+    columns: [producto_id, categoria, precio, rotacion, margen, es_rentable]
+    purpose: "Decision Tree classification"
+
+# Proximas tareas pendientes - actualizar segun avance
+next_tasks:
+  - description: "Crear datasets CSV para las sesiones"
+    priority: high
+    sessions_affected: [3, 4, 7, 8]
+  - description: "Crear slides de presentacion por sesion"
+    priority: medium
+    sessions_affected: all
+  - description: "Crear quizzes formativos por unidad"
+    priority: medium
+    sessions_affected: [5, 8, 10, 12, 14]
+  - description: "Crear rubricas detalladas del proyecto"
+    priority: medium
+    sessions_affected: [4, 8, 12, 14]
+  - description: "Preparar notebooks Jupyter de ejemplo"
+    priority: high
+    sessions_affected: [7, 8, 9]
+
+# Notas de implementacion
+implementation_notes:
+  - date: 2026-01-15
+    note: "Estructura inicial del repositorio creada con 14 sesiones"
+  - date: 2026-01-15
+    note: "README detallados creados para cada sesion"
+  - date: 2026-01-15
+    note: "CLAUDE.md y COURSE_STATE.yaml creados para continuidad"
+
+---
+# FIN DEL CONTRATO
+# Actualizar este archivo despues de cada sesion de trabajo con Claude Code
