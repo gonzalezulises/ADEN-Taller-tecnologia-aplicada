@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador OLTP vs OLAP - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .animate-bounce { animation: bounce 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(-10%); } 50% { transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { Database, BarChart3, Play, Clock, Users, Film, Eye, ChevronRight, AlertCircle, CheckCircle2, Zap, Server, TrendingUp, ArrowRight, Pause, RotateCcw, Factory, Warehouse, PieChart, Lightbulb, MousePointer, ShoppingCart, CreditCard, Truck, Package, RefreshCw, Map, Snowflake, Star, Table, Link, Box, Grid3X3, CircleDot, XCircle } = lucide;
+
+        // Wrapper para iconos de Lucide
+        const LucideIcon = ({ icon: IconComponent, size = 24, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (ref.current && IconComponent) {
+                    ref.current.innerHTML = '';
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svg.setAttribute("width", size);
+                    svg.setAttribute("height", size);
+                    svg.setAttribute("viewBox", "0 0 24 24");
+                    svg.setAttribute("fill", "none");
+                    svg.setAttribute("stroke", "currentColor");
+                    svg.setAttribute("stroke-width", "2");
+                    svg.setAttribute("stroke-linecap", "round");
+                    svg.setAttribute("stroke-linejoin", "round");
+                    svg.setAttribute("class", className);
+
+                    const iconName = IconComponent.name || IconComponent.toString();
+                    lucide.createIcons({ icons: { [iconName]: IconComponent }, attrs: {} });
+
+                    ref.current.appendChild(svg);
+                }
+            }, [IconComponent, size, className]);
+            return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} />;
+        };
+
+        // ============================================
+        // DATOS SIMULADOS DE NETFLIX
+        // ============================================
+
+        const oltpData = {
+          usuarios: [
+            { id: 1, nombre: 'Maria Garcia', email: 'maria@email.com', plan: 'Premium', fecha_registro: '2024-01-15' },
+            { id: 2, nombre: 'Carlos Lopez', email: 'carlos@email.com', plan: 'Basico', fecha_registro: '2024-02-20' },
+            { id: 3, nombre: 'Ana Martinez', email: 'ana@email.com', plan: 'Estandar', fecha_registro: '2024-03-10' },
+            { id: 4, nombre: 'Pedro Sanchez', email: 'pedro@email.com', plan: 'Premium', fecha_registro: '2024-01-22' },
+            { id: 5, nombre: 'Laura Torres', email: 'laura@email.com', plan: 'Estandar', fecha_registro: '2024-04-05' },
+          ],
+          peliculas: [
+            { id: 101, titulo: 'Stranger Things', genero: 'Sci-Fi', duracion_min: 50, ano: 2016 },
+            { id: 102, titulo: 'La Casa de Papel', genero: 'Thriller', duracion_min: 45, ano: 2017 },
+            { id: 103, titulo: 'Wednesday', genero: 'Comedia', duracion_min: 48, ano: 2022 },
+            { id: 104, titulo: 'Squid Game', genero: 'Drama', duracion_min: 55, ano: 2021 },
+            { id: 105, titulo: 'The Crown', genero: 'Drama', duracion_min: 58, ano: 2016 },
+          ],
+          reproducciones: [
+            { id: 1, usuario_id: 1, pelicula_id: 101, fecha: '2024-12-01', minutos_vistos: 50, completado: true },
+            { id: 2, usuario_id: 1, pelicula_id: 102, fecha: '2024-12-01', minutos_vistos: 30, completado: false },
+            { id: 3, usuario_id: 2, pelicula_id: 101, fecha: '2024-12-02', minutos_vistos: 50, completado: true },
+            { id: 4, usuario_id: 3, pelicula_id: 103, fecha: '2024-12-02', minutos_vistos: 48, completado: true },
+            { id: 5, usuario_id: 4, pelicula_id: 104, fecha: '2024-12-03', minutos_vistos: 55, completado: true },
+            { id: 6, usuario_id: 5, pelicula_id: 105, fecha: '2024-12-03', minutos_vistos: 20, completado: false },
+            { id: 7, usuario_id: 1, pelicula_id: 104, fecha: '2024-12-04', minutos_vistos: 55, completado: true },
+            { id: 8, usuario_id: 2, pelicula_id: 103, fecha: '2024-12-04', minutos_vistos: 48, completado: true },
+          ],
+        };
+
+        const olapData = {
+          resumen_reproducciones: [
+            { mes: 'Dic 2024', genero: 'Sci-Fi', total_reproducciones: 2, minutos_totales: 100, usuarios_unicos: 2, tasa_completado: 100 },
+            { mes: 'Dic 2024', genero: 'Thriller', total_reproducciones: 1, minutos_totales: 30, usuarios_unicos: 1, tasa_completado: 0 },
+            { mes: 'Dic 2024', genero: 'Comedia', total_reproducciones: 2, minutos_totales: 96, usuarios_unicos: 2, tasa_completado: 100 },
+            { mes: 'Dic 2024', genero: 'Drama', total_reproducciones: 3, minutos_totales: 130, usuarios_unicos: 3, tasa_completado: 66.7 },
+          ],
+          resumen_planes: [
+            { plan: 'Premium', total_usuarios: 2, reproducciones_promedio: 2.5, minutos_promedio: 95 },
+            { plan: 'Estandar', total_usuarios: 2, reproducciones_promedio: 1.5, minutos_promedio: 54 },
+            { plan: 'Basico', total_usuarios: 1, reproducciones_promedio: 2, minutos_promedio: 98 },
+          ],
+        };
+
+        // ============================================
+        // QUERIES DISPONIBLES
+        // ============================================
+
+        const oltpQueries = [
+          {
+            id: 'oltp1',
+            nombre: 'Registrar nueva reproduccion',
+            descripcion: 'Maria empieza a ver "Wednesday"',
+            tipo: 'INSERT',
+            sql: `INSERT INTO reproducciones
+  (usuario_id, pelicula_id, fecha, minutos_vistos)
+VALUES (1, 103, '2024-12-05', 0);`,
+            resultado: '1 fila insertada en 3ms',
+            explicacion: 'OLTP registra cada accion individual al instante.',
+          },
+          {
+            id: 'oltp2',
+            nombre: 'Buscar usuario por email',
+            descripcion: 'Verificar si existe una cuenta',
+            tipo: 'SELECT',
+            sql: `SELECT * FROM usuarios
+WHERE email = 'maria@email.com';`,
+            resultado: 'usuarios',
+            filtro: (data) => data.usuarios.filter(u => u.email === 'maria@email.com'),
+            explicacion: 'Busqueda rapida de un registro especifico.',
+          },
+          {
+            id: 'oltp3',
+            nombre: 'Actualizar minutos vistos',
+            descripcion: 'Usuario pauso en el minuto 25',
+            tipo: 'UPDATE',
+            sql: `UPDATE reproducciones
+SET minutos_vistos = 25
+WHERE id = 2;`,
+            resultado: '1 fila actualizada en 2ms',
+            explicacion: 'OLTP actualiza registros constantemente.',
+          },
+          {
+            id: 'oltp4',
+            nombre: 'Ver historial de un usuario',
+            descripcion: 'Que ha visto Maria?',
+            tipo: 'SELECT',
+            sql: `SELECT p.titulo, r.fecha, r.minutos_vistos
+FROM reproducciones r
+JOIN peliculas p ON r.pelicula_id = p.id
+WHERE r.usuario_id = 1;`,
+            resultado: 'custom',
+            customResult: [
+              { titulo: 'Stranger Things', fecha: '2024-12-01', minutos_vistos: 50 },
+              { titulo: 'La Casa de Papel', fecha: '2024-12-01', minutos_vistos: 30 },
+              { titulo: 'Squid Game', fecha: '2024-12-04', minutos_vistos: 55 },
+            ],
+            explicacion: 'JOIN conecta tablas relacionadas.',
+          },
+        ];
+
+        const olapQueries = [
+          {
+            id: 'olap1',
+            nombre: 'Genero mas popular del mes',
+            descripcion: 'Que contenido promocionar?',
+            tipo: 'AGGREGATE',
+            sql: `SELECT genero,
+       SUM(total_reproducciones) as vistas,
+       AVG(tasa_completado) as engagement
+FROM resumen_reproducciones
+WHERE mes = 'Dic 2024'
+GROUP BY genero
+ORDER BY vistas DESC;`,
+            resultado: 'resumen_reproducciones',
+            explicacion: 'OLAP pre-calcula agregaciones.',
+          },
+          {
+            id: 'olap2',
+            nombre: 'Rendimiento por tipo de plan',
+            descripcion: 'Que plan genera mas engagement?',
+            tipo: 'AGGREGATE',
+            sql: `SELECT plan,
+       total_usuarios,
+       reproducciones_promedio,
+       minutos_promedio
+FROM resumen_planes
+ORDER BY minutos_promedio DESC;`,
+            resultado: 'resumen_planes',
+            explicacion: 'Datos pre-agregados por dimension.',
+          },
+          {
+            id: 'olap3',
+            nombre: 'Tendencia de completado por genero',
+            descripcion: 'Que generos mantienen la atencion?',
+            tipo: 'AGGREGATE',
+            sql: `SELECT genero,
+       tasa_completado,
+       CASE
+         WHEN tasa_completado >= 80 THEN 'Alto'
+         WHEN tasa_completado >= 50 THEN 'Medio'
+         ELSE 'Bajo'
+       END as nivel_engagement
+FROM resumen_reproducciones;`,
+            resultado: 'custom',
+            customResult: [
+              { genero: 'Sci-Fi', tasa_completado: 100, nivel_engagement: 'Alto' },
+              { genero: 'Comedia', tasa_completado: 100, nivel_engagement: 'Alto' },
+              { genero: 'Drama', tasa_completado: 66.7, nivel_engagement: 'Medio' },
+              { genero: 'Thriller', tasa_completado: 0, nivel_engagement: 'Bajo' },
+            ],
+            explicacion: 'OLAP permite analisis dimensional.',
+          },
+        ];
+
+        // ============================================
+        // COMPONENTE: CICLO DEL DATO
+        // ============================================
+
+        const DataLifecycleAnimation = () => {
+          const [currentStep, setCurrentStep] = useState(0);
+          const [isPlaying, setIsPlaying] = useState(false);
+
+          const steps = [
+            {
+              id: 0,
+              title: "El Problema Inicial",
+              subtitle: "Por que necesitamos gestionar datos?",
+              color: "amber",
+              content: {
+                question: "Imagina que eres el CEO de Netflix...",
+                scenario: "Tienes 230 millones de suscriptores en 190 paises.",
+                challenge: "Como decides que serie producir el proximo ano?",
+                options: [
+                  { text: "Preguntar a cada usuario?", result: "Imposible - tomaria 730 anos" },
+                  { text: "Adivinar?", result: "Riesgoso - cada serie cuesta $100M+" },
+                  { text: "Analizar los DATOS?", result: "La unica opcion viable" },
+                ]
+              }
+            },
+            {
+              id: 1,
+              title: "1. Generacion del Dato",
+              subtitle: "Cada accion crea informacion",
+              color: "blue",
+              content: {
+                description: "Cada interaccion genera datos automaticamente",
+                examples: [
+                  { action: "Maria da play a Stranger Things", data: "usuario_id=1, contenido_id=101" },
+                  { action: "Maria pausa en el minuto 23", data: "evento='pause', minuto=23" },
+                  { action: "Maria le da like", data: "rating='like', contenido_id=101" },
+                ],
+                stats: { daily: "500B eventos/dia", perSecond: "5M eventos/segundo" }
+              }
+            },
+            {
+              id: 2,
+              title: "2. Captura y Almacenamiento",
+              subtitle: "OLTP: La memoria inmediata",
+              color: "indigo",
+              content: {
+                description: "Los datos se guardan instantaneamente en sistemas transaccionales",
+                characteristics: [
+                  { name: "Velocidad", value: "< 10ms por transaccion" },
+                  { name: "Concurrencia", value: "Millones de escrituras simultaneas" },
+                  { name: "Estructura", value: "Tablas normalizadas" },
+                ],
+                analogy: "Como el cajero del supermercado: registra cada venta al instante.",
+                limitation: "NO esta disenado para analisis complejos"
+              }
+            },
+            {
+              id: 3,
+              title: "3. Procesamiento ETL",
+              subtitle: "La fabrica de transformacion",
+              color: "yellow",
+              content: {
+                description: "Extract, Transform, Load",
+                phases: [
+                  { name: "EXTRACT", icon: "1", detail: "Sacar datos de multiples fuentes" },
+                  { name: "TRANSFORM", icon: "2", detail: "Limpiar, validar, agregar" },
+                  { name: "LOAD", icon: "3", detail: "Depositar en Data Warehouse" },
+                ],
+                timing: "Netflix corre ETL cada 15 minutos para datos criticos"
+              }
+            },
+            {
+              id: 4,
+              title: "4. Data Warehouse",
+              subtitle: "OLAP: La memoria analitica",
+              color: "purple",
+              content: {
+                description: "Almacen optimizado para consultas analiticas",
+                characteristics: [
+                  { name: "Velocidad", value: "Segundos sobre BILLONES de filas" },
+                  { name: "Estructura", value: "Datos pre-agregados (cubos OLAP)" },
+                  { name: "Historia", value: "Anos de datos historicos" },
+                ],
+                analogy: "Como el informe mensual: no sabe que vendio Juan a las 3:45pm, pero sabe que frutas subieron 15%.",
+                strength: "Disenado para analisis complejos"
+              }
+            },
+            {
+              id: 5,
+              title: "5. Analisis y Visualizacion",
+              subtitle: "Convertir datos en decisiones",
+              color: "emerald",
+              content: {
+                description: "Dashboards, reportes, y herramientas de BI",
+                tools: ["Power BI", "Tableau", "Looker"],
+                questions: [
+                  "Que genero esta creciendo mas rapido?",
+                  "En que pais invertir en marketing?",
+                  "Que contenido retiene mejor a Premium?",
+                ],
+                outcome: "De 500 billones de eventos -> 1 decision: 'Producir mas Sci-Fi coreano'"
+              }
+            },
+            {
+              id: 6,
+              title: "6. Accion y Retroalimentacion",
+              subtitle: "El ciclo se cierra",
+              color: "rose",
+              content: {
+                description: "Los insights generan acciones que generan mas datos",
+                cycle: [
+                  { step: "Insight", detail: "Los usuarios de LATAM prefieren thriller espanol" },
+                  { step: "Decision", detail: "Producir 'La Casa de Papel: Mexico'" },
+                  { step: "Accion", detail: "Lanzar la serie en Q2 2025" },
+                  { step: "Nuevos datos", detail: "230M de nuevas reproducciones para analizar" },
+                ],
+                conclusion: "El dato es el COMBUSTIBLE para mejores decisiones"
+              }
+            },
+          ];
+
+          useEffect(() => {
+            let interval;
+            if (isPlaying && currentStep < steps.length - 1) {
+              interval = setInterval(() => {
+                setCurrentStep(prev => prev >= steps.length - 1 ? prev : prev + 1);
+              }, 6000);
+            }
+            return () => clearInterval(interval);
+          }, [isPlaying, currentStep]);
+
+          const currentStepData = steps[currentStep];
+
+          const colorClasses = {
+            amber: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-800', btnBg: 'bg-amber-500' },
+            blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-800', btnBg: 'bg-blue-500' },
+            indigo: { bg: 'bg-indigo-100', border: 'border-indigo-300', text: 'text-indigo-800', btnBg: 'bg-indigo-500' },
+            yellow: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', btnBg: 'bg-yellow-500' },
+            purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-800', btnBg: 'bg-purple-500' },
+            emerald: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', btnBg: 'bg-emerald-500' },
+            rose: { bg: 'bg-rose-100', border: 'border-rose-300', text: 'text-rose-800', btnBg: 'bg-rose-500' },
+          };
+
+          const colors = colorClasses[currentStepData.color];
+
+          return (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Progress Bar */}
+              <div className="h-2 bg-gray-200">
+                <div className={`h-full ${colors.btnBg} transition-all duration-500`} style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
+              </div>
+
+              {/* Step Indicators */}
+              <div className="flex justify-between px-4 py-3 bg-gray-50 border-b">
+                {steps.map((step, idx) => (
+                  <button
+                    key={step.id}
+                    onClick={() => setCurrentStep(idx)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                      idx === currentStep
+                        ? `${colors.btnBg} text-white shadow-md scale-110`
+                        : idx < currentStep
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    }`}
+                  >
+                    {idx < currentStep ? 'OK' : idx}
+                  </button>
+                ))}
+              </div>
+
+              {/* Controls */}
+              <div className="flex justify-center gap-4 p-4 bg-gray-50 border-b">
+                <button
+                  onClick={() => setCurrentStep(0)}
+                  className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
+                >
+                  Reiniciar
+                </button>
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isPlaying ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+                >
+                  {isPlaying ? 'Pausar' : 'Auto-avanzar'}
+                </button>
+                <button
+                  onClick={() => setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))}
+                  disabled={currentStep >= steps.length - 1}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+                >
+                  Siguiente
+                </button>
+              </div>
+
+              {/* Main Content */}
+              <div className="p-6">
+                <div className={`flex items-center gap-4 mb-6 p-4 rounded-xl ${colors.bg} ${colors.border} border-2`}>
+                  <div className={`p-4 rounded-xl ${colors.btnBg} text-white text-2xl`}>
+                    {currentStep === 0 ? '?' : currentStep === 1 ? '#' : currentStep === 2 ? 'DB' : currentStep === 3 ? 'ETL' : currentStep === 4 ? 'DW' : currentStep === 5 ? 'BI' : 'OK'}
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-bold ${colors.text}`}>{currentStepData.title}</h2>
+                    <p className="text-gray-600">{currentStepData.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Dynamic Content by Step */}
+                <div className="space-y-4">
+                  {currentStep === 0 && (
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-6 rounded-xl">
+                        <p className="text-xl mb-2">{currentStepData.content.question}</p>
+                        <p className="text-gray-300">{currentStepData.content.scenario}</p>
+                      </div>
+                      <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl">
+                        <p className="font-bold text-amber-800 text-lg mb-3">{currentStepData.content.challenge}</p>
+                        <div className="space-y-2">
+                          {currentStepData.content.options.map((opt, idx) => (
+                            <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${idx === 2 ? 'bg-green-100 border-2 border-green-300' : 'bg-white border'}`}>
+                              <span className="font-medium">{opt.text}</span>
+                              <span className={`text-sm ${idx === 2 ? 'text-green-700 font-bold' : 'text-red-600'}`}>{opt.result}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="space-y-3">
+                        {currentStepData.content.examples.map((ex, idx) => (
+                          <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-blue-600">&gt;</span>
+                              <span className="font-medium text-blue-800">{ex.action}</span>
+                            </div>
+                            <code className="block bg-gray-900 text-green-400 p-2 rounded text-xs font-mono">{ex.data}</code>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="bg-indigo-100 p-4 rounded-xl text-center">
+                          <p className="text-3xl font-bold text-indigo-700">500B</p>
+                          <p className="text-sm text-indigo-600">eventos por dia</p>
+                        </div>
+                        <div className="bg-purple-100 p-4 rounded-xl text-center">
+                          <p className="text-3xl font-bold text-purple-700">5M</p>
+                          <p className="text-sm text-purple-600">eventos por segundo</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {currentStepData.content.characteristics.map((char, idx) => (
+                          <div key={idx} className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                            <p className="font-semibold text-indigo-800">{char.name}</p>
+                            <p className="text-sm text-gray-700">{char.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                        <p className="text-blue-800"><strong>Analogia:</strong> {currentStepData.content.analogy}</p>
+                      </div>
+                      <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-center">
+                        <p className="text-red-700 font-medium">{currentStepData.content.limitation}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 3 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="space-y-4">
+                        {currentStepData.content.phases.map((phase, idx) => (
+                          <div key={idx} className="relative">
+                            <div className="flex items-start gap-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                              <div className="text-3xl font-bold text-yellow-600">{phase.icon}</div>
+                              <div className="flex-1">
+                                <h4 className="font-bold text-yellow-800">{phase.name}</h4>
+                                <p className="text-sm text-gray-600">{phase.detail}</p>
+                              </div>
+                            </div>
+                            {idx < currentStepData.content.phases.length - 1 && (
+                              <div className="flex justify-center my-2">
+                                <span className="text-yellow-500 text-xl">|</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-amber-100 p-3 rounded-lg text-center">
+                        <p className="text-amber-800">{currentStepData.content.timing}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 4 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {currentStepData.content.characteristics.map((char, idx) => (
+                          <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            <p className="font-semibold text-purple-800">{char.name}</p>
+                            <p className="text-sm text-gray-700">{char.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-purple-100 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                        <p className="text-purple-800"><strong>Analogia:</strong> {currentStepData.content.analogy}</p>
+                      </div>
+                      <div className="bg-green-50 border border-green-200 p-3 rounded-lg text-center">
+                        <p className="text-green-700 font-medium">{currentStepData.content.strength}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 5 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="flex gap-3">
+                        {currentStepData.content.tools.map((tool, idx) => (
+                          <div key={idx} className="flex-1 bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                            <p className="font-bold text-emerald-800">{tool}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-gray-100 rounded-lg p-4">
+                        <p className="font-semibold text-gray-800 mb-2">Preguntas que podemos responder:</p>
+                        {currentStepData.content.questions.map((q, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-gray-700 mb-1">
+                            <span className="text-emerald-500">&gt;</span> {q}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-4 rounded-xl text-center">
+                        <p className="text-lg font-bold">{currentStepData.content.outcome}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 6 && (
+                    <div className="space-y-4">
+                      <p className="text-gray-700">{currentStepData.content.description}</p>
+                      <div className="space-y-3">
+                        {currentStepData.content.cycle.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                              idx === 0 ? 'bg-rose-500' : idx === 1 ? 'bg-orange-500' : idx === 2 ? 'bg-amber-500' : 'bg-yellow-500'
+                            }`}>
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1 bg-rose-50 border border-rose-200 rounded-lg p-3">
+                              <p className="font-semibold text-rose-800">{item.step}</p>
+                              <p className="text-sm text-gray-600">{item.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-5 rounded-xl">
+                        <p className="text-lg">{currentStepData.content.conclusion}</p>
+                        <p className="text-gray-300 mt-2 italic">Y el ciclo vuelve a empezar...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // ============================================
+        // COMPONENTE: MODELOS DE DATOS
+        // ============================================
+
+        const DataModelsAnimation = () => {
+          const [currentStep, setCurrentStep] = useState(0);
+          const [showSimulation, setShowSimulation] = useState(false);
+          const [simulationStep, setSimulationStep] = useState(0);
+
+          const steps = [
+            { id: 0, title: "El Problema: Por que tantas tablas?", subtitle: "La razon de ser del OLTP" },
+            { id: 1, title: "Principio 1: Una Sola Verdad", subtitle: "Single Source of Truth" },
+            { id: 2, title: "Principio 2: Eficiencia de Escritura", subtitle: "IDs vs Texto repetitivo" },
+            { id: 3, title: "La Cascada de Tablas", subtitle: "La jerarquia del OLTP" },
+            { id: 4, title: "OLAP: La Pizza ya Cocinada", subtitle: "Por que es diferente" },
+          ];
+
+          const runSimulation = () => {
+            setShowSimulation(true);
+            setSimulationStep(0);
+            const interval = setInterval(() => {
+              setSimulationStep(prev => {
+                if (prev >= 3) {
+                  clearInterval(interval);
+                  return prev;
+                }
+                return prev + 1;
+              });
+            }, 2000);
+          };
+
+          return (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Progress */}
+              <div className="h-2 bg-gray-200">
+                <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-500" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
+              </div>
+
+              {/* Step Indicators */}
+              <div className="flex justify-between px-4 py-3 bg-gray-50 border-b">
+                {steps.map((step, idx) => (
+                  <button
+                    key={step.id}
+                    onClick={() => setCurrentStep(idx)}
+                    className={`flex-1 mx-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                      idx === currentStep
+                        ? 'bg-violet-500 text-white shadow-md'
+                        : idx < currentStep
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    }`}
+                  >
+                    {step.title.split(':')[0]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-violet-100 border-2 border-violet-300">
+                  <div className="p-4 rounded-xl bg-violet-500 text-white text-2xl font-bold">
+                    {currentStep + 1}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-violet-800">{steps[currentStep].title}</h2>
+                    <p className="text-gray-600">{steps[currentStep].subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Step 0: El Problema */}
+                {currentStep === 0 && (
+                  <div className="space-y-4">
+                    <div className="bg-red-50 border-2 border-red-200 p-6 rounded-xl">
+                      <p className="text-xl text-red-800 font-bold mb-4">Cuando ves un diagrama OLTP por primera vez...</p>
+                      <div className="grid grid-cols-5 gap-2 mb-4">
+                        {['Usuarios', 'Paises', 'Ciudades', 'Planes', 'Peliculas', 'Generos', 'Actores', 'Reparto', 'Reproducciones', 'Pagos'].map((t, i) => (
+                          <div key={i} className="bg-white p-2 rounded border text-center text-sm">{t}</div>
+                        ))}
+                      </div>
+                      <p className="text-red-700">Por que 10+ tablas cuando podria ser 1 hoja de Excel gigante?</p>
+                    </div>
+                    <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl">
+                      <p className="text-green-800 font-bold text-lg mb-2">La respuesta: INTEGRIDAD DE DATOS</p>
+                      <p className="text-gray-700">OLTP no esta disenado para ser facil de ver. Esta disenado para que los datos NUNCA esten mal.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 1: Single Source of Truth */}
+                {currentStep === 1 && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
+                      <p className="text-lg text-blue-800 mb-4"><strong>Regla de Oro:</strong> Cada pieza de informacion existe en UN SOLO lugar.</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-red-100 p-4 rounded-lg border-2 border-red-300">
+                          <p className="font-bold text-red-800 mb-2">MAL: Direccion repetida</p>
+                          <div className="text-xs space-y-1 bg-white p-2 rounded">
+                            <div>Maria Garcia | Av. Reforma 123, CDMX</div>
+                            <div>Maria Garcia | Av. Reforma 123, CDMX</div>
+                            <div>Maria Garcia | Av Reforma 123, CDMX</div>
+                          </div>
+                          <p className="text-red-600 text-sm mt-2">Inconsistencia!</p>
+                        </div>
+                        <div className="bg-green-100 p-4 rounded-lg border-2 border-green-300">
+                          <p className="font-bold text-green-800 mb-2">BIEN: ID unico</p>
+                          <div className="text-xs space-y-1 bg-white p-2 rounded">
+                            <div>Reproduccion 1: usuario_id = 1</div>
+                            <div>Reproduccion 2: usuario_id = 1</div>
+                            <div>Reproduccion 3: usuario_id = 1</div>
+                          </div>
+                          <p className="text-green-600 text-sm mt-2">Siempre consistente</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simulacion interactiva */}
+                    <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl">
+                      <p className="font-bold text-amber-800 mb-3">Simulacion: Maria se muda de ciudad</p>
+                      <button onClick={runSimulation} className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 mb-4">
+                        {showSimulation ? 'Reiniciar' : 'Ejecutar Simulacion'}
+                      </button>
+                      {showSimulation && (
+                        <div className="space-y-3">
+                          <div className={`p-3 rounded-lg transition-all ${simulationStep >= 0 ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-100'}`}>
+                            <p className="font-semibold">Sin normalizacion (Excel):</p>
+                            <p className="text-sm text-gray-600">Actualizar {simulationStep >= 1 ? <span className="text-red-600 font-bold">847 registros</span> : '...'}</p>
+                            {simulationStep >= 2 && <p className="text-red-600">3 registros quedaron con la direccion vieja!</p>}
+                          </div>
+                          <div className={`p-3 rounded-lg transition-all ${simulationStep >= 3 ? 'bg-green-100 border-2 border-green-300' : 'bg-gray-100'}`}>
+                            <p className="font-semibold">Con normalizacion (OLTP):</p>
+                            {simulationStep >= 3 && (
+                              <>
+                                <p className="text-sm text-green-600">Actualizar <span className="font-bold">1 registro</span> en tabla usuarios</p>
+                                <p className="text-green-700">Todas las reproducciones ahora muestran la nueva ciudad automaticamente</p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Eficiencia */}
+                {currentStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="bg-indigo-50 border-2 border-indigo-200 p-6 rounded-xl">
+                      <p className="text-lg text-indigo-800 mb-4"><strong>Por que IDs numericos?</strong></p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-red-100 p-4 rounded-lg">
+                          <p className="font-bold text-red-800 mb-2">Sin normalizar (cada fila):</p>
+                          <code className="text-xs bg-white block p-2 rounded">
+                            "Ciudad de Mexico, Mexico, LATAM"<br/>
+                            = 35 caracteres x 1M filas<br/>
+                            = <span className="text-red-600 font-bold">35 MB</span>
+                          </code>
+                        </div>
+                        <div className="bg-green-100 p-4 rounded-lg">
+                          <p className="font-bold text-green-800 mb-2">Normalizado (ID):</p>
+                          <code className="text-xs bg-white block p-2 rounded">
+                            ciudad_id = 1<br/>
+                            = 4 bytes x 1M filas<br/>
+                            = <span className="text-green-600 font-bold">4 MB</span>
+                          </code>
+                        </div>
+                      </div>
+                      <p className="text-center mt-4 text-indigo-700 font-bold">88% menos espacio + escrituras mas rapidas!</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: La Cascada */}
+                {currentStep === 3 && (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-xl">
+                      <p className="text-lg text-purple-800 mb-4">Las tablas OLTP forman una jerarquia de especificidad:</p>
+                      <div className="space-y-3">
+                        {[
+                          { level: 'Nivel 1 (Catalogos)', tables: ['Paises', 'Generos', 'Idiomas'], desc: 'Cambian casi nunca', color: 'blue' },
+                          { level: 'Nivel 2 (Referencias)', tables: ['Ciudades', 'Planes', 'Categorias'], desc: 'Cambian poco', color: 'indigo' },
+                          { level: 'Nivel 3 (Entidades)', tables: ['Usuarios', 'Peliculas', 'Actores'], desc: 'El "que"', color: 'purple' },
+                          { level: 'Nivel 4 (Transacciones)', tables: ['Reproducciones', 'Pagos', 'Likes'], desc: 'Millones por segundo', color: 'pink' },
+                        ].map((item, idx) => (
+                          <div key={idx} className={`p-3 rounded-lg bg-${item.color}-100 border border-${item.color}-200`}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold">{item.level}</span>
+                              <span className="text-sm text-gray-600">{item.desc}</span>
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              {item.tables.map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-amber-100 p-4 rounded-xl text-center">
+                      <p className="text-amber-800"><strong>Por eso hay tantas tablas:</strong> Cada nivel existe por una razon de integridad y eficiencia</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: OLAP - La Pizza */}
+                {currentStep === 4 && (
+                  <div className="space-y-4">
+                    <div className="bg-orange-50 border-2 border-orange-200 p-6 rounded-xl">
+                      <p className="text-xl text-orange-800 mb-4">La Analogia de la Pizza</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-indigo-100 p-4 rounded-lg">
+                          <p className="font-bold text-indigo-800 mb-2">OLTP = Ingredientes separados</p>
+                          <div className="flex flex-wrap gap-2 text-2xl">
+                            <span>Queso</span><span>Tomate</span><span>Aceitunas</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-2">Organizados, frescos, sin mezclar. Puedes cambiar cualquier ingrediente.</p>
+                        </div>
+                        <div className="bg-orange-100 p-4 rounded-lg">
+                          <p className="font-bold text-orange-800 mb-2">OLAP = Pizza horneada</p>
+                          <div className="text-4xl text-center">PIZZA</div>
+                          <p className="text-sm text-gray-600 mt-2">Todo junto, listo para consumir. No puedes quitar solo el queso.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 border-2 border-green-200 p-4 rounded-xl">
+                      <p className="font-bold text-green-800 mb-2">Resumen Final:</p>
+                      <table className="w-full text-sm">
+                        <thead className="bg-green-200">
+                          <tr>
+                            <th className="p-2 text-left">Aspecto</th>
+                            <th className="p-2 text-left">OLTP (Ingredientes)</th>
+                            <th className="p-2 text-left">OLAP (Pizza)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b"><td className="p-2">Tablas</td><td>Muchas, pequenas</td><td>Pocas, grandes</td></tr>
+                          <tr className="border-b"><td className="p-2">Duplicacion</td><td>Prohibida</td><td>Necesaria</td></tr>
+                          <tr className="border-b"><td className="p-2">Actualizar</td><td>Facil</td><td>Reconstruir todo</td></tr>
+                          <tr><td className="p-2">Analizar</td><td>Lento (JOINs)</td><td>Rapido (pre-agregado)</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="flex justify-between mt-6">
+                  <button
+                    onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                    disabled={currentStep === 0}
+                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
+                    disabled={currentStep === steps.length - 1}
+                    className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // ============================================
+        // COMPONENTES AUXILIARES
+        // ============================================
+
+        const DataTable = ({ data, title }) => (
+          <div className="bg-white rounded-lg border overflow-hidden">
+            {title && <div className="bg-gray-100 px-3 py-2 text-sm font-semibold border-b">{title}</div>}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {data.length > 0 && Object.keys(data[0]).map((key, i) => (
+                      <th key={i} className="px-2 py-1 text-left text-gray-600 font-medium">{key}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((row, i) => (
+                    <tr key={i} className="border-t hover:bg-gray-50">
+                      {Object.values(row).map((val, j) => (
+                        <td key={j} className="px-2 py-1">{String(val)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+        const QueryCard = ({ query, onExecute, isActive, result }) => (
+          <div className={`border rounded-lg p-3 cursor-pointer transition-all ${isActive ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300'}`} onClick={onExecute}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-sm">{query.nombre}</span>
+              <span className={`text-xs px-2 py-0.5 rounded ${query.tipo === 'INSERT' ? 'bg-green-100 text-green-700' : query.tipo === 'UPDATE' ? 'bg-yellow-100 text-yellow-700' : query.tipo === 'SELECT' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                {query.tipo}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-2">{query.descripcion}</p>
+            <pre className="bg-gray-900 text-green-400 p-2 rounded text-xs overflow-x-auto">{query.sql}</pre>
+            {isActive && result && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Resultado:</p>
+                {typeof result === 'string' ? (
+                  <p className="text-sm text-green-600">{result}</p>
+                ) : (
+                  <DataTable data={result} />
+                )}
+                <p className="text-xs text-blue-600 mt-2 italic">{query.explicacion}</p>
+              </div>
+            )}
+          </div>
+        );
+
+        const SystemPanel = ({ title, color, icon, queries, data, activeQuery, setActiveQuery }) => {
+          const executeQuery = (query) => {
+            setActiveQuery(query.id);
+          };
+
+          const getResult = (query) => {
+            if (query.resultado === 'custom') return query.customResult;
+            if (typeof query.resultado === 'string' && !query.filtro) return query.resultado;
+            if (query.filtro) return query.filtro(data);
+            return data[query.resultado];
+          };
+
+          return (
+            <div className={`flex-1 border-2 rounded-xl ${color === 'blue' ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50'}`}>
+              <div className={`p-3 ${color === 'blue' ? 'bg-blue-100' : 'bg-purple-100'} rounded-t-lg`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{icon}</span>
+                  <h3 className="font-bold text-lg">{title}</h3>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {queries.map(query => (
+                  <QueryCard
+                    key={query.id}
+                    query={query}
+                    onExecute={() => executeQuery(query)}
+                    isActive={activeQuery === query.id}
+                    result={activeQuery === query.id ? getResult(query) : null}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const OLTPvsOLAPSimulator = () => {
+          const [activeTab, setActiveTab] = useState('lifecycle');
+          const [activeOltpQuery, setActiveOltpQuery] = useState(null);
+          const [activeOlapQuery, setActiveOlapQuery] = useState(null);
+
+          const tabs = [
+            { id: 'lifecycle', label: 'Ciclo del Dato' },
+            { id: 'intro', label: 'OLTP vs OLAP' },
+            { id: 'models', label: 'Modelos de Datos' },
+            { id: 'simulator', label: 'Simulador' },
+            { id: 'compare', label: 'Comparar' },
+          ];
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+              {/* Header */}
+              <div className="max-w-7xl mx-auto mb-4">
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h1 className="text-3xl font-bold mb-2">Simulador OLTP vs OLAP</h1>
+                      <p className="text-indigo-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 01</p>
+                    </div>
+                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                      Volver al inicio
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="max-w-7xl mx-auto mb-4">
+                <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
+                  {tabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-indigo-500 text-white shadow-md'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="max-w-7xl mx-auto">
+                {activeTab === 'lifecycle' && <DataLifecycleAnimation />}
+
+                {activeTab === 'intro' && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold mb-6 text-center">Que son OLTP y OLAP?</h2>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-3 bg-blue-500 text-white rounded-lg text-2xl font-bold">DB</div>
+                          <div>
+                            <h3 className="text-xl font-bold text-blue-800">OLTP</h3>
+                            <p className="text-sm text-blue-600">Online Transaction Processing</p>
+                          </div>
+                        </div>
+                        <ul className="space-y-2 text-gray-700">
+                          <li>* Procesa transacciones en tiempo real</li>
+                          <li>* Optimizado para escrituras rapidas</li>
+                          <li>* Datos normalizados (sin duplicacion)</li>
+                          <li>* Muchas tablas pequenas</li>
+                          <li>* Responde: "Que esta pasando AHORA?"</li>
+                        </ul>
+                        <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                          <p className="text-sm text-blue-800"><strong>Ejemplo:</strong> Cuando das play, se registra instantaneamente.</p>
+                        </div>
+                      </div>
+                      <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-3 bg-purple-500 text-white rounded-lg text-2xl font-bold">BI</div>
+                          <div>
+                            <h3 className="text-xl font-bold text-purple-800">OLAP</h3>
+                            <p className="text-sm text-purple-600">Online Analytical Processing</p>
+                          </div>
+                        </div>
+                        <ul className="space-y-2 text-gray-700">
+                          <li>* Analiza grandes volumenes historicos</li>
+                          <li>* Optimizado para lecturas complejas</li>
+                          <li>* Datos desnormalizados (con duplicacion)</li>
+                          <li>* Pocas tablas grandes</li>
+                          <li>* Responde: "Que paso en el PASADO?"</li>
+                        </ul>
+                        <div className="mt-4 p-3 bg-purple-100 rounded-lg">
+                          <p className="text-sm text-purple-800"><strong>Ejemplo:</strong> Que genero fue mas visto en diciembre?</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'models' && <DataModelsAnimation />}
+
+                {activeTab === 'simulator' && (
+                  <div className="flex gap-4">
+                    <SystemPanel
+                      title="Sistema OLTP"
+                      color="blue"
+                      icon="DB"
+                      queries={oltpQueries}
+                      data={oltpData}
+                      activeQuery={activeOltpQuery}
+                      setActiveQuery={setActiveOltpQuery}
+                    />
+                    <SystemPanel
+                      title="Sistema OLAP"
+                      color="purple"
+                      icon="BI"
+                      queries={olapQueries}
+                      data={olapData}
+                      activeQuery={activeOlapQuery}
+                      setActiveQuery={setActiveOlapQuery}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'compare' && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold mb-6 text-center">Comparativa OLTP vs OLAP</h2>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 text-left">Caracteristica</th>
+                          <th className="p-3 text-left bg-blue-50 text-blue-800">OLTP (DB)</th>
+                          <th className="p-3 text-left bg-purple-50 text-purple-800">OLAP (BI)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ['Proposito', 'Operaciones diarias', 'Analisis estrategico'],
+                          ['Velocidad', 'Milisegundos por transaccion', 'Segundos para millones de filas'],
+                          ['Usuarios', 'Miles simultaneos', 'Decenas de analistas'],
+                          ['Datos', 'Actuales, detallados', 'Historicos, agregados'],
+                          ['Ejemplo Netflix', 'Registrar cada play/pause', 'Que genero crecio mas en 2024'],
+                          ['Estructura', 'Muchas tablas normalizadas', 'Pocas tablas desnormalizadas'],
+                          ['Actualizaciones', 'Constantes (INSERT/UPDATE)', 'Periodicas (batch ETL)'],
+                        ].map(([feature, oltp, olap], idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="p-3 font-medium">{feature}</td>
+                            <td className="p-3 bg-blue-50">{oltp}</td>
+                            <td className="p-3 bg-purple-50">{olap}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl">
+                      <p className="text-center text-lg font-semibold">
+                        <strong>Conclusion:</strong> OLTP y OLAP no compiten, se COMPLEMENTAN. Uno captura el momento, otro analiza la historia.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="max-w-7xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 01</p>
+                <p class="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<OLTPvsOLAPSimulator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
