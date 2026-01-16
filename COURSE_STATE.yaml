@@ -6,10 +6,11 @@ meta:
   course_id: aden-taller-tecnologia-aplicada
   course_code: CT ING 027
   institution: ADEN University
-  last_updated: 2026-01-15
-  last_session_worked: session-14
+  last_updated: 2026-01-16
+  last_session_worked: session-02
   total_sessions: 14
   sessions_with_content: 14
+  sessions_with_interactive_materials: 2
   project_phases_defined: 4
 
 # Fechas del calendario academico
@@ -19,10 +20,18 @@ calendar:
   sessions:
     - id: sesion-01
       date: 2026-01-16
-      status: planned
+      status: materials_created
+      interactive_resources:
+        - simulador_oltp_olap
+        - laboratorio_gimnasio_supabase
+        - ejercicio_biblioteca_ia
     - id: sesion-02
       date: 2026-01-23
-      status: planned
+      status: materials_created
+      interactive_resources:
+        - simulador_arquitectura_bi
+        - laboratorio_ecosistema_bi
+        - ejercicio_mapear_arquitectura_ia
     - id: sesion-03
       date: 2026-01-30
       status: planned
@@ -132,12 +141,12 @@ learning_progression:
       - seleccion_graficos
       - dashboard_design
     sesion-11:
-      - power_bi_desktop
-      - medidas_dax
-      - slicers_filtros
+      - tableau_desktop
+      - campos_calculados
+      - filtros_parametros
       - drill_down
       - drill_through
-      - power_bi_service
+      - tableau_public
     sesion-12:
       - data_storytelling
       - narrativa_visual
@@ -169,7 +178,7 @@ learning_progression:
     sesion-09: [algoritmos_clustering, algoritmos_clasificacion]
     sesion-10: [big_data_concepto]
     sesion-11: [principios_visualizacion, dashboard_design]
-    sesion-12: [power_bi_desktop, medidas_dax]
+    sesion-12: [tableau_desktop, campos_calculados]
     sesion-13: [data_storytelling, proyecto_completo]
     sesion-14: [madurez_bi, gobernanza_datos]
 
@@ -223,12 +232,12 @@ learning_progression:
     sesion-10:
       theory_hours: 2
       practice_hours: 2
-      tools_introduced: [power_bi_desktop]
+      tools_introduced: [tableau_desktop]
       deliverables: [quiz_unidad_4]
     sesion-11:
       theory_hours: 1
       practice_hours: 3
-      tools_introduced: [dax, power_bi_service]
+      tools_introduced: [tableau_calculated_fields, tableau_public]
       deliverables: []
     sesion-12:
       theory_hours: 1
@@ -283,28 +292,41 @@ code_conventions:
       from sklearn.preprocessing import StandardScaler
     docstring_style: "google"
 
-  dax:
-    measure_naming: "Nombre descriptivo sin prefijo"
-    variable_prefix: "_"
+  tableau:
+    calculated_field_naming: "Nombre descriptivo sin prefijo"
+    parameter_prefix: "p_"
     style: |
-      // Medidas comienzan con mayuscula
-      // Variables internas con _ prefix
-      // CALCULATE siempre formateado en multiples lineas
+      // Campos calculados comienzan con mayuscula
+      // Parametros con p_ prefix
+      // Usar SUM(), AVG(), COUNTD() para agregaciones
+      // IF/THEN/ELSE para logica condicional
 
 # Registro de materiales creados por sesion
 materials_registry:
   sesion-01:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/ejercicio-individual.html"
   sesion-02:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true  # Quiz integrado en el simulador
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/ejercicio-individual.html"
   sesion-03:
     readme: true
     slides: false
@@ -399,12 +421,12 @@ project_phases:
       - resultados_clustering
       - resultados_clasificacion
   fase_3:
-    title: "Dashboard interactivo Power BI"
+    title: "Dashboard interactivo Tableau"
     weight: 20%
     delivery_session: sesion-12
     status: defined
     deliverables:
-      - dashboard_pbix
+      - dashboard_tableau_twbx
       - presentacion_oral
       - documento_visualizaciones
   fase_4:
@@ -491,6 +513,14 @@ implementation_notes:
     note: "README detallados creados para cada sesion"
   - date: 2026-01-15
     note: "CLAUDE.md y COURSE_STATE.yaml creados para continuidad"
+  - date: 2026-01-16
+    note: "Sesion 01 - Materiales interactivos creados: simulador OLTP/OLAP, lab Supabase, ejercicio IA"
+  - date: 2026-01-16
+    note: "Sesion 02 - Materiales interactivos creados: simulador arquitectura BI, lab ecosistema, ejercicio IA"
+  - date: 2026-01-16
+    note: "Cambio de herramienta BI: Power BI reemplazado por Tableau en el stack del curso"
+  - date: 2026-01-16
+    note: "GitHub Pages configurado y funcionando para recursos interactivos"
 
 ---
 # FIN DEL CONTRATO
