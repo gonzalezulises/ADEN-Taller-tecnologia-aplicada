@@ -4,51 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador OLTP vs OLAP - ADEN University</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', system-ui, sans-serif; }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .animate-bounce { animation: bounce 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        @keyframes bounce { 0%, 100% { transform: translateY(-10%); } 50% { transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const { Database, BarChart3, Play, Clock, Users, Film, Eye, ChevronRight, AlertCircle, CheckCircle2, Zap, Server, TrendingUp, ArrowRight, Pause, RotateCcw, Factory, Warehouse, PieChart, Lightbulb, MousePointer, ShoppingCart, CreditCard, Truck, Package, RefreshCw, Map, Snowflake, Star, Table, Link, Box, Grid3X3, CircleDot, XCircle } = lucide;
-
-        // Wrapper para iconos de Lucide
-        const LucideIcon = ({ icon: IconComponent, size = 24, className = "" }) => {
-            const ref = useRef(null);
-            useEffect(() => {
-                if (ref.current && IconComponent) {
-                    ref.current.innerHTML = '';
-                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    svg.setAttribute("width", size);
-                    svg.setAttribute("height", size);
-                    svg.setAttribute("viewBox", "0 0 24 24");
-                    svg.setAttribute("fill", "none");
-                    svg.setAttribute("stroke", "currentColor");
-                    svg.setAttribute("stroke-width", "2");
-                    svg.setAttribute("stroke-linecap", "round");
-                    svg.setAttribute("stroke-linejoin", "round");
-                    svg.setAttribute("class", className);
-
-                    const iconName = IconComponent.name || IconComponent.toString();
-                    lucide.createIcons({ icons: { [iconName]: IconComponent }, attrs: {} });
-
-                    ref.current.appendChild(svg);
-                }
-            }, [IconComponent, size, className]);
-            return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} />;
-        };
+        const { useState, useEffect } = React;
 
         // ============================================
         // DATOS SIMULADOS DE NETFLIX
@@ -220,6 +188,7 @@ FROM resumen_reproducciones;`,
               title: "El Problema Inicial",
               subtitle: "Por que necesitamos gestionar datos?",
               color: "amber",
+              icon: "?",
               content: {
                 question: "Imagina que eres el CEO de Netflix...",
                 scenario: "Tienes 230 millones de suscriptores en 190 paises.",
@@ -236,6 +205,7 @@ FROM resumen_reproducciones;`,
               title: "1. Generacion del Dato",
               subtitle: "Cada accion crea informacion",
               color: "blue",
+              icon: "#",
               content: {
                 description: "Cada interaccion genera datos automaticamente",
                 examples: [
@@ -251,6 +221,7 @@ FROM resumen_reproducciones;`,
               title: "2. Captura y Almacenamiento",
               subtitle: "OLTP: La memoria inmediata",
               color: "indigo",
+              icon: "DB",
               content: {
                 description: "Los datos se guardan instantaneamente en sistemas transaccionales",
                 characteristics: [
@@ -267,6 +238,7 @@ FROM resumen_reproducciones;`,
               title: "3. Procesamiento ETL",
               subtitle: "La fabrica de transformacion",
               color: "yellow",
+              icon: "ETL",
               content: {
                 description: "Extract, Transform, Load",
                 phases: [
@@ -282,6 +254,7 @@ FROM resumen_reproducciones;`,
               title: "4. Data Warehouse",
               subtitle: "OLAP: La memoria analitica",
               color: "purple",
+              icon: "DW",
               content: {
                 description: "Almacen optimizado para consultas analiticas",
                 characteristics: [
@@ -298,6 +271,7 @@ FROM resumen_reproducciones;`,
               title: "5. Analisis y Visualizacion",
               subtitle: "Convertir datos en decisiones",
               color: "emerald",
+              icon: "BI",
               content: {
                 description: "Dashboards, reportes, y herramientas de BI",
                 tools: ["Power BI", "Tableau", "Looker"],
@@ -306,7 +280,7 @@ FROM resumen_reproducciones;`,
                   "En que pais invertir en marketing?",
                   "Que contenido retiene mejor a Premium?",
                 ],
-                outcome: "De 500 billones de eventos -> 1 decision: 'Producir mas Sci-Fi coreano'"
+                outcome: "De 500 billones de eventos a 1 decision: Producir mas Sci-Fi coreano"
               }
             },
             {
@@ -314,11 +288,12 @@ FROM resumen_reproducciones;`,
               title: "6. Accion y Retroalimentacion",
               subtitle: "El ciclo se cierra",
               color: "rose",
+              icon: "OK",
               content: {
                 description: "Los insights generan acciones que generan mas datos",
                 cycle: [
                   { step: "Insight", detail: "Los usuarios de LATAM prefieren thriller espanol" },
-                  { step: "Decision", detail: "Producir 'La Casa de Papel: Mexico'" },
+                  { step: "Decision", detail: "Producir La Casa de Papel: Mexico" },
                   { step: "Accion", detail: "Lanzar la serie en Q2 2025" },
                   { step: "Nuevos datos", detail: "230M de nuevas reproducciones para analizar" },
                 ],
@@ -353,12 +328,10 @@ FROM resumen_reproducciones;`,
 
           return (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {/* Progress Bar */}
               <div className="h-2 bg-gray-200">
                 <div className={`h-full ${colors.btnBg} transition-all duration-500`} style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
               </div>
 
-              {/* Step Indicators */}
               <div className="flex justify-between px-4 py-3 bg-gray-50 border-b">
                 {steps.map((step, idx) => (
                   <button
@@ -377,34 +350,29 @@ FROM resumen_reproducciones;`,
                 ))}
               </div>
 
-              {/* Controls */}
               <div className="flex justify-center gap-4 p-4 bg-gray-50 border-b">
-                <button
-                  onClick={() => setCurrentStep(0)}
-                  className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
-                >
+                <button onClick={() => setCurrentStep(0)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                   Reiniciar
                 </button>
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isPlaying ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+                  className={`px-4 py-2 rounded-lg ${isPlaying ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
                 >
                   {isPlaying ? 'Pausar' : 'Auto-avanzar'}
                 </button>
                 <button
                   onClick={() => setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))}
                   disabled={currentStep >= steps.length - 1}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
                 >
                   Siguiente
                 </button>
               </div>
 
-              {/* Main Content */}
               <div className="p-6">
                 <div className={`flex items-center gap-4 mb-6 p-4 rounded-xl ${colors.bg} ${colors.border} border-2`}>
-                  <div className={`p-4 rounded-xl ${colors.btnBg} text-white text-2xl`}>
-                    {currentStep === 0 ? '?' : currentStep === 1 ? '#' : currentStep === 2 ? 'DB' : currentStep === 3 ? 'ETL' : currentStep === 4 ? 'DW' : currentStep === 5 ? 'BI' : 'OK'}
+                  <div className={`p-4 rounded-xl ${colors.btnBg} text-white text-2xl font-bold`}>
+                    {currentStepData.icon}
                   </div>
                   <div>
                     <h2 className={`text-2xl font-bold ${colors.text}`}>{currentStepData.title}</h2>
@@ -412,7 +380,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 </div>
 
-                {/* Dynamic Content by Step */}
                 <div className="space-y-4">
                   {currentStep === 0 && (
                     <div className="space-y-4">
@@ -441,7 +408,7 @@ FROM resumen_reproducciones;`,
                         {currentStepData.content.examples.map((ex, idx) => (
                           <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-blue-600">&gt;</span>
+                              <span className="text-blue-600 font-bold">&gt;</span>
                               <span className="font-medium text-blue-800">{ex.action}</span>
                             </div>
                             <code className="block bg-gray-900 text-green-400 p-2 rounded text-xs font-mono">{ex.data}</code>
@@ -496,7 +463,7 @@ FROM resumen_reproducciones;`,
                             </div>
                             {idx < currentStepData.content.phases.length - 1 && (
                               <div className="flex justify-center my-2">
-                                <span className="text-yellow-500 text-xl">|</span>
+                                <span className="text-yellow-500 text-xl font-bold">|</span>
                               </div>
                             )}
                           </div>
@@ -542,7 +509,7 @@ FROM resumen_reproducciones;`,
                         <p className="font-semibold text-gray-800 mb-2">Preguntas que podemos responder:</p>
                         {currentStepData.content.questions.map((q, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-gray-700 mb-1">
-                            <span className="text-emerald-500">&gt;</span> {q}
+                            <span className="text-emerald-500 font-bold">&gt;</span> {q}
                           </div>
                         ))}
                       </div>
@@ -615,12 +582,10 @@ FROM resumen_reproducciones;`,
 
           return (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {/* Progress */}
               <div className="h-2 bg-gray-200">
                 <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-500" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
               </div>
 
-              {/* Step Indicators */}
               <div className="flex justify-between px-4 py-3 bg-gray-50 border-b">
                 {steps.map((step, idx) => (
                   <button
@@ -634,13 +599,12 @@ FROM resumen_reproducciones;`,
                           : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                     }`}
                   >
-                    {step.title.split(':')[0]}
+                    Paso {idx + 1}
                   </button>
                 ))}
               </div>
 
               <div className="p-6">
-                {/* Header */}
                 <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-violet-100 border-2 border-violet-300">
                   <div className="p-4 rounded-xl bg-violet-500 text-white text-2xl font-bold">
                     {currentStep + 1}
@@ -651,7 +615,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 </div>
 
-                {/* Step 0: El Problema */}
                 {currentStep === 0 && (
                   <div className="space-y-4">
                     <div className="bg-red-50 border-2 border-red-200 p-6 rounded-xl">
@@ -670,7 +633,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 )}
 
-                {/* Step 1: Single Source of Truth */}
                 {currentStep === 1 && (
                   <div className="space-y-4">
                     <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
@@ -696,8 +658,6 @@ FROM resumen_reproducciones;`,
                         </div>
                       </div>
                     </div>
-
-                    {/* Simulacion interactiva */}
                     <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl">
                       <p className="font-bold text-amber-800 mb-3">Simulacion: Maria se muda de ciudad</p>
                       <button onClick={runSimulation} className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 mb-4">
@@ -725,7 +685,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 )}
 
-                {/* Step 2: Eficiencia */}
                 {currentStep === 2 && (
                   <div className="space-y-4">
                     <div className="bg-indigo-50 border-2 border-indigo-200 p-6 rounded-xl">
@@ -753,28 +712,47 @@ FROM resumen_reproducciones;`,
                   </div>
                 )}
 
-                {/* Step 3: La Cascada */}
                 {currentStep === 3 && (
                   <div className="space-y-4">
                     <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-xl">
                       <p className="text-lg text-purple-800 mb-4">Las tablas OLTP forman una jerarquia de especificidad:</p>
                       <div className="space-y-3">
-                        {[
-                          { level: 'Nivel 1 (Catalogos)', tables: ['Paises', 'Generos', 'Idiomas'], desc: 'Cambian casi nunca', color: 'blue' },
-                          { level: 'Nivel 2 (Referencias)', tables: ['Ciudades', 'Planes', 'Categorias'], desc: 'Cambian poco', color: 'indigo' },
-                          { level: 'Nivel 3 (Entidades)', tables: ['Usuarios', 'Peliculas', 'Actores'], desc: 'El "que"', color: 'purple' },
-                          { level: 'Nivel 4 (Transacciones)', tables: ['Reproducciones', 'Pagos', 'Likes'], desc: 'Millones por segundo', color: 'pink' },
-                        ].map((item, idx) => (
-                          <div key={idx} className={`p-3 rounded-lg bg-${item.color}-100 border border-${item.color}-200`}>
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold">{item.level}</span>
-                              <span className="text-sm text-gray-600">{item.desc}</span>
-                            </div>
-                            <div className="flex gap-2 mt-2">
-                              {item.tables.map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
-                            </div>
+                        <div className="p-3 rounded-lg bg-blue-100 border border-blue-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold">Nivel 1 (Catalogos)</span>
+                            <span className="text-sm text-gray-600">Cambian casi nunca</span>
                           </div>
-                        ))}
+                          <div className="flex gap-2 mt-2">
+                            {['Paises', 'Generos', 'Idiomas'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-indigo-100 border border-indigo-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold">Nivel 2 (Referencias)</span>
+                            <span className="text-sm text-gray-600">Cambian poco</span>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            {['Ciudades', 'Planes', 'Categorias'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-purple-100 border border-purple-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold">Nivel 3 (Entidades)</span>
+                            <span className="text-sm text-gray-600">El "que"</span>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            {['Usuarios', 'Peliculas', 'Actores'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-pink-100 border border-pink-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold">Nivel 4 (Transacciones)</span>
+                            <span className="text-sm text-gray-600">Millones por segundo</span>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            {['Reproducciones', 'Pagos', 'Likes'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="bg-amber-100 p-4 rounded-xl text-center">
@@ -783,7 +761,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 )}
 
-                {/* Step 4: OLAP - La Pizza */}
                 {currentStep === 4 && (
                   <div className="space-y-4">
                     <div className="bg-orange-50 border-2 border-orange-200 p-6 rounded-xl">
@@ -791,14 +768,12 @@ FROM resumen_reproducciones;`,
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-indigo-100 p-4 rounded-lg">
                           <p className="font-bold text-indigo-800 mb-2">OLTP = Ingredientes separados</p>
-                          <div className="flex flex-wrap gap-2 text-2xl">
-                            <span>Queso</span><span>Tomate</span><span>Aceitunas</span>
-                          </div>
+                          <div className="text-center text-2xl my-2">Queso + Tomate + Aceitunas</div>
                           <p className="text-sm text-gray-600 mt-2">Organizados, frescos, sin mezclar. Puedes cambiar cualquier ingrediente.</p>
                         </div>
                         <div className="bg-orange-100 p-4 rounded-lg">
                           <p className="font-bold text-orange-800 mb-2">OLAP = Pizza horneada</p>
-                          <div className="text-4xl text-center">PIZZA</div>
+                          <div className="text-center text-4xl my-2">PIZZA</div>
                           <p className="text-sm text-gray-600 mt-2">Todo junto, listo para consumir. No puedes quitar solo el queso.</p>
                         </div>
                       </div>
@@ -824,7 +799,6 @@ FROM resumen_reproducciones;`,
                   </div>
                 )}
 
-                {/* Navigation */}
                 <div className="flex justify-between mt-6">
                   <button
                     onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
@@ -916,7 +890,7 @@ FROM resumen_reproducciones;`,
             <div className={`flex-1 border-2 rounded-xl ${color === 'blue' ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50'}`}>
               <div className={`p-3 ${color === 'blue' ? 'bg-blue-100' : 'bg-purple-100'} rounded-t-lg`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{icon}</span>
+                  <span className="text-xl font-bold">{icon}</span>
                   <h3 className="font-bold text-lg">{title}</h3>
                 </div>
               </div>
@@ -954,7 +928,6 @@ FROM resumen_reproducciones;`,
 
           return (
             <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
-              {/* Header */}
               <div className="max-w-7xl mx-auto mb-4">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
                   <div className="flex justify-between items-center">
@@ -969,7 +942,6 @@ FROM resumen_reproducciones;`,
                 </div>
               </div>
 
-              {/* Tabs */}
               <div className="max-w-7xl mx-auto mb-4">
                 <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
                   {tabs.map(tab => (
@@ -988,7 +960,6 @@ FROM resumen_reproducciones;`,
                 </div>
               </div>
 
-              {/* Content */}
               <div className="max-w-7xl mx-auto">
                 {activeTab === 'lifecycle' && <DataLifecycleAnimation />}
 
@@ -1041,7 +1012,7 @@ FROM resumen_reproducciones;`,
                 {activeTab === 'models' && <DataModelsAnimation />}
 
                 {activeTab === 'simulator' && (
-                  <div className="flex gap-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     <SystemPanel
                       title="Sistema OLTP"
                       color="blue"
@@ -1066,32 +1037,34 @@ FROM resumen_reproducciones;`,
                 {activeTab === 'compare' && (
                   <div className="bg-white rounded-xl shadow-sm p-6">
                     <h2 className="text-2xl font-bold mb-6 text-center">Comparativa OLTP vs OLAP</h2>
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="p-3 text-left">Caracteristica</th>
-                          <th className="p-3 text-left bg-blue-50 text-blue-800">OLTP (DB)</th>
-                          <th className="p-3 text-left bg-purple-50 text-purple-800">OLAP (BI)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          ['Proposito', 'Operaciones diarias', 'Analisis estrategico'],
-                          ['Velocidad', 'Milisegundos por transaccion', 'Segundos para millones de filas'],
-                          ['Usuarios', 'Miles simultaneos', 'Decenas de analistas'],
-                          ['Datos', 'Actuales, detallados', 'Historicos, agregados'],
-                          ['Ejemplo Netflix', 'Registrar cada play/pause', 'Que genero crecio mas en 2024'],
-                          ['Estructura', 'Muchas tablas normalizadas', 'Pocas tablas desnormalizadas'],
-                          ['Actualizaciones', 'Constantes (INSERT/UPDATE)', 'Periodicas (batch ETL)'],
-                        ].map(([feature, oltp, olap], idx) => (
-                          <tr key={idx} className="border-b">
-                            <td className="p-3 font-medium">{feature}</td>
-                            <td className="p-3 bg-blue-50">{oltp}</td>
-                            <td className="p-3 bg-purple-50">{olap}</td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="p-3 text-left">Caracteristica</th>
+                            <th className="p-3 text-left bg-blue-50 text-blue-800">OLTP (DB)</th>
+                            <th className="p-3 text-left bg-purple-50 text-purple-800">OLAP (BI)</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {[
+                            ['Proposito', 'Operaciones diarias', 'Analisis estrategico'],
+                            ['Velocidad', 'Milisegundos por transaccion', 'Segundos para millones de filas'],
+                            ['Usuarios', 'Miles simultaneos', 'Decenas de analistas'],
+                            ['Datos', 'Actuales, detallados', 'Historicos, agregados'],
+                            ['Ejemplo Netflix', 'Registrar cada play/pause', 'Que genero crecio mas en 2024'],
+                            ['Estructura', 'Muchas tablas normalizadas', 'Pocas tablas desnormalizadas'],
+                            ['Actualizaciones', 'Constantes (INSERT/UPDATE)', 'Periodicas (batch ETL)'],
+                          ].map(([feature, oltp, olap], idx) => (
+                            <tr key={idx} className="border-b">
+                              <td className="p-3 font-medium">{feature}</td>
+                              <td className="p-3 bg-blue-50">{oltp}</td>
+                              <td className="p-3 bg-purple-50">{olap}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                     <div className="mt-6 p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl">
                       <p className="text-center text-lg font-semibold">
                         <strong>Conclusion:</strong> OLTP y OLAP no compiten, se COMPLEMENTAN. Uno captura el momento, otro analiza la historia.
@@ -1101,16 +1074,16 @@ FROM resumen_reproducciones;`,
                 )}
               </div>
 
-              {/* Footer */}
               <div className="max-w-7xl mx-auto mt-6 text-center text-gray-500 text-sm">
                 <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 01</p>
-                <p class="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
               </div>
             </div>
           );
         };
 
-        ReactDOM.render(<OLTPvsOLAPSimulator />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<OLTPvsOLAPSimulator />);
     </script>
 </body>
 </html>
