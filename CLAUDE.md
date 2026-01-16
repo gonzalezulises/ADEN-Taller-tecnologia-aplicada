@@ -26,12 +26,13 @@ dashboards y estrategias de implementacion.
 
 | Herramienta | Uso en el Curso |
 |-------------|-----------------|
-| **Power BI Desktop** | Dashboards interactivos (Sesiones 10-12) |
-| **SQL Server / PostgreSQL** | Bases de datos, modelado dimensional |
+| **Tableau** | Dashboards interactivos y visualizacion (Sesiones 10-12) |
+| **Supabase / PostgreSQL** | Bases de datos relacionales, modelado dimensional |
 | **Pentaho Data Integration** | Procesos ETL (Sesion 6) |
 | **Python** | Data Mining con pandas, scikit-learn, matplotlib |
 | **Jupyter Notebooks** | Analisis exploratorio y algoritmos ML |
 | **Google Colab** | Alternativa para notebooks (Big Data) |
+| **Google NotebookLM** | Material de apoyo con IA |
 
 ---
 
@@ -91,7 +92,7 @@ El curso incluye un proyecto grupal con 4 fases acumulativas:
 |------|----------------|------|------------|
 | 1 | Sesion 4 | 15% | Analisis de necesidades + Diseno DW |
 | 2 | Sesion 8 | 15% | Implementacion ETL + Data Mining |
-| 3 | Sesion 12 | 20% | Dashboard interactivo Power BI |
+| 3 | Sesion 12 | 20% | Dashboard interactivo Tableau |
 | 4 | Sesion 14 | 15% | Roadmap de implementacion BI |
 
 ### Evaluacion Completa
@@ -165,28 +166,24 @@ def explorar_datos(df):
     print(f"\nEstadisticas:\n{df.describe()}")
 ```
 
-### DAX (Power BI)
+### Tableau (Campos Calculados)
 
-```dax
+```
 // Medidas estandar
-Total Ventas = SUM(Ventas[Monto])
-Num Transacciones = COUNTROWS(Ventas)
-Promedio Venta = AVERAGE(Ventas[Monto])
-Clientes Unicos = DISTINCTCOUNT(Ventas[ClienteID])
+Total Ventas: SUM([Monto])
+Num Transacciones: COUNT([ID Transaccion])
+Promedio Venta: AVG([Monto])
+Clientes Unicos: COUNTD([Cliente ID])
 
-// Medidas con contexto temporal
-Ventas Año Anterior =
-CALCULATE(
-    [Total Ventas],
-    SAMEPERIODLASTYEAR(Calendario[Fecha])
-)
+// Calculo con condicion
+Ventas Altas: IF SUM([Monto]) > 10000 THEN "Alto" ELSE "Normal" END
 
-Crecimiento YoY =
-DIVIDE(
-    [Total Ventas] - [Ventas Año Anterior],
-    [Ventas Año Anterior],
-    0
-)
+// Calculo de fecha
+Año Venta: YEAR([Fecha])
+Mes Venta: MONTH([Fecha])
+
+// Crecimiento porcentual (Table Calculation)
+Crecimiento YoY: (SUM([Monto]) - LOOKUP(SUM([Monto]), -1)) / LOOKUP(SUM([Monto]), -1)
 ```
 
 ---

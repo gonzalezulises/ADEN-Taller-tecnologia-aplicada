@@ -27,11 +27,12 @@ Taller de Tecnologia Aplicada es una asignatura de aplicacion practica que desar
 
 ## Herramientas
 
-- **Power BI Desktop** - Dashboards interactivos
-- **SQL Server / PostgreSQL** - Bases de datos
+- **Tableau** - Dashboards interactivos y visualizacion de datos
+- **Supabase / PostgreSQL** - Bases de datos relacionales
 - **Pentaho Data Integration** - Procesos ETL
 - **Python** (pandas, scikit-learn, matplotlib) - Data Mining
 - **Jupyter Notebooks** - Analisis de datos
+- **Google NotebookLM** - Material de apoyo con IA
 
 ## Estructura del Curso
 
@@ -47,7 +48,7 @@ Taller de Tecnologia Aplicada es una asignatura de aplicacion practica que desar
 | 08 | 13-mar | Algoritmos clasificacion y clustering |
 | 09 | 20-mar | Big Data fundamentals y arquitecturas distribuidas |
 | 10 | 27-mar | Principios visualizacion de datos y diseno dashboards |
-| 11 | 3-abr | Implementacion dashboards interactivos en Power BI |
+| 11 | 3-abr | Implementacion dashboards interactivos en Tableau |
 | 12 | 11-abr | Presentaciones dashboards y data storytelling |
 | 13 | TBD | Estrategias implementacion BI y madurez organizacional |
 | 14 | TBD | Presentaciones finales - Propuesta Roadmap BI |
@@ -58,7 +59,7 @@ El curso incluye un proyecto integrador grupal con 4 fases:
 
 1. **Fase 1** (15%): Analisis de necesidades + Diseno DW
 2. **Fase 2** (15%): Implementacion ETL + Mineria de datos
-3. **Fase 3** (20%): Dashboard interactivo Power BI
+3. **Fase 3** (20%): Dashboard interactivo Tableau
 4. **Fase 4** (15%): Hoja de ruta de implementacion y gobernanza
 
 ## Evaluacion
