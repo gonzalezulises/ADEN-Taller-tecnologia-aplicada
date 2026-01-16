@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Sistema de Biblioteca - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); min-height: 100vh; padding: 16px; color: #e2e8f0; }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
+        .header-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 8px; }
+        .header-individual { display: inline-block; background: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 8px; margin-left: 8px; color: #000; font-weight: bold; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .header p { opacity: 0.9; }
+
+        /* Back Link */
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #a5b4fc; text-decoration: none; margin-bottom: 16px; font-size: 14px; transition: color 0.2s; }
+        .back-link:hover { color: #c7d2fe; }
+
+        /* Progress */
+        .progress-container { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #334155; }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .progress-title { font-weight: 600; color: #8b5cf6; }
+        .progress-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); transition: width 0.5s; border-radius: 4px; }
+        .progress-steps { display: flex; justify-content: space-between; margin-top: 12px; }
+        .progress-step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .progress-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .progress-dot.completed { background: #8b5cf6; color: white; }
+        .progress-dot.active { background: #8b5cf6; color: white; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3); transform: scale(1.1); }
+        .progress-dot.pending { background: #334155; color: #64748b; }
+        .progress-dot:hover { transform: scale(1.1); }
+        .progress-label { font-size: 11px; color: #64748b; text-align: center; max-width: 80px; }
+
+        /* Content Card */
+        .content-card { background: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden; margin-bottom: 20px; }
+        .content-header { padding: 20px 24px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 16px; }
+        .step-number { width: 48px; height: 48px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; }
+        .step-info h2 { font-size: 20px; color: #f1f5f9; margin-bottom: 4px; }
+        .step-info p { font-size: 14px; color: #94a3b8; }
+        .content-body { padding: 24px; }
+
+        /* Scenario Box */
+        .scenario { background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #3b82f6; }
+        .scenario h3 { color: #93c5fd; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .scenario p { color: #bfdbfe; line-height: 1.7; }
+
+        /* AI Prompt Box */
+        .ai-prompt { background: linear-gradient(135deg, #312e81 0%, #3730a3 100%); border-radius: 12px; padding: 20px; margin: 16px 0; border: 2px dashed #6366f1; }
+        .ai-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .ai-icons { display: flex; gap: 8px; }
+        .ai-icon { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 12px; }
+        .ai-title { color: #a5b4fc; font-weight: 600; font-size: 18px; }
+        .ai-content { background: #1e1b4b; border-radius: 8px; padding: 16px; color: #e0e7ff; line-height: 1.6; font-family: monospace; font-size: 14px; white-space: pre-wrap; }
+        .ai-tip { margin-top: 12px; font-size: 13px; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
+        .copy-prompt-btn { margin-top: 12px; background: #6366f1; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .copy-prompt-btn:hover { background: #4f46e5; }
+        .copy-prompt-btn.copied { background: #10b981; }
+
+        /* Instructions */
+        .instruction { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #8b5cf6; }
+        .instruction-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #8b5cf6; color: white; border-radius: 50%; font-size: 14px; font-weight: bold; margin-right: 12px; }
+        .instruction p { color: #cbd5e1; line-height: 1.6; }
+        .instruction strong { color: #a78bfa; }
+        .instruction ul { margin-top: 12px; margin-left: 40px; color: #94a3b8; }
+        .instruction li { margin-bottom: 8px; }
+
+        /* Deliverables */
+        .deliverables { background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 12px; padding: 20px; margin: 16px 0; }
+        .deliverables h4 { color: #6ee7b7; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .deliverables ul { list-style: none; }
+        .deliverables li { padding: 8px 0; color: #a7f3d0; display: flex; align-items: flex-start; gap: 8px; }
+        .deliverables li::before { content: "□"; color: #6ee7b7; font-weight: bold; }
+
+        /* Warning/Info Boxes */
+        .info-box { border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; gap: 12px; }
+        .info-box.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; }
+        .info-box.warning { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; }
+        .info-box.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
+        .info-box.info { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; }
+        .info-icon { font-size: 24px; }
+        .info-content h4 { margin-bottom: 4px; }
+        .info-box.success h4 { color: #10b981; }
+        .info-box.warning h4 { color: #f59e0b; }
+        .info-box.error h4 { color: #ef4444; }
+        .info-box.info h4 { color: #3b82f6; }
+        .info-content p { font-size: 14px; color: #94a3b8; }
+
+        /* Challenge Box */
+        .challenge { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); border-radius: 12px; padding: 20px; margin: 16px 0; border: 2px solid #ea580c; }
+        .challenge h4 { color: #fdba74; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .challenge p { color: #fed7aa; line-height: 1.6; }
+        .challenge-points { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-top: 12px; }
+        .challenge-points span { color: #fbbf24; font-weight: bold; }
+
+        /* Checklist */
+        .checklist { background: #0f172a; border-radius: 12px; padding: 20px; margin: 16px 0; }
+        .checklist h4 { color: #8b5cf6; margin-bottom: 16px; }
+        .checklist-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .checklist-item:hover { background: #334155; }
+        .checklist-box { width: 24px; height: 24px; border: 2px solid #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .checklist-item.checked .checklist-box { background: #8b5cf6; border-color: #8b5cf6; }
+        .checklist-item.checked .checklist-box::after { content: "✓"; color: white; font-size: 14px; }
+        .checklist-text { color: #94a3b8; }
+        .checklist-item.checked .checklist-text { color: #8b5cf6; text-decoration: line-through; }
+
+        /* Rubric */
+        .rubric { background: #0f172a; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid #334155; }
+        .rubric-header { padding: 12px 16px; background: #1e293b; border-bottom: 1px solid #334155; }
+        .rubric-header h4 { color: #8b5cf6; }
+        .rubric-table { width: 100%; border-collapse: collapse; }
+        .rubric-table th { background: #334155; padding: 10px 12px; text-align: left; color: #94a3b8; font-size: 12px; font-weight: 600; }
+        .rubric-table td { padding: 10px 12px; border-top: 1px solid #334155; color: #e2e8f0; font-size: 13px; }
+        .rubric-table tr:hover td { background: rgba(139, 92, 246, 0.05); }
+        .rubric-points { color: #a78bfa; font-weight: 600; }
+
+        /* Navigation */
+        .navigation { display: flex; justify-content: space-between; padding: 20px 0; }
+        .nav-btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn.prev { background: #334155; color: #94a3b8; }
+        .nav-btn.prev:hover:not(:disabled) { background: #475569; color: #e2e8f0; }
+        .nav-btn.next { background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; }
+        .nav-btn.next:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); }
+
+        /* Diagram */
+        .diagram { background: #0f172a; border-radius: 12px; padding: 24px; margin: 16px 0; border: 1px solid #334155; }
+        .diagram-title { color: #8b5cf6; font-weight: 600; margin-bottom: 16px; text-align: center; }
+        .diagram-content { display: flex; justify-content: center; align-items: center; gap: 24px; flex-wrap: wrap; }
+        .diagram-table { background: #1e293b; border-radius: 8px; padding: 16px; min-width: 140px; border: 2px solid #334155; }
+        .diagram-table.highlight { border-color: #8b5cf6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
+        .diagram-table-name { background: #8b5cf6; color: white; padding: 8px 12px; margin: -16px -16px 12px -16px; border-radius: 6px 6px 0 0; font-weight: 600; text-align: center; font-size: 14px; }
+        .diagram-field { padding: 4px 0; font-size: 12px; color: #94a3b8; }
+        .diagram-field.pk { color: #fcd34d; }
+        .diagram-field.fk { color: #f472b6; }
+        .diagram-arrow { color: #8b5cf6; font-size: 24px; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 20px; color: #64748b; font-size: 14px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .diagram-content { flex-direction: column; }
+            .diagram-arrow { transform: rotate(90deg); }
+            .progress-label { display: none; }
+            .ai-icons { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        var createElement = React.createElement;
+        var useState = React.useState;
+
+        var aiPrompt = `Hola, estoy aprendiendo sobre bases de datos OLTP. Necesito diseñar un sistema de biblioteca universitaria en PostgreSQL (Supabase).
+
+Requiero que generes el código SQL para crear las siguientes tablas normalizadas:
+
+1. **libros**: Debe incluir título, autor, ISBN, año de publicación, y cantidad de copias disponibles.
+
+2. **socios**: Los usuarios de la biblioteca con nombre, email único, carrera que estudian, y fecha de registro.
+
+3. **prestamos**: La tabla transaccional que conecta socios con libros. Debe registrar la fecha del préstamo, fecha de devolución esperada, fecha de devolución real (puede ser NULL si no se ha devuelto), y un estado (activo, devuelto, atrasado).
+
+Requisitos técnicos:
+- Usar SERIAL para las Primary Keys
+- Incluir FOREIGN KEYS que conecten las tablas
+- Agregar constraints apropiados (NOT NULL, UNIQUE donde corresponda)
+- Incluir valores DEFAULT donde tenga sentido
+- Agregar comentarios explicando cada sección
+
+Por favor genera SOLO el código SQL, sin explicaciones adicionales.`;
+
+        function ChecklistItem(props) {
+            var text = props.text;
+            var checked = props.checked;
+            var onClick = props.onClick;
+
+            return createElement('div', { className: 'checklist-item' + (checked ? ' checked' : ''), onClick: onClick },
+                createElement('div', { className: 'checklist-box' }),
+                createElement('span', { className: 'checklist-text' }, text)
+            );
+        }
+
+        // Steps Content
+        function Step0() {
+            return createElement('div', null,
+                createElement('div', { className: 'scenario' },
+                    createElement('h3', null, '📚 El Escenario'),
+                    createElement('p', null,
+                        'La Universidad ADEN te ha contratado para diseñar el sistema de su nueva biblioteca digital. ',
+                        'Actualmente manejan todo en hojas de Excel y tienen problemas constantes: libros "prestados" a personas ',
+                        'que nunca existieron, fechas de devolución que no coinciden, y no pueden saber cuántas copias de cada libro tienen disponibles.'
+                    ),
+                    createElement('p', { style: { marginTop: '12px' } },
+                        'Tu misión: Crear un sistema OLTP que garantice la integridad de los datos usando ',
+                        createElement('strong', null, 'Supabase'), ' (PostgreSQL) y la ayuda de ',
+                        createElement('strong', null, 'inteligencia artificial'), ' para diseñar el esquema.'
+                    )
+                ),
+                createElement('div', { className: 'deliverables' },
+                    createElement('h4', null, '📋 Entregables del Ejercicio'),
+                    createElement('ul', null,
+                        createElement('li', null, 'Proyecto creado en Supabase con nombre "Biblioteca_OLTP"'),
+                        createElement('li', null, 'Tres tablas creadas: libros, socios, prestamos'),
+                        createElement('li', null, 'Datos de prueba insertados (mínimo 5 libros, 5 socios, 7 préstamos)'),
+                        createElement('li', null, 'Captura de pantalla del experimento de integridad referencial'),
+                        createElement('li', null, 'Una consulta JOIN que muestre préstamos con nombres de libros y socios')
+                    )
+                ),
+                createElement('div', { className: 'diagram' },
+                    createElement('div', { className: 'diagram-title' }, '📊 Estructura que debes crear'),
+                    createElement('div', { className: 'diagram-content' },
+                        createElement('div', { className: 'diagram-table' },
+                            createElement('div', { className: 'diagram-table-name' }, 'libros'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id'),
+                            createElement('div', { className: 'diagram-field' }, '📖 titulo'),
+                            createElement('div', { className: 'diagram-field' }, '✍️ autor'),
+                            createElement('div', { className: 'diagram-field' }, '📊 copias')
+                        ),
+                        createElement('div', { className: 'diagram-arrow' }, '←'),
+                        createElement('div', { className: 'diagram-table highlight' },
+                            createElement('div', { className: 'diagram-table-name' }, 'prestamos'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id'),
+                            createElement('div', { className: 'diagram-field fk' }, '🔗 libro_id'),
+                            createElement('div', { className: 'diagram-field fk' }, '🔗 socio_id'),
+                            createElement('div', { className: 'diagram-field' }, '📅 fechas')
+                        ),
+                        createElement('div', { className: 'diagram-arrow' }, '→'),
+                        createElement('div', { className: 'diagram-table' },
+                            createElement('div', { className: 'diagram-table-name' }, 'socios'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id'),
+                            createElement('div', { className: 'diagram-field' }, '👤 nombre'),
+                            createElement('div', { className: 'diagram-field' }, '📧 email'),
+                            createElement('div', { className: 'diagram-field' }, '🎓 carrera')
+                        )
+                    )
+                ),
+                createElement('div', { className: 'info-box warning' },
+                    createElement('span', { className: 'info-icon' }, '⏱️'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Tiempo estimado: 45-60 minutos'),
+                        createElement('p', null, 'Este ejercicio es individual. Puedes consultar el laboratorio guiado como referencia, pero el diseño debe ser tuyo.')
+                    )
+                )
+            );
+        }
+
+        function Step1() {
+            var checksArr = useState([false, false, false, false]);
+            var checks = checksArr[0];
+            var setChecks = checksArr[1];
+
+            function toggleCheck(index) {
+                var newChecks = checks.slice();
+                newChecks[index] = !newChecks[index];
+                setChecks(newChecks);
+            }
+
+            return createElement('div', null,
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Ve a ', createElement('strong', null, 'supabase.com'), ' e inicia sesión con tu cuenta'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Crea un nuevo proyecto con estos datos:'
+                    ),
+                    createElement('ul', null,
+                        createElement('li', null, createElement('strong', null, 'Nombre:'), ' Biblioteca_OLTP'),
+                        createElement('li', null, createElement('strong', null, 'Database Password:'), ' Genera uno seguro y guárdalo'),
+                        createElement('li', null, createElement('strong', null, 'Region:'), ' La más cercana a Panamá')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Espera 1-2 minutos mientras se crea el proyecto'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '4'),
+                        'Verifica que el proyecto muestre un ', createElement('strong', null, 'punto verde'), ' (activo)'
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '✅'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Punto de verificación'),
+                        createElement('p', null, 'Debes poder acceder al SQL Editor desde el menú lateral izquierdo (icono >_)')
+                    )
+                ),
+                createElement('div', { className: 'checklist' },
+                    createElement('h4', null, '✓ Marca lo que hayas completado'),
+                    ChecklistItem({ text: 'Cuenta de Supabase activa', checked: checks[0], onClick: function() { toggleCheck(0); } }),
+                    ChecklistItem({ text: 'Proyecto "Biblioteca_OLTP" creado', checked: checks[1], onClick: function() { toggleCheck(1); } }),
+                    ChecklistItem({ text: 'Proyecto activo (punto verde)', checked: checks[2], onClick: function() { toggleCheck(2); } }),
+                    ChecklistItem({ text: 'SQL Editor accesible', checked: checks[3], onClick: function() { toggleCheck(3); } })
+                )
+            );
+        }
+
+        function Step2() {
+            var copiedArr = useState(false);
+            var copied = copiedArr[0];
+            var setCopied = copiedArr[1];
+
+            function copyPrompt() {
+                navigator.clipboard.writeText(aiPrompt).then(function() {
+                    setCopied(true);
+                    setTimeout(function() { setCopied(false); }, 2000);
+                });
+            }
+
+            return createElement('div', null,
+                createElement('div', { className: 'info-box info' },
+                    createElement('span', { className: 'info-icon' }, '🤖'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Por qué usar IA para diseñar el esquema?'),
+                        createElement('p', null, 'En el mundo real, los arquitectos de datos diseñan estos esquemas. Usar IA te permite ver cómo se traduce un problema de negocio a tablas SQL, aprendiendo el "cómo" mientras construyes.')
+                    )
+                ),
+                createElement('div', { className: 'ai-prompt' },
+                    createElement('div', { className: 'ai-header' },
+                        createElement('div', { className: 'ai-icons' },
+                            createElement('span', { className: 'ai-icon' }, '💬 ChatGPT'),
+                            createElement('span', { className: 'ai-icon' }, '🤖 Claude'),
+                            createElement('span', { className: 'ai-icon' }, '✨ Gemini')
+                        )
+                    ),
+                    createElement('div', { className: 'ai-title' }, 'Prompt para generar tu esquema SQL'),
+                    createElement('div', { className: 'ai-content' }, aiPrompt),
+                    createElement('button', {
+                        className: 'copy-prompt-btn' + (copied ? ' copied' : ''),
+                        onClick: copyPrompt
+                    }, copied ? '✓ Copiado al portapapeles' : '📋 Copiar Prompt'),
+                    createElement('div', { className: 'ai-tip' },
+                        '💡 Usa cualquiera de las tres IAs. El resultado será similar pero no idéntico.'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Copia el prompt de arriba'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Pégalo en ', createElement('strong', null, 'ChatGPT, Claude o Gemini')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        createElement('strong', null, 'IMPORTANTE:'), ' Antes de usar el código, revisa que incluya:'
+                    ),
+                    createElement('ul', null,
+                        createElement('li', null, 'CREATE TABLE para las 3 tablas'),
+                        createElement('li', null, 'PRIMARY KEY en cada tabla (usando SERIAL)'),
+                        createElement('li', null, 'FOREIGN KEY en la tabla prestamos'),
+                        createElement('li', null, 'REFERENCES que conecten las tablas')
+                    )
+                ),
+                createElement('div', { className: 'info-box warning' },
+                    createElement('span', { className: 'info-icon' }, '⚠️'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'No copies ciegamente'),
+                        createElement('p', null, 'Lee el código que genera la IA. Si hay algo que no entiendes, pregúntale a la IA que te lo explique. Este es TU diseño.')
+                    )
+                )
+            );
+        }
+
+        function Step3() {
+            var checksArr = useState([false, false, false]);
+            var checks = checksArr[0];
+            var setChecks = checksArr[1];
+
+            function toggleCheck(index) {
+                var newChecks = checks.slice();
+                newChecks[index] = !newChecks[index];
+                setChecks(newChecks);
+            }
+
+            return createElement('div', null,
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Abre el ', createElement('strong', null, 'SQL Editor'), ' en Supabase'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Pega el código SQL que generó la IA'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Haz clic en ', createElement('strong', null, 'Run'), ' (o Ctrl+Enter)'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '4'),
+                        'Ve al ', createElement('strong', null, 'Table Editor'), ' y verifica que existan las 3 tablas'
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '✅'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Cómo verifico que funcionó?'),
+                        createElement('p', null, 'En Table Editor debes ver: libros, socios, prestamos. Las 3 tablas estarán vacías (0 rows), pero deben existir.')
+                    )
+                ),
+                createElement('div', { className: 'info-box error' },
+                    createElement('span', { className: 'info-icon' }, '❌'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Tienes errores?'),
+                        createElement('p', null, 'Copia el error y pégalo en la IA. Pídele que corrija el código. Es normal que la primera versión tenga ajustes.')
+                    )
+                ),
+                createElement('div', { className: 'checklist' },
+                    createElement('h4', null, '✓ Verificación'),
+                    ChecklistItem({ text: 'Tabla "libros" creada', checked: checks[0], onClick: function() { toggleCheck(0); } }),
+                    ChecklistItem({ text: 'Tabla "socios" creada', checked: checks[1], onClick: function() { toggleCheck(1); } }),
+                    ChecklistItem({ text: 'Tabla "prestamos" creada', checked: checks[2], onClick: function() { toggleCheck(2); } })
+                )
+            );
+        }
+
+        function Step4() {
+            return createElement('div', null,
+                createElement('div', { className: 'scenario' },
+                    createElement('h3', null, '📝 Tu tarea'),
+                    createElement('p', null,
+                        'Ahora debes crear los datos de prueba. Puedes pedirle a la IA que te genere INSERTs, ',
+                        'o puedes escribirlos tú mismo. Los datos deben ser coherentes con una biblioteca universitaria.'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Inserta al menos ', createElement('strong', null, '5 libros'), ' (variados: diferentes autores, años, géneros)'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Inserta al menos ', createElement('strong', null, '5 socios'), ' (estudiantes de diferentes carreras)'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Inserta al menos ', createElement('strong', null, '7 préstamos'), ' que conecten socios con libros'
+                    ),
+                    createElement('ul', null,
+                        createElement('li', null, 'Algunos préstamos deben estar "activos" (sin fecha de devolución real)'),
+                        createElement('li', null, 'Algunos deben estar "devueltos"'),
+                        createElement('li', null, 'Al menos uno debe estar "atrasado"')
+                    )
+                ),
+                createElement('div', { className: 'ai-prompt', style: { background: 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)', borderColor: '#10b981' } },
+                    createElement('div', { className: 'ai-title', style: { color: '#6ee7b7' } }, '💡 Prompt sugerido para datos'),
+                    createElement('div', { className: 'ai-content', style: { background: '#022c22' } },
+                        'Genera sentencias INSERT para poblar las tablas de mi sistema de biblioteca:\n\n' +
+                        '- 5 libros variados (mezcla de novelas, técnicos, clásicos)\n' +
+                        '- 5 socios de diferentes carreras universitarias\n' +
+                        '- 7 préstamos con diferentes estados\n\n' +
+                        'Los préstamos deben referenciar IDs válidos de libros y socios.'
+                    )
+                ),
+                createElement('div', { className: 'info-box warning' },
+                    createElement('span', { className: 'info-icon' }, '⚠️'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Orden de inserción'),
+                        createElement('p', null, 'Debes insertar primero libros y socios, LUEGO préstamos. Las Foreign Keys requieren que los registros referenciados ya existan.')
+                    )
+                )
+            );
+        }
+
+        function Step5() {
+            return createElement('div', null,
+                createElement('div', { className: 'scenario' },
+                    createElement('h3', null, '🧪 El Experimento Crucial'),
+                    createElement('p', null,
+                        'Este es el momento más importante. Vas a intentar "romper" la base de datos ',
+                        'para demostrar cómo la integridad referencial protege tus datos.'
+                    )
+                ),
+                createElement('div', { className: 'challenge' },
+                    createElement('h4', null, '🔬 Experimento de Integridad Referencial'),
+                    createElement('p', null,
+                        createElement('strong', null, 'Intenta lo siguiente y documenta qué pasa:')
+                    ),
+                    createElement('div', { className: 'challenge-points' },
+                        createElement('p', null, createElement('span', null, '1.'), ' Intenta borrar un LIBRO que tiene préstamos activos'),
+                        createElement('p', { style: { marginTop: '8px' } }, createElement('span', null, '2.'), ' Intenta borrar un SOCIO que tiene préstamos'),
+                        createElement('p', { style: { marginTop: '8px' } }, createElement('span', null, '3.'), ' Intenta insertar un préstamo con un libro_id que no existe')
+                    )
+                ),
+                createElement('div', { className: 'info-box error' },
+                    createElement('span', { className: 'info-icon' }, '❌'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Resultado esperado'),
+                        createElement('p', null, 'Deberías ver errores como "violates foreign key constraint". ¡Esto es BUENO! Significa que tu base de datos está protegiendo la integridad.')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '📸'),
+                        createElement('strong', null, 'ENTREGABLE:'), ' Toma una captura de pantalla mostrando el error de integridad referencial. Esto demuestra que tu diseño funciona correctamente.'
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '💡'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Por qué esto importa?'),
+                        createElement('p', null, 'En Excel, podrías borrar a un socio y dejar préstamos "huérfanos" apuntando a nadie. En OLTP, el sistema IMPIDE estas inconsistencias.')
+                    )
+                )
+            );
+        }
+
+        function Step6() {
+            return createElement('div', null,
+                createElement('div', { className: 'scenario' },
+                    createElement('h3', null, '🔍 Consultas JOIN'),
+                    createElement('p', null,
+                        'Ahora demuestra que puedes combinar información de múltiples tablas usando JOINs.'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Escribe una consulta que muestre: ', createElement('strong', null, 'nombre del socio, título del libro, fecha de préstamo, y estado')
+                    )
+                ),
+                createElement('div', { className: 'ai-prompt', style: { background: 'linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%)', borderColor: '#3b82f6' } },
+                    createElement('div', { className: 'ai-title', style: { color: '#93c5fd' } }, '💡 Si necesitas ayuda'),
+                    createElement('div', { className: 'ai-content', style: { background: '#172554' } },
+                        'Ayúdame a escribir una consulta SQL que:\n' +
+                        '- Use JOIN para conectar las tablas prestamos, libros y socios\n' +
+                        '- Muestre: nombre del socio, título del libro, fecha del préstamo, estado\n' +
+                        '- Ordene por fecha de préstamo descendente'
+                    )
+                ),
+                createElement('div', { className: 'challenge' },
+                    createElement('h4', null, '🌟 Desafío Extra (Opcional)'),
+                    createElement('p', null, 'Escribe una consulta que responda: "¿Cuántos libros ha prestado cada socio?"'),
+                    createElement('div', { className: 'challenge-points' },
+                        createElement('p', null, 'Pista: Necesitarás usar GROUP BY y COUNT()')
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '📸'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'ENTREGABLE'),
+                        createElement('p', null, 'Incluye el código SQL de tu consulta JOIN y una captura del resultado.')
+                    )
+                )
+            );
+        }
+
+        function Step7() {
+            return createElement('div', null,
+                createElement('div', { className: 'deliverables' },
+                    createElement('h4', null, '📋 Resumen de Entregables'),
+                    createElement('ul', null,
+                        createElement('li', null, 'URL de tu proyecto en Supabase (Settings > General)'),
+                        createElement('li', null, 'Código SQL completo usado para crear las tablas'),
+                        createElement('li', null, 'Código SQL de los INSERTs de datos'),
+                        createElement('li', null, 'Captura de pantalla del error de integridad referencial'),
+                        createElement('li', null, 'Código y resultado de tu consulta JOIN')
+                    )
+                ),
+                createElement('div', { className: 'rubric' },
+                    createElement('div', { className: 'rubric-header' },
+                        createElement('h4', null, '📊 Rúbrica de Evaluación')
+                    ),
+                    createElement('table', { className: 'rubric-table' },
+                        createElement('thead', null,
+                            createElement('tr', null,
+                                createElement('th', null, 'Criterio'),
+                                createElement('th', null, 'Puntos'),
+                                createElement('th', null, 'Descripción')
+                            )
+                        ),
+                        createElement('tbody', null,
+                            createElement('tr', null,
+                                createElement('td', null, 'Estructura de tablas'),
+                                createElement('td', { className: 'rubric-points' }, '25'),
+                                createElement('td', null, '3 tablas con PKs, FKs correctas')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, 'Datos de prueba'),
+                                createElement('td', { className: 'rubric-points' }, '20'),
+                                createElement('td', null, 'Mínimo 5+5+7 registros coherentes')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, 'Experimento integridad'),
+                                createElement('td', { className: 'rubric-points' }, '25'),
+                                createElement('td', null, 'Captura mostrando error FK')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, 'Consulta JOIN'),
+                                createElement('td', { className: 'rubric-points' }, '20'),
+                                createElement('td', null, 'JOIN funcional con resultado')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, 'Desafío extra'),
+                                createElement('td', { className: 'rubric-points' }, '10'),
+                                createElement('td', null, 'GROUP BY + COUNT (opcional)')
+                            )
+                        )
+                    )
+                ),
+                createElement('div', { className: 'info-box info' },
+                    createElement('span', { className: 'info-icon' }, '📤'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Formato de entrega'),
+                        createElement('p', null, 'Sube un documento PDF o Word con todos los entregables. Incluye tu nombre y la fecha.')
+                    )
+                ),
+                createElement('div', { className: 'scenario', style: { background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)', borderColor: '#10b981' } },
+                    createElement('h3', { style: { color: '#6ee7b7' } }, '🎉 ¡Felicitaciones!'),
+                    createElement('p', { style: { color: '#a7f3d0' } },
+                        'Has diseñado tu primer sistema OLTP desde cero. Ahora entiendes por qué las bases de datos ',
+                        'relacionales usan múltiples tablas conectadas: para garantizar que los datos siempre sean consistentes y verdaderos.'
+                    )
+                )
+            );
+        }
+
+        // Main App
+        function App() {
+            var stepArr = useState(0);
+            var currentStep = stepArr[0];
+            var setCurrentStep = stepArr[1];
+
+            var steps = [
+                { num: 0, title: 'Contexto', time: '5 min', emoji: '📋' },
+                { num: 1, title: 'Supabase', time: '5 min', emoji: '⚙️' },
+                { num: 2, title: 'Prompt IA', time: '10 min', emoji: '🤖' },
+                { num: 3, title: 'Crear Tablas', time: '10 min', emoji: '🏗️' },
+                { num: 4, title: 'Insertar Datos', time: '15 min', emoji: '💾' },
+                { num: 5, title: 'Experimento', time: '10 min', emoji: '🧪' },
+                { num: 6, title: 'JOIN', time: '10 min', emoji: '🔍' },
+                { num: 7, title: 'Entrega', time: '5 min', emoji: '📤' }
+            ];
+
+            var stepComponents = [Step0, Step1, Step2, Step3, Step4, Step5, Step6, Step7];
+
+            function renderCurrentStep() {
+                var StepComponent = stepComponents[currentStep];
+                return createElement(StepComponent);
+            }
+
+            return createElement('div', { className: 'container' },
+                createElement('a', { href: './', className: 'back-link' }, '← Volver al Simulador'),
+                createElement('div', { className: 'header' },
+                    createElement('div', null,
+                        createElement('span', { className: 'header-badge' }, 'Sesión 01 - Ejercicio'),
+                        createElement('span', { className: 'header-individual' }, 'INDIVIDUAL')
+                    ),
+                    createElement('h1', null, '📚 Sistema de Biblioteca OLTP'),
+                    createElement('p', null, 'Diseña tu propia base de datos con ayuda de IA')
+                ),
+                createElement('div', { className: 'progress-container' },
+                    createElement('div', { className: 'progress-header' },
+                        createElement('span', { className: 'progress-title' }, 'Progreso del Ejercicio'),
+                        createElement('span', null, 'Paso ' + (currentStep + 1) + ' de ' + steps.length)
+                    ),
+                    createElement('div', { className: 'progress-bar' },
+                        createElement('div', { className: 'progress-fill', style: { width: ((currentStep + 1) / steps.length * 100) + '%' } })
+                    ),
+                    createElement('div', { className: 'progress-steps' },
+                        steps.map(function(s, i) {
+                            var dotClass = 'progress-dot ';
+                            if (i < currentStep) dotClass += 'completed';
+                            else if (i === currentStep) dotClass += 'active';
+                            else dotClass += 'pending';
+
+                            return createElement('div', { key: i, className: 'progress-step' },
+                                createElement('div', { className: dotClass, onClick: function() { setCurrentStep(i); } }, i < currentStep ? '✓' : s.emoji),
+                                createElement('span', { className: 'progress-label' }, s.title)
+                            );
+                        })
+                    )
+                ),
+                createElement('div', { className: 'content-card' },
+                    createElement('div', { className: 'content-header' },
+                        createElement('div', { className: 'step-number' }, steps[currentStep].emoji),
+                        createElement('div', { className: 'step-info' },
+                            createElement('h2', null, 'Paso ' + (currentStep + 1) + ': ' + steps[currentStep].title),
+                            createElement('p', null, 'Ejercicio Individual - Sistema de Biblioteca')
+                        )
+                    ),
+                    createElement('div', { className: 'content-body' },
+                        renderCurrentStep()
+                    )
+                ),
+                createElement('div', { className: 'navigation' },
+                    createElement('button', {
+                        className: 'nav-btn prev',
+                        disabled: currentStep === 0,
+                        onClick: function() { setCurrentStep(currentStep - 1); }
+                    }, '← Anterior'),
+                    createElement('button', {
+                        className: 'nav-btn next',
+                        disabled: currentStep === steps.length - 1,
+                        onClick: function() { setCurrentStep(currentStep + 1); }
+                    }, currentStep === steps.length - 1 ? '📤 Listo para entregar' : 'Siguiente →')
+                ),
+                createElement('div', { className: 'footer' },
+                    'ADEN University - Taller de Tecnología Aplicada - Sesión 01'
+                )
+            );
+        }
+
+        // Render
+        var root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(createElement(App));
+    })();
+    </script>
+</body>
+</html>
