@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Mapear Arquitectura BI - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .ai-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .copy-btn:active { transform: scale(0.95); }
+        .resource-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .resource-icon.google { background: linear-gradient(135deg, #4285f4, #34a853); }
+        .resource-icon.harvard { background: linear-gradient(135deg, #a51c30, #c90016); }
+        .resource-icon.tableau { background: linear-gradient(135deg, #e97627, #c72037); }
+        .resource-icon.notebooklm { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL EJERCICIO
+        // ============================================
+
+        const casosEmpresa = [
+            {
+                id: 'retail',
+                nombre: 'MegaMart Panama',
+                industria: 'Retail / Supermercados',
+                descripcion: 'Cadena de supermercados con 25 tiendas en Panama, 3,000 empleados, y facturacion anual de $150M.',
+                contexto: 'Actualmente tienen sistemas aislados: un ERP para inventario, un sistema de punto de venta (POS), una hoja de Excel para RRHH, y un CRM basico para el programa de lealtad.',
+                desafios: [
+                    'No saben cuales productos generan mas margen por tienda',
+                    'No pueden predecir demanda para optimizar inventario',
+                    'Reportes manuales toman 2 semanas en generarse',
+                    'No tienen visibilidad del rendimiento en tiempo real'
+                ],
+                datosDisponibles: ['Ventas diarias por tienda', 'Inventario', 'Datos de empleados', 'Programa de lealtad', 'Proveedores']
+            },
+            {
+                id: 'banco',
+                nombre: 'Banco Istmeno',
+                industria: 'Banca / Servicios Financieros',
+                descripcion: 'Banco regional con 50 sucursales, 2,000 empleados, y 500,000 clientes activos.',
+                contexto: 'Tienen un core bancario legacy, un sistema de tarjetas, un CRM para clientes, y multiples hojas de Excel para reportes regulatorios.',
+                desafios: [
+                    'Cumplimiento regulatorio requiere reportes que toman dias',
+                    'No pueden identificar clientes con riesgo de fuga',
+                    'Fraude se detecta dias despues de ocurrir',
+                    'No hay vision 360 del cliente'
+                ],
+                datosDisponibles: ['Transacciones', 'Saldos de cuentas', 'Datos de clientes', 'Historial crediticio', 'Canales digitales']
+            },
+            {
+                id: 'hospital',
+                nombre: 'Hospital Santa Maria',
+                industria: 'Salud / Healthcare',
+                descripcion: 'Hospital privado con 200 camas, 800 empleados, y 50,000 pacientes anuales.',
+                contexto: 'Usan un sistema de historia clinica electronica (HCE), un sistema de facturacion, y Excel para programacion de citas y recursos.',
+                desafios: [
+                    'Tiempos de espera en urgencias son muy largos',
+                    'No pueden predecir ocupacion de camas',
+                    'Costos operativos no estan claros por departamento',
+                    'Readmisiones no se monitorean adecuadamente'
+                ],
+                datosDisponibles: ['Historias clinicas', 'Citas y procedimientos', 'Facturacion', 'Inventario medico', 'Personal y turnos']
+            },
+            {
+                id: 'logistica',
+                nombre: 'LogiPan Express',
+                industria: 'Logistica / Transporte',
+                descripcion: 'Empresa de logistica con 100 vehiculos, 300 empleados, y 10,000 entregas mensuales.',
+                contexto: 'Tienen GPS en vehiculos, un sistema de gestion de pedidos, y Excel para control de combustible y mantenimiento.',
+                desafios: [
+                    'Rutas no estan optimizadas, alto costo de combustible',
+                    'No saben que vehiculos necesitan mantenimiento preventivo',
+                    'Clientes se quejan de entregas tardias',
+                    'No hay visibilidad en tiempo real de las entregas'
+                ],
+                datosDisponibles: ['Tracking GPS', 'Ordenes y entregas', 'Combustible', 'Mantenimiento vehicular', 'Clientes y rutas']
+            }
+        ];
+
+        const fasesEjercicio = [
+            {
+                id: 1,
+                titulo: 'Selecciona tu caso de estudio',
+                descripcion: 'Elige una empresa para disenar su arquitectura BI'
+            },
+            {
+                id: 2,
+                titulo: 'Identifica las fuentes de datos',
+                descripcion: 'Usa IA para listar y clasificar todas las fuentes de datos'
+            },
+            {
+                id: 3,
+                titulo: 'Disena el proceso ETL',
+                descripcion: 'Define las transformaciones necesarias para cada fuente'
+            },
+            {
+                id: 4,
+                titulo: 'Modela el Data Warehouse',
+                descripcion: 'Identifica tablas de hechos y dimensiones'
+            },
+            {
+                id: 5,
+                titulo: 'Propone visualizaciones',
+                descripcion: 'Disena los KPIs y dashboards principales'
+            },
+            {
+                id: 6,
+                titulo: 'Documenta tu arquitectura',
+                descripcion: 'Genera el diagrama completo de la solucion'
+            }
+        ];
+
+        const promptsGuiados = {
+            fuentes: (empresa) => `Actua como consultor de Business Intelligence.
+
+Estoy analizando "${empresa.nombre}", una empresa de ${empresa.industria}.
+
+Contexto: ${empresa.contexto}
+
+Los datos disponibles son: ${empresa.datosDisponibles.join(', ')}.
+
+Por favor:
+1. Lista TODAS las posibles fuentes de datos (incluyendo las mencionadas y otras que tipicamente tendria esta industria)
+2. Clasifica cada fuente como: Interna/Externa, Estructurada/Semi-estructurada/No estructurada
+3. Indica la frecuencia de actualizacion tipica (tiempo real, diaria, semanal, mensual)
+4. Identifica posibles problemas de calidad de datos en cada fuente
+
+Presenta la informacion en formato de tabla.`,
+
+            etl: (empresa) => `Actua como ingeniero de datos especializado en ETL.
+
+Para "${empresa.nombre}" (${empresa.industria}), necesito disenar los procesos ETL.
+
+Fuentes identificadas: ${empresa.datosDisponibles.join(', ')}
+
+Por favor disena:
+1. Para cada fuente, indica:
+   - Metodo de extraccion (API, conexion directa, archivo, web scraping)
+   - Transformaciones necesarias (limpieza, validacion, enriquecimiento, agregacion)
+   - Destino en el Data Warehouse
+
+2. Define las reglas de calidad de datos:
+   - Validaciones obligatorias
+   - Manejo de valores nulos
+   - Deteccion de duplicados
+
+3. Propone la frecuencia del ETL y si debe ser incremental o full load.
+
+4. Identifica dependencias entre los procesos ETL.`,
+
+            datawarehouse: (empresa) => `Actua como arquitecto de Data Warehouse.
+
+Para "${empresa.nombre}" (${empresa.industria}), necesito disenar el modelo dimensional.
+
+Los desafios de negocio son:
+${empresa.desafios.map((d, i) => `${i + 1}. ${d}`).join('\n')}
+
+Por favor disena:
+1. TABLAS DE HECHOS (minimo 2):
+   - Nombre de la tabla
+   - Metricas/medidas que contiene
+   - Granularidad (que representa cada fila)
+   - Claves foraneas a dimensiones
+
+2. TABLAS DE DIMENSIONES (minimo 4):
+   - Nombre de la tabla
+   - Atributos principales
+   - Jerarquias si aplican
+   - Tipo de dimension (SCD Tipo 1, 2 o 3)
+
+3. Para una tabla de hechos, escribe el CREATE TABLE en SQL con:
+   - Claves primarias y foraneas
+   - Tipos de datos apropiados
+   - Comentarios explicativos`,
+
+            visualizacion: (empresa) => `Actua como consultor de Business Intelligence especializado en visualizacion.
+
+Para "${empresa.nombre}" (${empresa.industria}), necesito disenar los dashboards.
+
+Desafios del negocio:
+${empresa.desafios.map((d, i) => `${i + 1}. ${d}`).join('\n')}
+
+Por favor disena:
+1. KPIs PRINCIPALES (minimo 5):
+   - Nombre del KPI
+   - Formula de calculo
+   - Meta/objetivo sugerido
+   - Frecuencia de actualizacion
+   - Usuario principal (ejecutivo, gerente, operativo)
+
+2. DASHBOARDS (minimo 3 diferentes):
+   - Dashboard Ejecutivo: que KPIs y visualizaciones incluye
+   - Dashboard Operativo: metricas del dia a dia
+   - Dashboard Especializado: para un area especifica
+
+3. Para cada dashboard, sugiere:
+   - 4-6 visualizaciones especificas (tipo de grafico y datos)
+   - Filtros interactivos necesarios
+   - Alertas o umbrales importantes`,
+
+            arquitectura: (empresa) => `Actua como arquitecto de soluciones de Business Intelligence.
+
+Genera un resumen ejecutivo de la arquitectura BI propuesta para "${empresa.nombre}" (${empresa.industria}).
+
+Incluye:
+1. DIAGRAMA DE ARQUITECTURA (describe en texto los componentes y flujos):
+   - Capa de Fuentes de Datos
+   - Capa de Integracion (ETL)
+   - Capa de Almacenamiento (Data Warehouse + Data Marts)
+   - Capa de Analisis (OLAP/Semantic Layer)
+   - Capa de Visualizacion
+   - Usuarios finales
+
+2. HERRAMIENTAS RECOMENDADAS:
+   - Para cada capa, sugiere 2-3 herramientas (incluyendo opciones open source)
+   - Justifica la eleccion
+
+3. ROADMAP DE IMPLEMENTACION:
+   - Fase 1 (3 meses): Quick wins
+   - Fase 2 (6 meses): Core BI
+   - Fase 3 (12 meses): Advanced Analytics
+
+4. ESTIMACION DE BENEFICIOS:
+   - Ahorro de tiempo en reportes
+   - Mejora en toma de decisiones
+   - ROI esperado
+
+Presenta el resumen como lo presentarias a un C-Level.`
+        };
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const CopyButton = ({ text }) => {
+            const [copied, setCopied] = useState(false);
+
+            const handleCopy = () => {
+                navigator.clipboard.writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <button
+                    onClick={handleCopy}
+                    className={`copy-btn px-4 py-2 rounded-lg font-medium transition-all ${
+                        copied
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    }`}
+                >
+                    {copied ? 'Copiado!' : 'Copiar prompt'}
+                </button>
+            );
+        };
+
+        const AIToolSelector = ({ selected, onSelect }) => {
+            const tools = [
+                { id: 'chatgpt', name: 'ChatGPT', url: 'https://chat.openai.com', color: 'bg-green-500' },
+                { id: 'claude', name: 'Claude', url: 'https://claude.ai', color: 'bg-orange-500' },
+                { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com', color: 'bg-blue-500' }
+            ];
+
+            return (
+                <div className="flex gap-3 mb-4">
+                    <span className="text-gray-600 py-2">Herramienta de IA:</span>
+                    {tools.map(tool => (
+                        <button
+                            key={tool.id}
+                            onClick={() => onSelect(tool)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                selected?.id === tool.id
+                                    ? `${tool.color} text-white`
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            {tool.name}
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
+        const PromptCard = ({ title, description, prompt, aiTool }) => {
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
+                        <h4 className="font-bold text-gray-800">{title}</h4>
+                        <p className="text-sm text-gray-600">{description}</p>
+                    </div>
+                    <div className="p-4">
+                        <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap mb-4 max-h-64 overflow-y-auto">
+                            {prompt}
+                        </pre>
+                        <div className="flex justify-between items-center">
+                            <CopyButton text={prompt} />
+                            {aiTool && (
+                                <a
+                                    href={aiTool.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`${aiTool.color} text-white px-4 py-2 rounded-lg font-medium hover:opacity-90`}
+                                >
+                                    Abrir {aiTool.name} ↗
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const EjercicioArquitecturaBI = () => {
+            const [faseActual, setFaseActual] = useState(1);
+            const [empresaSeleccionada, setEmpresaSeleccionada] = useState(null);
+            const [aiTool, setAiTool] = useState(null);
+            const [fasesCompletadas, setFasesCompletadas] = useState({});
+
+            const marcarFaseCompleta = (faseId) => {
+                setFasesCompletadas(prev => ({ ...prev, [faseId]: true }));
+                if (faseId < fasesEjercicio.length) {
+                    setFaseActual(faseId + 1);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-5xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="ai-badge px-3 py-1 rounded-full text-sm font-medium">Con IA</span>
+                                        <h1 className="text-3xl font-bold">Ejercicio: Mapear Arquitectura BI</h1>
+                                    </div>
+                                    <p className="text-violet-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Simulador
+                                    </a>
+                                    <a href="laboratorio.html" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        Laboratorio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navegacion de fases */}
+                    <div className="max-w-5xl mx-auto mb-4">
+                        <div className="bg-white rounded-xl shadow-sm p-4">
+                            <div className="flex justify-between items-center">
+                                {fasesEjercicio.map((fase, idx) => (
+                                    <React.Fragment key={fase.id}>
+                                        <button
+                                            onClick={() => setFaseActual(fase.id)}
+                                            className={`flex flex-col items-center transition-all ${
+                                                fase.id === faseActual ? 'scale-110' : ''
+                                            }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-1 ${
+                                                fasesCompletadas[fase.id]
+                                                    ? 'bg-green-500 text-white'
+                                                    : fase.id === faseActual
+                                                        ? 'bg-violet-500 text-white'
+                                                        : 'bg-gray-200 text-gray-500'
+                                            }`}>
+                                                {fasesCompletadas[fase.id] ? 'OK' : fase.id}
+                                            </div>
+                                            <span className={`text-xs text-center max-w-20 ${
+                                                fase.id === faseActual ? 'text-violet-700 font-medium' : 'text-gray-500'
+                                            }`}>
+                                                {fase.titulo}
+                                            </span>
+                                        </button>
+                                        {idx < fasesEjercicio.length - 1 && (
+                                            <div className={`flex-1 h-1 mx-2 rounded ${
+                                                fasesCompletadas[fase.id] ? 'bg-green-300' : 'bg-gray-200'
+                                            }`} />
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-5xl mx-auto">
+                        {/* Fase 1: Seleccion de empresa */}
+                        {faseActual === 1 && (
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2">Paso 1: Selecciona tu caso de estudio</h2>
+                                <p className="text-gray-600 mb-6">Elige una empresa para disenar su arquitectura de Business Intelligence completa.</p>
+
+                                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                    {casosEmpresa.map((empresa) => (
+                                        <div
+                                            key={empresa.id}
+                                            onClick={() => setEmpresaSeleccionada(empresa)}
+                                            className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                                                empresaSeleccionada?.id === empresa.id
+                                                    ? 'border-violet-500 bg-violet-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-bold text-gray-800">{empresa.nombre}</h3>
+                                                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs text-gray-600">{empresa.industria}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-3">{empresa.descripcion}</p>
+                                            <div className="text-xs text-gray-500">
+                                                <strong>Desafios:</strong> {empresa.desafios.length} identificados
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {empresaSeleccionada && (
+                                    <div className="bg-violet-50 border-2 border-violet-200 rounded-xl p-6">
+                                        <h3 className="font-bold text-violet-800 text-lg mb-3">
+                                            Caso seleccionado: {empresaSeleccionada.nombre}
+                                        </h3>
+                                        <p className="text-gray-700 mb-4">{empresaSeleccionada.contexto}</p>
+
+                                        <h4 className="font-bold text-gray-800 mb-2">Desafios de negocio:</h4>
+                                        <ul className="space-y-1 mb-4">
+                                            {empresaSeleccionada.desafios.map((desafio, idx) => (
+                                                <li key={idx} className="flex items-center gap-2 text-gray-700">
+                                                    <span className="text-red-500">!</span> {desafio}
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <h4 className="font-bold text-gray-800 mb-2">Datos disponibles:</h4>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {empresaSeleccionada.datosDisponibles.map((dato, idx) => (
+                                                <span key={idx} className="bg-white px-3 py-1 rounded-full text-sm border">{dato}</span>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => marcarFaseCompleta(1)}
+                                            className="w-full py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                        >
+                                            Continuar con este caso →
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Fases 2-6: Prompts guiados */}
+                        {faseActual >= 2 && faseActual <= 6 && empresaSeleccionada && (
+                            <div className="space-y-4">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                        Paso {faseActual}: {fasesEjercicio[faseActual - 1].titulo}
+                                    </h2>
+                                    <p className="text-gray-600 mb-4">{fasesEjercicio[faseActual - 1].descripcion}</p>
+
+                                    <AIToolSelector selected={aiTool} onSelect={setAiTool} />
+                                </div>
+
+                                {faseActual === 2 && (
+                                    <PromptCard
+                                        title="Prompt: Identificar Fuentes de Datos"
+                                        description="Usa este prompt para que la IA te ayude a listar y clasificar todas las fuentes de datos de la empresa."
+                                        prompt={promptsGuiados.fuentes(empresaSeleccionada)}
+                                        aiTool={aiTool}
+                                    />
+                                )}
+
+                                {faseActual === 3 && (
+                                    <PromptCard
+                                        title="Prompt: Disenar Proceso ETL"
+                                        description="Usa este prompt para definir las transformaciones necesarias para cada fuente de datos."
+                                        prompt={promptsGuiados.etl(empresaSeleccionada)}
+                                        aiTool={aiTool}
+                                    />
+                                )}
+
+                                {faseActual === 4 && (
+                                    <PromptCard
+                                        title="Prompt: Modelar Data Warehouse"
+                                        description="Usa este prompt para disenar las tablas de hechos y dimensiones del Data Warehouse."
+                                        prompt={promptsGuiados.datawarehouse(empresaSeleccionada)}
+                                        aiTool={aiTool}
+                                    />
+                                )}
+
+                                {faseActual === 5 && (
+                                    <PromptCard
+                                        title="Prompt: Proponer Visualizaciones"
+                                        description="Usa este prompt para disenar los KPIs y dashboards principales."
+                                        prompt={promptsGuiados.visualizacion(empresaSeleccionada)}
+                                        aiTool={aiTool}
+                                    />
+                                )}
+
+                                {faseActual === 6 && (
+                                    <PromptCard
+                                        title="Prompt: Generar Arquitectura Completa"
+                                        description="Usa este prompt para obtener un resumen ejecutivo de toda la arquitectura BI."
+                                        prompt={promptsGuiados.arquitectura(empresaSeleccionada)}
+                                        aiTool={aiTool}
+                                    />
+                                )}
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h3 className="font-bold text-gray-800 mb-3">Instrucciones</h3>
+                                    <ol className="space-y-2 text-gray-700 mb-4">
+                                        <li className="flex items-start gap-2">
+                                            <span className="bg-violet-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">1</span>
+                                            <span>Copia el prompt usando el boton "Copiar prompt"</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="bg-violet-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">2</span>
+                                            <span>Pegalo en tu herramienta de IA preferida ({aiTool?.name || 'ChatGPT, Claude o Gemini'})</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="bg-violet-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">3</span>
+                                            <span>Revisa la respuesta y guardala (screenshot o copia el texto)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="bg-violet-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">4</span>
+                                            <span>Marca como completado y continua al siguiente paso</span>
+                                        </li>
+                                    </ol>
+
+                                    <div className="flex justify-between">
+                                        <button
+                                            onClick={() => setFaseActual(prev => Math.max(1, prev - 1))}
+                                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                                        >
+                                            ← Anterior
+                                        </button>
+                                        <button
+                                            onClick={() => marcarFaseCompleta(faseActual)}
+                                            className="px-6 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                        >
+                                            {faseActual < 6 ? 'Completar y continuar →' : 'Finalizar ejercicio'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Fase final: Entrega */}
+                        {faseActual === 6 && fasesCompletadas[6] && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 mt-4">
+                                <div className="text-center mb-6">
+                                    <div className="text-6xl mb-4">OK</div>
+                                    <h2 className="text-2xl font-bold text-green-600 mb-2">Ejercicio Completado</h2>
+                                    <p className="text-gray-600">Has disenado una arquitectura BI completa para {empresaSeleccionada?.nombre}</p>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-6 mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-4">Entregable Final</h3>
+                                    <div className="space-y-3">
+                                        <div className="bg-white p-4 rounded-lg border">
+                                            <h4 className="font-semibold text-gray-800 mb-2">1. Documento de arquitectura</h4>
+                                            <p className="text-sm text-gray-600">Compila todas las respuestas de la IA en un documento Word o PDF.</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg border">
+                                            <h4 className="font-semibold text-gray-800 mb-2">2. Diagrama visual</h4>
+                                            <p className="text-sm text-gray-600">Crea un diagrama de la arquitectura usando draw.io, Lucidchart, o incluso PowerPoint.</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg border">
+                                            <h4 className="font-semibold text-gray-800 mb-2">3. Reflexion personal</h4>
+                                            <p className="text-sm text-gray-600">Escribe un parrafo sobre que aprendiste del ejercicio y que desafios encontraste.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                                    <p className="text-amber-800">
+                                        <strong>Formato de entrega:</strong> Sube tu documento al campus virtual antes de la proxima sesion.
+                                        Este ejercicio forma parte del proyecto integrador Fase 1.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setFaseActual(1);
+                                        setFasesCompletadas({});
+                                        setEmpresaSeleccionada(null);
+                                    }}
+                                    className="w-full py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                                >
+                                    Reiniciar ejercicio con otra empresa
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Seccion de recursos adicionales */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+                            <h3 className="font-bold text-gray-800 text-lg mb-4">Ir mas alla</h3>
+                            <p className="text-gray-600 mb-4">Recursos adicionales para profundizar en arquitectura de BI:</p>
+
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <a href="https://www.coursera.org/learn/business-intelligence-tools" target="_blank" rel="noopener noreferrer"
+                                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-all">
+                                    <div className="resource-icon google text-white text-lg font-bold">G</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800">Business Intelligence Tools</h4>
+                                        <p className="text-sm text-gray-500">Coursera - Google</p>
+                                    </div>
+                                </a>
+                                <a href="https://www.edx.org/learn/data-analysis" target="_blank" rel="noopener noreferrer"
+                                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-all">
+                                    <div className="resource-icon harvard text-white text-lg font-bold">H</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800">Data Analysis</h4>
+                                        <p className="text-sm text-gray-500">edX - Harvard</p>
+                                    </div>
+                                </a>
+                                <a href="https://www.tableau.com/learn/training" target="_blank" rel="noopener noreferrer"
+                                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-all">
+                                    <div className="resource-icon tableau text-white text-lg font-bold">T</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800">Tableau Training</h4>
+                                        <p className="text-sm text-gray-500">Tableau - Free Training</p>
+                                    </div>
+                                </a>
+                                <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer"
+                                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-all">
+                                    <div className="resource-icon notebooklm text-white text-lg font-bold">AI</div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-800">NotebookLM del Curso</h4>
+                                        <p className="text-sm text-gray-500">Google - Material de apoyo con IA</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-5xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<EjercicioArquitecturaBI />);
+    </script>
+</body>
+</html>

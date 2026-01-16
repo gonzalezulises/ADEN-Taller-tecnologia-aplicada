@@ -16,6 +16,9 @@ Accede a los simuladores y herramientas interactivas del curso:
 | 01 | Simulador | [OLTP vs OLAP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/) | Ciclo del dato, modelos de datos, comparativa interactiva |
 | 01 | Laboratorio | [Sistema de Gimnasio OLTP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/laboratorio.html) | Laboratorio guiado: crea tu primer motor OLTP con Supabase |
 | 01 | Ejercicio | [Sistema de Biblioteca OLTP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/ejercicio-individual.html) | Ejercicio individual con IA (ChatGPT/Claude/Gemini) |
+| 02 | Simulador | [Arquitectura BI](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/) | Capas de arquitectura, caso Copa Airlines, flujo de datos, quiz |
+| 02 | Laboratorio | [Explorando Ecosistema BI](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/laboratorio.html) | Tour por Kaggle, Pentaho, Supabase y Tableau |
+| 02 | Ejercicio | [Mapear Arquitectura BI](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/ejercicio-individual.html) | Disena arquitectura BI con IA para empresa real |
 
 ## Documentacion
 

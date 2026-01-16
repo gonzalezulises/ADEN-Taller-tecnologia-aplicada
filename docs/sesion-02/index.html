@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura de BI - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .pulse-animation { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .flow-arrow { animation: flowMove 1.5s ease-in-out infinite; }
+        @keyframes flowMove { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ============================================
+        // DATOS DE LA ARQUITECTURA BI
+        // ============================================
+
+        const arquitecturaCapas = [
+            {
+                id: 'fuentes',
+                nombre: 'Fuentes de Datos',
+                color: 'blue',
+                icon: 'DB',
+                descripcion: 'Origen de todos los datos de la organizacion',
+                ejemplos: ['ERP (SAP, Oracle)', 'CRM (Salesforce)', 'Bases operacionales', 'APIs externas', 'Hojas de calculo', 'Logs de sistemas'],
+                caracteristicas: [
+                    'Datos crudos sin procesar',
+                    'Multiples formatos (SQL, CSV, JSON, XML)',
+                    'Actualizacion en tiempo real o batch',
+                    'Pueden ser internas o externas'
+                ],
+                preguntaClave: 'De donde vienen los datos?'
+            },
+            {
+                id: 'etl',
+                nombre: 'ETL / ELT',
+                color: 'yellow',
+                icon: 'ETL',
+                descripcion: 'Extraccion, Transformacion y Carga de datos',
+                ejemplos: ['Pentaho Data Integration', 'Talend', 'SSIS', 'Apache Airflow', 'dbt', 'Azure Data Factory'],
+                caracteristicas: [
+                    'Extract: Conecta a multiples fuentes',
+                    'Transform: Limpia, valida, enriquece',
+                    'Load: Carga al Data Warehouse',
+                    'Programado o en tiempo real'
+                ],
+                preguntaClave: 'Como se preparan los datos?'
+            },
+            {
+                id: 'dw',
+                nombre: 'Data Warehouse',
+                color: 'purple',
+                icon: 'DW',
+                descripcion: 'Almacen central de datos analiticos',
+                ejemplos: ['Snowflake', 'Amazon Redshift', 'Google BigQuery', 'Azure Synapse', 'Supabase/PostgreSQL', 'Teradata'],
+                caracteristicas: [
+                    'Datos historicos consolidados',
+                    'Modelo dimensional (hechos + dimensiones)',
+                    'Optimizado para consultas analiticas',
+                    'Single Source of Truth'
+                ],
+                preguntaClave: 'Donde se almacenan para analisis?'
+            },
+            {
+                id: 'olap',
+                nombre: 'Cubos OLAP / Semantic Layer',
+                color: 'indigo',
+                icon: 'OLAP',
+                descripcion: 'Capa de modelado semantico y agregaciones',
+                ejemplos: ['Analysis Services', 'Cubos Multidimensionales', 'Modelos Tabulares', 'LookML', 'dbt Metrics'],
+                caracteristicas: [
+                    'Pre-calcula agregaciones comunes',
+                    'Define metricas de negocio',
+                    'Permite drill-down y slice & dice',
+                    'Acelera consultas complejas'
+                ],
+                preguntaClave: 'Como se organizan para analisis rapido?'
+            },
+            {
+                id: 'visualizacion',
+                nombre: 'Visualizacion y Reporting',
+                color: 'emerald',
+                icon: 'BI',
+                descripcion: 'Dashboards, reportes y herramientas de autoservicio',
+                ejemplos: ['Tableau', 'Power BI', 'Looker', 'Metabase', 'Google Data Studio', 'Superset'],
+                caracteristicas: [
+                    'Dashboards interactivos',
+                    'Reportes programados',
+                    'Analisis ad-hoc',
+                    'Alertas y notificaciones'
+                ],
+                preguntaClave: 'Como se presentan los insights?'
+            },
+            {
+                id: 'usuarios',
+                nombre: 'Usuarios Finales',
+                color: 'rose',
+                icon: 'USER',
+                descripcion: 'Consumidores de la informacion',
+                ejemplos: ['Ejecutivos (C-Level)', 'Gerentes', 'Analistas de negocio', 'Data Scientists', 'Operaciones'],
+                caracteristicas: [
+                    'Diferentes niveles de profundidad',
+                    'Distintas necesidades de datos',
+                    'Variedad de dispositivos',
+                    'Toma de decisiones basada en datos'
+                ],
+                preguntaClave: 'Quien consume la informacion?'
+            }
+        ];
+
+        const casoCopaAirlines = {
+            empresa: 'Copa Airlines',
+            industria: 'Aviacion Comercial',
+            contexto: 'Copa Airlines, con hub en Panama, opera vuelos a mas de 80 destinos en America. Necesitaba una solucion de BI para optimizar operaciones y mejorar la experiencia del pasajero.',
+            desafios: [
+                'Multiples sistemas aislados (reservas, operaciones, mantenimiento)',
+                'Reportes manuales que tomaban dias en generarse',
+                'Dificultad para identificar rutas rentables vs no rentables',
+                'Falta de visibilidad en tiempo real del rendimiento'
+            ],
+            arquitectura: {
+                fuentes: ['Amadeus (Reservas)', 'Sistema de Operaciones', 'Mantenimiento de Flota', 'SAP (Finanzas)', 'CRM Pasajeros'],
+                etl: 'SSIS + Stored Procedures diarios',
+                dataWarehouse: 'SQL Server con modelo dimensional',
+                cubos: 'Analysis Services (SSAS)',
+                visualizacion: 'Power BI + Reportes SSRS',
+                usuarios: ['CEO', 'VP Operaciones', 'Revenue Management', 'Marketing']
+            },
+            kpis: [
+                { nombre: 'Load Factor', descripcion: 'Porcentaje de asientos ocupados', valor: '82%', tendencia: 'up' },
+                { nombre: 'OTP (On-Time Performance)', descripcion: 'Vuelos a tiempo', valor: '89%', tendencia: 'up' },
+                { nombre: 'Revenue per ASM', descripcion: 'Ingreso por asiento-milla', valor: '$0.12', tendencia: 'stable' },
+                { nombre: 'NPS', descripcion: 'Net Promoter Score', valor: '45', tendencia: 'up' }
+            ],
+            beneficios: [
+                'Reduccion del 70% en tiempo de generacion de reportes',
+                'Identificacion de 15 rutas sub-optimas para reevaluacion',
+                'Mejora del 8% en Load Factor en 18 meses',
+                'Dashboards en tiempo real para operaciones'
+            ]
+        };
+
+        const componentesDetalle = [
+            {
+                id: 'staging',
+                nombre: 'Staging Area',
+                descripcion: 'Zona temporal donde los datos crudos aterrizan antes de ser transformados',
+                analogia: 'Como el muelle de carga de un almacen: los productos llegan, se inspeccionan, y luego se mueven a su ubicacion final.',
+                ubicacion: 'Entre Fuentes y ETL',
+                proposito: 'Desacoplar la extraccion de la transformacion'
+            },
+            {
+                id: 'ods',
+                nombre: 'ODS (Operational Data Store)',
+                descripcion: 'Almacen con datos operacionales casi en tiempo real, pero ya integrados',
+                analogia: 'Como una foto del estado actual del negocio, pero combinando informacion de todos los sistemas.',
+                ubicacion: 'Paralelo al Data Warehouse',
+                proposito: 'Reportes operacionales que necesitan datos recientes'
+            },
+            {
+                id: 'datamart',
+                nombre: 'Data Marts',
+                descripcion: 'Subconjuntos del Data Warehouse enfocados en un area de negocio',
+                analogia: 'Como departamentos especializados dentro de un gran almacen: uno para ventas, otro para RRHH, otro para finanzas.',
+                ubicacion: 'Derivados del Data Warehouse',
+                proposito: 'Acceso rapido a datos relevantes por area'
+            },
+            {
+                id: 'metadata',
+                nombre: 'Repositorio de Metadata',
+                descripcion: 'Diccionario que describe que significan los datos, de donde vienen, y como se transformaron',
+                analogia: 'Como el catalogo de una biblioteca: no contiene los libros, pero te dice donde encontrar cada uno.',
+                ubicacion: 'Transversal a toda la arquitectura',
+                proposito: 'Documentacion y gobernanza de datos'
+            },
+            {
+                id: 'datalake',
+                nombre: 'Data Lake',
+                descripcion: 'Almacen de datos en formato crudo, sin esquema predefinido',
+                analogia: 'Como un lago donde todos los rios desembocan: toda el agua (datos) llega sin procesar.',
+                ubicacion: 'Complementario al Data Warehouse',
+                proposito: 'Almacenar grandes volumenes de datos diversos para analisis futuro'
+            }
+        ];
+
+        const quizPreguntas = [
+            {
+                id: 1,
+                pregunta: 'Cual es el proposito principal de un Data Warehouse?',
+                opciones: [
+                    'Procesar transacciones en tiempo real',
+                    'Almacenar datos historicos optimizados para analisis',
+                    'Reemplazar las bases de datos operacionales',
+                    'Generar reportes automaticos'
+                ],
+                correcta: 1,
+                explicacion: 'El Data Warehouse esta disenado especificamente para almacenar datos historicos de manera optimizada para consultas analiticas, no para transacciones operacionales.'
+            },
+            {
+                id: 2,
+                pregunta: 'En el proceso ETL, que significa la "T"?',
+                opciones: [
+                    'Transfer - Transferir datos entre sistemas',
+                    'Transform - Limpiar, validar y enriquecer datos',
+                    'Test - Probar la calidad de los datos',
+                    'Track - Rastrear el origen de los datos'
+                ],
+                correcta: 1,
+                explicacion: 'Transform es el proceso de limpiar, validar, estandarizar y enriquecer los datos antes de cargarlos al Data Warehouse.'
+            },
+            {
+                id: 3,
+                pregunta: 'Cual de las siguientes NO es una fuente de datos tipica para BI?',
+                opciones: [
+                    'Sistema ERP (SAP, Oracle)',
+                    'CRM (Salesforce)',
+                    'Dashboard de Tableau',
+                    'Archivos CSV'
+                ],
+                correcta: 2,
+                explicacion: 'Tableau es una herramienta de visualizacion (capa de salida), no una fuente de datos. Las fuentes son sistemas que generan datos originales.'
+            },
+            {
+                id: 4,
+                pregunta: 'Que es un Data Mart?',
+                opciones: [
+                    'Un sistema de backup del Data Warehouse',
+                    'Un subconjunto del DW enfocado en un area de negocio',
+                    'Una herramienta de ETL',
+                    'El servidor donde se almacenan los dashboards'
+                ],
+                correcta: 1,
+                explicacion: 'Un Data Mart es un subconjunto especializado del Data Warehouse, optimizado para las necesidades de un departamento o area de negocio especifica.'
+            },
+            {
+                id: 5,
+                pregunta: 'Cual es la diferencia principal entre OLTP y OLAP?',
+                opciones: [
+                    'OLTP es para analisis, OLAP es para transacciones',
+                    'OLTP es mas caro que OLAP',
+                    'OLTP procesa transacciones, OLAP analiza datos historicos',
+                    'No hay diferencia, son sinonimos'
+                ],
+                correcta: 2,
+                explicacion: 'OLTP (Online Transaction Processing) esta optimizado para procesar muchas transacciones pequenas en tiempo real. OLAP (Online Analytical Processing) esta optimizado para consultas analiticas complejas sobre grandes volumenes de datos historicos.'
+            }
+        ];
+
+        // ============================================
+        // COMPONENTE: ARQUITECTURA POR CAPAS
+        // ============================================
+
+        const ArquitecturaCapas = () => {
+            const [capaActiva, setCapaActiva] = useState(null);
+            const [mostrarFlujo, setMostrarFlujo] = useState(false);
+
+            const colorClasses = {
+                blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-800', btnBg: 'bg-blue-500', hover: 'hover:bg-blue-200' },
+                yellow: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', btnBg: 'bg-yellow-500', hover: 'hover:bg-yellow-200' },
+                purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-800', btnBg: 'bg-purple-500', hover: 'hover:bg-purple-200' },
+                indigo: { bg: 'bg-indigo-100', border: 'border-indigo-300', text: 'text-indigo-800', btnBg: 'bg-indigo-500', hover: 'hover:bg-indigo-200' },
+                emerald: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', btnBg: 'bg-emerald-500', hover: 'hover:bg-emerald-200' },
+                rose: { bg: 'bg-rose-100', border: 'border-rose-300', text: 'text-rose-800', btnBg: 'bg-rose-500', hover: 'hover:bg-rose-200' },
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800">Arquitectura de Business Intelligence</h2>
+                                <p className="text-gray-600">Las 6 capas fundamentales de un sistema de BI</p>
+                            </div>
+                            <button
+                                onClick={() => setMostrarFlujo(!mostrarFlujo)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${mostrarFlujo ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                {mostrarFlujo ? 'Flujo Activo' : 'Ver Flujo de Datos'}
+                            </button>
+                        </div>
+
+                        {/* Diagrama de arquitectura */}
+                        <div className="relative mb-8">
+                            <div className="flex items-center justify-between gap-2">
+                                {arquitecturaCapas.map((capa, index) => {
+                                    const colors = colorClasses[capa.color];
+                                    const isActive = capaActiva === capa.id;
+
+                                    return (
+                                        <React.Fragment key={capa.id}>
+                                            <div
+                                                onClick={() => setCapaActiva(isActive ? null : capa.id)}
+                                                className={`flex-1 cursor-pointer transition-all duration-300 ${
+                                                    isActive ? 'transform scale-105 z-10' : 'hover:scale-102'
+                                                }`}
+                                            >
+                                                <div className={`${colors.bg} ${colors.border} border-2 rounded-xl p-4 ${colors.hover} ${isActive ? 'ring-4 ring-offset-2 ring-' + capa.color + '-400' : ''}`}>
+                                                    <div className={`${colors.btnBg} text-white w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold mx-auto mb-2`}>
+                                                        {capa.icon}
+                                                    </div>
+                                                    <h3 className={`text-center font-bold text-sm ${colors.text}`}>{capa.nombre}</h3>
+                                                    <p className="text-center text-xs text-gray-500 mt-1">{capa.preguntaClave}</p>
+                                                </div>
+                                            </div>
+
+                                            {index < arquitecturaCapas.length - 1 && (
+                                                <div className={`text-2xl font-bold ${mostrarFlujo ? 'text-green-500 flow-arrow' : 'text-gray-300'}`}>
+                                                    →
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Panel de detalle */}
+                        {capaActiva && (
+                            <div className={`${colorClasses[arquitecturaCapas.find(c => c.id === capaActiva).color].bg} border-2 ${colorClasses[arquitecturaCapas.find(c => c.id === capaActiva).color].border} rounded-xl p-6 transition-all`}>
+                                {(() => {
+                                    const capa = arquitecturaCapas.find(c => c.id === capaActiva);
+                                    const colors = colorClasses[capa.color];
+                                    return (
+                                        <>
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className={`${colors.btnBg} text-white p-4 rounded-xl text-2xl font-bold`}>
+                                                    {capa.icon}
+                                                </div>
+                                                <div>
+                                                    <h3 className={`text-2xl font-bold ${colors.text}`}>{capa.nombre}</h3>
+                                                    <p className="text-gray-600">{capa.descripcion}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-800 mb-2">Herramientas y Ejemplos</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {capa.ejemplos.map((ejemplo, idx) => (
+                                                            <span key={idx} className="bg-white px-3 py-1 rounded-full text-sm border">{ejemplo}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-gray-800 mb-2">Caracteristicas Clave</h4>
+                                                    <ul className="space-y-1">
+                                                        {capa.caracteristicas.map((caract, idx) => (
+                                                            <li key={idx} className="flex items-center gap-2 text-sm text-gray-700">
+                                                                <span className={`w-2 h-2 rounded-full ${colors.btnBg}`}></span>
+                                                                {caract}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
+                        {!capaActiva && (
+                            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                                <p className="text-gray-500 text-lg">Haz clic en cualquier capa para ver sus detalles</p>
+                                <p className="text-gray-400 text-sm mt-2">Explora cada componente de la arquitectura de BI</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: COMPONENTES DETALLADOS
+        // ============================================
+
+        const ComponentesBI = () => {
+            const [componenteActivo, setComponenteActivo] = useState(null);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Componentes Adicionales del Ecosistema BI</h2>
+                        <p className="text-gray-600 mb-6">Elementos que complementan la arquitectura principal</p>
+
+                        <div className="grid md:grid-cols-3 gap-4 mb-6">
+                            {componentesDetalle.map((comp) => (
+                                <div
+                                    key={comp.id}
+                                    onClick={() => setComponenteActivo(componenteActivo === comp.id ? null : comp.id)}
+                                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                                        componenteActivo === comp.id
+                                            ? 'border-indigo-500 bg-indigo-50 shadow-lg'
+                                            : 'border-gray-200 hover:border-gray-300 hover:shadow'
+                                    }`}
+                                >
+                                    <h3 className="font-bold text-gray-800 mb-1">{comp.nombre}</h3>
+                                    <p className="text-sm text-gray-600">{comp.descripcion}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {componenteActivo && (
+                            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
+                                {(() => {
+                                    const comp = componentesDetalle.find(c => c.id === componenteActivo);
+                                    return (
+                                        <>
+                                            <h3 className="text-xl font-bold text-indigo-800 mb-4">{comp.nombre}</h3>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <div className="bg-white rounded-lg p-4 mb-4">
+                                                        <h4 className="font-bold text-gray-700 mb-2">Analogia</h4>
+                                                        <p className="text-gray-600 italic">"{comp.analogia}"</p>
+                                                    </div>
+                                                    <div className="bg-white rounded-lg p-4">
+                                                        <h4 className="font-bold text-gray-700 mb-2">Ubicacion en la Arquitectura</h4>
+                                                        <p className="text-gray-600">{comp.ubicacion}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-bold text-gray-700 mb-2">Proposito Principal</h4>
+                                                    <p className="text-gray-600">{comp.proposito}</p>
+                                                    <div className="mt-4 p-3 bg-indigo-100 rounded-lg">
+                                                        <p className="text-sm text-indigo-700">
+                                                            <strong>Tip:</strong> Este componente es especialmente util cuando necesitas {comp.proposito.toLowerCase()}.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
+                        {!componenteActivo && (
+                            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                                <p className="text-gray-500">Selecciona un componente para ver mas detalles</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: CASO COPA AIRLINES
+        // ============================================
+
+        const CasoCopaAirlines = () => {
+            const [seccionActiva, setSeccionActiva] = useState('contexto');
+
+            const secciones = [
+                { id: 'contexto', nombre: 'Contexto', icon: 'INFO' },
+                { id: 'desafios', nombre: 'Desafios', icon: '!' },
+                { id: 'arquitectura', nombre: 'Arquitectura', icon: 'ARCH' },
+                { id: 'kpis', nombre: 'KPIs', icon: 'KPI' },
+                { id: 'beneficios', nombre: 'Beneficios', icon: 'OK' },
+            ];
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white/20 p-4 rounded-xl">
+                                <span className="text-3xl font-bold">COPA</span>
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold">Caso de Estudio: Copa Airlines</h2>
+                                <p className="text-blue-100">{casoCopaAirlines.industria} - Hub Panama</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex border-b">
+                        {secciones.map((sec) => (
+                            <button
+                                key={sec.id}
+                                onClick={() => setSeccionActiva(sec.id)}
+                                className={`flex-1 py-3 px-4 font-medium transition-all ${
+                                    seccionActiva === sec.id
+                                        ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                <span className="mr-2">{sec.icon}</span>
+                                {sec.nombre}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-6">
+                        {seccionActiva === 'contexto' && (
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                                    <p className="text-gray-700">{casoCopaAirlines.contexto}</p>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                        <p className="text-3xl font-bold text-blue-600">80+</p>
+                                        <p className="text-sm text-gray-600">Destinos</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                        <p className="text-3xl font-bold text-blue-600">15M+</p>
+                                        <p className="text-sm text-gray-600">Pasajeros/ano</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                        <p className="text-3xl font-bold text-blue-600">100+</p>
+                                        <p className="text-sm text-gray-600">Aviones</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {seccionActiva === 'desafios' && (
+                            <div className="space-y-3">
+                                <h3 className="font-bold text-lg text-gray-800 mb-4">Desafios antes de implementar BI</h3>
+                                {casoCopaAirlines.desafios.map((desafio, idx) => (
+                                    <div key={idx} className="flex items-start gap-3 bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                                        <span className="text-red-500 font-bold text-lg">!</span>
+                                        <p className="text-gray-700">{desafio}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {seccionActiva === 'arquitectura' && (
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-lg text-gray-800 mb-4">Arquitectura BI Implementada</h3>
+                                <div className="grid gap-3">
+                                    {Object.entries(casoCopaAirlines.arquitectura).map(([capa, valor]) => {
+                                        const capaInfo = {
+                                            fuentes: { color: 'blue', label: 'Fuentes de Datos' },
+                                            etl: { color: 'yellow', label: 'ETL' },
+                                            dataWarehouse: { color: 'purple', label: 'Data Warehouse' },
+                                            cubos: { color: 'indigo', label: 'Cubos OLAP' },
+                                            visualizacion: { color: 'emerald', label: 'Visualizacion' },
+                                            usuarios: { color: 'rose', label: 'Usuarios' }
+                                        };
+                                        const info = capaInfo[capa];
+                                        const bgColor = `bg-${info.color}-50`;
+                                        const borderColor = `border-${info.color}-300`;
+                                        const textColor = `text-${info.color}-800`;
+
+                                        return (
+                                            <div key={capa} className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`font-bold ${textColor}`}>{info.label}:</span>
+                                                    <span className="text-gray-700">
+                                                        {Array.isArray(valor) ? valor.join(', ') : valor}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {seccionActiva === 'kpis' && (
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-lg text-gray-800 mb-4">KPIs Monitoreados</h3>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {casoCopaAirlines.kpis.map((kpi, idx) => (
+                                        <div key={idx} className="bg-gray-50 p-4 rounded-lg border">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-gray-800">{kpi.nombre}</h4>
+                                                <span className={`text-2xl font-bold ${
+                                                    kpi.tendencia === 'up' ? 'text-green-600' :
+                                                    kpi.tendencia === 'down' ? 'text-red-600' : 'text-gray-600'
+                                                }`}>
+                                                    {kpi.valor}
+                                                    {kpi.tendencia === 'up' && ' ↑'}
+                                                    {kpi.tendencia === 'down' && ' ↓'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-600">{kpi.descripcion}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {seccionActiva === 'beneficios' && (
+                            <div className="space-y-3">
+                                <h3 className="font-bold text-lg text-gray-800 mb-4">Beneficios Logrados</h3>
+                                {casoCopaAirlines.beneficios.map((beneficio, idx) => (
+                                    <div key={idx} className="flex items-start gap-3 bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                                        <span className="text-green-500 font-bold text-lg">OK</span>
+                                        <p className="text-gray-700">{beneficio}</p>
+                                    </div>
+                                ))}
+                                <div className="mt-6 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl text-center">
+                                    <p className="font-bold text-lg">La implementacion de BI transformo la toma de decisiones de Copa Airlines</p>
+                                    <p className="text-blue-100 mt-2">De decisiones basadas en intuicion a decisiones basadas en datos</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: FLUJO DE DATOS INTERACTIVO
+        // ============================================
+
+        const FlujoDatos = () => {
+            const [pasoActual, setPasoActual] = useState(0);
+            const [autoPlay, setAutoPlay] = useState(false);
+
+            const pasos = [
+                {
+                    titulo: 'Generacion del Dato',
+                    descripcion: 'Un pasajero reserva un vuelo Panama-Miami en el sitio web de Copa Airlines',
+                    datos: { tipo: 'Transaccion', formato: 'JSON', sistema: 'Amadeus Reservas' },
+                    ejemplo: '{ "pnr": "ABC123", "origen": "PTY", "destino": "MIA", "fecha": "2024-03-15", "pasajero_id": 45892 }'
+                },
+                {
+                    titulo: 'Captura en Sistema Fuente',
+                    descripcion: 'El sistema de reservas almacena la transaccion en su base de datos operacional',
+                    datos: { tipo: 'INSERT', formato: 'SQL', sistema: 'Base de datos Amadeus' },
+                    ejemplo: 'INSERT INTO reservas (pnr, origen, destino, fecha, pasajero_id) VALUES ("ABC123", "PTY", "MIA", "2024-03-15", 45892);'
+                },
+                {
+                    titulo: 'Extraccion (ETL - E)',
+                    descripcion: 'El proceso ETL nocturno extrae las nuevas reservas del dia',
+                    datos: { tipo: 'Query', formato: 'SQL', sistema: 'SSIS Package' },
+                    ejemplo: 'SELECT * FROM reservas WHERE fecha_creacion >= DATEADD(day, -1, GETDATE());'
+                },
+                {
+                    titulo: 'Transformacion (ETL - T)',
+                    descripcion: 'Los datos se limpian, validan y enriquecen con informacion de dimensiones',
+                    datos: { tipo: 'Transformacion', formato: 'Staging Table', sistema: 'SSIS Data Flow' },
+                    ejemplo: 'Lookup: pasajero_id -> nombre_pasajero, categoria_loyalty\nLookup: destino -> ciudad_destino, pais_destino, region'
+                },
+                {
+                    titulo: 'Carga al Data Warehouse (ETL - L)',
+                    descripcion: 'Los datos transformados se cargan en la tabla de hechos del DW',
+                    datos: { tipo: 'INSERT', formato: 'Dimensional', sistema: 'SQL Server DW' },
+                    ejemplo: 'INSERT INTO fact_reservas (fecha_key, ruta_key, pasajero_key, cantidad, revenue) VALUES (20240315, 142, 45892, 1, 450.00);'
+                },
+                {
+                    titulo: 'Procesamiento OLAP',
+                    descripcion: 'El cubo OLAP se actualiza con los nuevos datos para analisis rapido',
+                    datos: { tipo: 'Process', formato: 'Cubo OLAP', sistema: 'Analysis Services' },
+                    ejemplo: 'Agregaciones pre-calculadas:\n- Reservas por ruta por mes\n- Revenue por region\n- Tendencia vs ano anterior'
+                },
+                {
+                    titulo: 'Visualizacion en Dashboard',
+                    descripcion: 'El analista de Revenue Management ve la nueva reserva reflejada en su dashboard',
+                    datos: { tipo: 'Consulta', formato: 'DAX/MDX', sistema: 'Power BI' },
+                    ejemplo: 'CALCULATE(SUM(fact_reservas[revenue]), dim_fecha[mes] = "Marzo 2024", dim_ruta[destino] = "Miami")'
+                },
+                {
+                    titulo: 'Decision de Negocio',
+                    descripcion: 'El gerente identifica alta demanda PTY-MIA y decide agregar un vuelo adicional',
+                    datos: { tipo: 'Insight', formato: 'Accion', sistema: 'Decisiones Operativas' },
+                    ejemplo: 'Insight: Load Factor PTY-MIA = 95% (por encima del objetivo 82%)\nDecision: Agregar vuelo CM245 en horario vespertino'
+                }
+            ];
+
+            useEffect(() => {
+                let interval;
+                if (autoPlay && pasoActual < pasos.length - 1) {
+                    interval = setInterval(() => {
+                        setPasoActual(prev => prev >= pasos.length - 1 ? prev : prev + 1);
+                    }, 4000);
+                }
+                return () => clearInterval(interval);
+            }, [autoPlay, pasoActual]);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800">Flujo de Datos en Accion</h2>
+                                <p className="text-gray-600">Sigue el viaje de un dato desde su generacion hasta la decision</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setPasoActual(0)}
+                                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                                >
+                                    Reiniciar
+                                </button>
+                                <button
+                                    onClick={() => setAutoPlay(!autoPlay)}
+                                    className={`px-4 py-2 rounded-lg ${autoPlay ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+                                >
+                                    {autoPlay ? 'Pausar' : 'Auto-avanzar'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Barra de progreso */}
+                        <div className="mb-6">
+                            <div className="flex justify-between mb-2">
+                                {pasos.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setPasoActual(idx)}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                                            idx === pasoActual
+                                                ? 'bg-indigo-500 text-white scale-110'
+                                                : idx < pasoActual
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-200 text-gray-500'
+                                        }`}
+                                    >
+                                        {idx < pasoActual ? 'OK' : idx + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="h-2 bg-gray-200 rounded-full">
+                                <div
+                                    className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${((pasoActual + 1) / pasos.length) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Contenido del paso actual */}
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="bg-indigo-500 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold">
+                                    {pasoActual + 1}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-indigo-800">{pasos[pasoActual].titulo}</h3>
+                                    <p className="text-gray-600">{pasos[pasoActual].descripcion}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-4 mb-4">
+                                <div className="bg-white p-3 rounded-lg">
+                                    <p className="text-xs text-gray-500">Tipo</p>
+                                    <p className="font-semibold text-gray-800">{pasos[pasoActual].datos.tipo}</p>
+                                </div>
+                                <div className="bg-white p-3 rounded-lg">
+                                    <p className="text-xs text-gray-500">Formato</p>
+                                    <p className="font-semibold text-gray-800">{pasos[pasoActual].datos.formato}</p>
+                                </div>
+                                <div className="bg-white p-3 rounded-lg">
+                                    <p className="text-xs text-gray-500">Sistema</p>
+                                    <p className="font-semibold text-gray-800">{pasos[pasoActual].datos.sistema}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                <pre>{pasos[pasoActual].ejemplo}</pre>
+                            </div>
+                        </div>
+
+                        {/* Navegacion */}
+                        <div className="flex justify-between mt-6">
+                            <button
+                                onClick={() => setPasoActual(prev => Math.max(0, prev - 1))}
+                                disabled={pasoActual === 0}
+                                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                            >
+                                ← Anterior
+                            </button>
+                            <button
+                                onClick={() => setPasoActual(prev => Math.min(pasos.length - 1, prev + 1))}
+                                disabled={pasoActual === pasos.length - 1}
+                                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50"
+                            >
+                                Siguiente →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: QUIZ FORMATIVO
+        // ============================================
+
+        const QuizFormativo = () => {
+            const [preguntaActual, setPreguntaActual] = useState(0);
+            const [respuestas, setRespuestas] = useState({});
+            const [mostrarResultado, setMostrarResultado] = useState(false);
+            const [quizTerminado, setQuizTerminado] = useState(false);
+
+            const handleRespuesta = (opcionIdx) => {
+                if (mostrarResultado) return;
+
+                setRespuestas(prev => ({
+                    ...prev,
+                    [preguntaActual]: opcionIdx
+                }));
+                setMostrarResultado(true);
+            };
+
+            const siguientePregunta = () => {
+                if (preguntaActual < quizPreguntas.length - 1) {
+                    setPreguntaActual(prev => prev + 1);
+                    setMostrarResultado(false);
+                } else {
+                    setQuizTerminado(true);
+                }
+            };
+
+            const reiniciarQuiz = () => {
+                setPreguntaActual(0);
+                setRespuestas({});
+                setMostrarResultado(false);
+                setQuizTerminado(false);
+            };
+
+            const calcularPuntaje = () => {
+                let correctas = 0;
+                Object.entries(respuestas).forEach(([pregIdx, respIdx]) => {
+                    if (quizPreguntas[parseInt(pregIdx)].correcta === respIdx) {
+                        correctas++;
+                    }
+                });
+                return correctas;
+            };
+
+            if (quizTerminado) {
+                const puntaje = calcularPuntaje();
+                const porcentaje = (puntaje / quizPreguntas.length) * 100;
+
+                return (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-6">
+                            <div className={`text-center p-8 rounded-xl ${
+                                porcentaje >= 80 ? 'bg-green-50' : porcentaje >= 60 ? 'bg-yellow-50' : 'bg-red-50'
+                            }`}>
+                                <div className={`text-6xl font-bold mb-4 ${
+                                    porcentaje >= 80 ? 'text-green-600' : porcentaje >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                    {puntaje}/{quizPreguntas.length}
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                    {porcentaje >= 80 ? 'Excelente!' : porcentaje >= 60 ? 'Buen trabajo!' : 'Sigue practicando!'}
+                                </h2>
+                                <p className="text-gray-600 mb-6">
+                                    {porcentaje >= 80
+                                        ? 'Tienes un excelente entendimiento de la arquitectura de BI.'
+                                        : porcentaje >= 60
+                                            ? 'Vas por buen camino. Revisa los conceptos donde tuviste errores.'
+                                            : 'Te recomendamos revisar el material de la sesion nuevamente.'}
+                                </p>
+                                <button
+                                    onClick={reiniciarQuiz}
+                                    className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                                >
+                                    Intentar de nuevo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const pregunta = quizPreguntas[preguntaActual];
+            const respuestaSeleccionada = respuestas[preguntaActual];
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold">Quiz Formativo - Unidad 1</h2>
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                                Pregunta {preguntaActual + 1} de {quizPreguntas.length}
+                            </span>
+                        </div>
+                        <div className="mt-3 h-2 bg-white/20 rounded-full">
+                            <div
+                                className="h-full bg-white rounded-full transition-all"
+                                style={{ width: `${((preguntaActual + 1) / quizPreguntas.length) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6">{pregunta.pregunta}</h3>
+
+                        <div className="space-y-3 mb-6">
+                            {pregunta.opciones.map((opcion, idx) => {
+                                let bgColor = 'bg-gray-50 hover:bg-gray-100';
+                                let borderColor = 'border-gray-200';
+
+                                if (mostrarResultado) {
+                                    if (idx === pregunta.correcta) {
+                                        bgColor = 'bg-green-100';
+                                        borderColor = 'border-green-500';
+                                    } else if (idx === respuestaSeleccionada && idx !== pregunta.correcta) {
+                                        bgColor = 'bg-red-100';
+                                        borderColor = 'border-red-500';
+                                    }
+                                } else if (respuestaSeleccionada === idx) {
+                                    bgColor = 'bg-indigo-100';
+                                    borderColor = 'border-indigo-500';
+                                }
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleRespuesta(idx)}
+                                        disabled={mostrarResultado}
+                                        className={`w-full text-left p-4 rounded-lg border-2 ${bgColor} ${borderColor} transition-all`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                                mostrarResultado && idx === pregunta.correcta
+                                                    ? 'bg-green-500 text-white'
+                                                    : mostrarResultado && idx === respuestaSeleccionada && idx !== pregunta.correcta
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-gray-200 text-gray-600'
+                                            }`}>
+                                                {String.fromCharCode(65 + idx)}
+                                            </span>
+                                            <span className="text-gray-800">{opcion}</span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {mostrarResultado && (
+                            <div className={`p-4 rounded-lg mb-6 ${
+                                respuestaSeleccionada === pregunta.correcta
+                                    ? 'bg-green-50 border-l-4 border-green-500'
+                                    : 'bg-red-50 border-l-4 border-red-500'
+                            }`}>
+                                <p className={`font-bold mb-1 ${
+                                    respuestaSeleccionada === pregunta.correcta ? 'text-green-700' : 'text-red-700'
+                                }`}>
+                                    {respuestaSeleccionada === pregunta.correcta ? 'Correcto!' : 'Incorrecto'}
+                                </p>
+                                <p className="text-gray-700">{pregunta.explicacion}</p>
+                            </div>
+                        )}
+
+                        {mostrarResultado && (
+                            <button
+                                onClick={siguientePregunta}
+                                className="w-full py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                            >
+                                {preguntaActual < quizPreguntas.length - 1 ? 'Siguiente Pregunta →' : 'Ver Resultados'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const ArquitecturaBISimulator = () => {
+            const [activeTab, setActiveTab] = useState('arquitectura');
+
+            const tabs = [
+                { id: 'arquitectura', label: 'Arquitectura BI' },
+                { id: 'componentes', label: 'Componentes' },
+                { id: 'caso', label: 'Caso Copa Airlines' },
+                { id: 'flujo', label: 'Flujo de Datos' },
+                { id: 'quiz', label: 'Quiz Unidad 1' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-7xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-2">Arquitectura de Business Intelligence</h1>
+                                    <p className="text-indigo-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                        <span>ARCH</span> Lab Guiado
+                                    </a>
+                                    <a href="ejercicio-individual.html" className="bg-violet-500 hover:bg-violet-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                        <span>MAP</span> Ejercicio Individual
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Inicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto mb-4">
+                        <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-500 text-white shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto">
+                        {activeTab === 'arquitectura' && <ArquitecturaCapas />}
+                        {activeTab === 'componentes' && <ComponentesBI />}
+                        {activeTab === 'caso' && <CasoCopaAirlines />}
+                        {activeTab === 'flujo' && <FlujoDatos />}
+                        {activeTab === 'quiz' && <QuizFormativo />}
+                    </div>
+
+                    <div className="max-w-7xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ArquitecturaBISimulator />);
+    </script>
+</body>
+</html>

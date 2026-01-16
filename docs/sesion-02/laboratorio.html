@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: Explorando el Ecosistema BI - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .step-connector { position: relative; }
+        .step-connector::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            width: 2px;
+            height: 20px;
+            background: #e5e7eb;
+        }
+        .step-connector.completed::after { background: #10b981; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ============================================
+        // DATOS DEL LABORATORIO
+        // ============================================
+
+        const laboratorioSteps = [
+            {
+                id: 1,
+                titulo: 'Introduccion al Laboratorio',
+                duracion: '5 min',
+                tipo: 'contexto',
+                contenido: {
+                    objetivo: 'Explorar herramientas reales del ecosistema BI para comprender como se implementa una arquitectura de Business Intelligence en la practica.',
+                    queAprenderas: [
+                        'Navegar interfaces de herramientas ETL (Pentaho)',
+                        'Explorar un Data Warehouse en Supabase',
+                        'Crear tu primera visualizacion en Tableau Public',
+                        'Conectar los componentes mentalmente'
+                    ],
+                    prerequisitos: [
+                        'Haber completado el simulador de Arquitectura BI',
+                        'Cuenta de Google (para Supabase)',
+                        'Navegador moderno actualizado'
+                    ],
+                    advertencia: 'Este laboratorio es exploratorio. No necesitas crear cuentas en todas las herramientas, solo observar y entender su funcion.'
+                }
+            },
+            {
+                id: 2,
+                titulo: 'Explorando Fuentes de Datos',
+                duracion: '10 min',
+                tipo: 'exploracion',
+                contenido: {
+                    concepto: 'Las fuentes de datos son el punto de partida de cualquier sistema BI. Pueden ser bases de datos, APIs, archivos o sistemas externos.',
+                    actividad: {
+                        titulo: 'Identificar tipos de fuentes en un dataset publico',
+                        pasos: [
+                            {
+                                instruccion: 'Visita Kaggle Datasets',
+                                url: 'https://www.kaggle.com/datasets',
+                                accion: 'Abre el enlace en una nueva pestana',
+                                observa: 'Nota la variedad de formatos: CSV, JSON, SQL dumps, imagenes'
+                            },
+                            {
+                                instruccion: 'Busca "sales retail"',
+                                accion: 'Usa la barra de busqueda',
+                                observa: 'Observa los diferentes datasets de ventas disponibles'
+                            },
+                            {
+                                instruccion: 'Selecciona un dataset y observa su estructura',
+                                accion: 'Haz clic en cualquier dataset de ventas',
+                                observa: 'Mira las columnas, tipos de datos, y tamano del archivo'
+                            }
+                        ]
+                    },
+                    reflexion: 'Estos datasets publicos simulan las fuentes de datos que una empresa real tendria en sus sistemas ERP, CRM o bases operacionales.',
+                    pregunta: 'Que tipos de datos observaste? (numericos, fechas, categoricos, texto libre)'
+                }
+            },
+            {
+                id: 3,
+                titulo: 'Conociendo una Herramienta ETL',
+                duracion: '15 min',
+                tipo: 'demo',
+                contenido: {
+                    concepto: 'Las herramientas ETL permiten extraer datos de multiples fuentes, transformarlos y cargarlos en un Data Warehouse. Pentaho Data Integration (PDI) es una de las mas populares de codigo abierto.',
+                    actividad: {
+                        titulo: 'Tour virtual por Pentaho Data Integration',
+                        pasos: [
+                            {
+                                instruccion: 'Observa la interfaz de Pentaho (imagen/video)',
+                                url: 'https://www.hitachivantara.com/en-us/products/pentaho-plus-platform/data-integration-analytics.html',
+                                accion: 'Revisa las capturas de pantalla de la herramienta',
+                                observa: 'Identifica: Canvas de diseno, Paleta de componentes, Propiedades'
+                            },
+                            {
+                                instruccion: 'Entiende el concepto de "Transformacion"',
+                                accion: 'Lee la descripcion',
+                                observa: 'Una transformacion conecta pasos: Input -> Process -> Output'
+                            },
+                            {
+                                instruccion: 'Identifica pasos comunes',
+                                accion: 'Observa los iconos',
+                                observa: 'CSV Input, Table Input, Filter, Join, Select Values, Table Output'
+                            }
+                        ]
+                    },
+                    diagramaEtl: {
+                        entrada: ['CSV File', 'Database Table', 'REST API'],
+                        transformacion: ['Filter Rows', 'Join Tables', 'Calculate Fields', 'Validate Data'],
+                        salida: ['Data Warehouse Table', 'CSV Export', 'Dashboard']
+                    },
+                    nota: 'En la Sesion 6 usaras Pentaho para crear tu primer proceso ETL real.'
+                }
+            },
+            {
+                id: 4,
+                titulo: 'Explorando un Data Warehouse',
+                duracion: '15 min',
+                tipo: 'practica',
+                contenido: {
+                    concepto: 'Un Data Warehouse almacena datos de manera dimensional (tablas de hechos + dimensiones) optimizada para analisis. Usaremos Supabase como ejemplo accesible.',
+                    actividad: {
+                        titulo: 'Crear y explorar un esquema dimensional basico',
+                        pasos: [
+                            {
+                                instruccion: 'Accede a Supabase',
+                                url: 'https://supabase.com/',
+                                accion: 'Inicia sesion con tu cuenta de Google',
+                                observa: 'El dashboard principal de Supabase'
+                            },
+                            {
+                                instruccion: 'Crea un nuevo proyecto',
+                                accion: 'Click en "New Project", nombralo "lab-bi-sesion02"',
+                                observa: 'Supabase creara una base de datos PostgreSQL'
+                            },
+                            {
+                                instruccion: 'Abre el SQL Editor',
+                                accion: 'En el menu lateral, selecciona "SQL Editor"',
+                                observa: 'Tendras un editor para ejecutar queries SQL'
+                            },
+                            {
+                                instruccion: 'Crea una tabla de dimension',
+                                accion: 'Ejecuta el siguiente SQL',
+                                codigo: `-- Dimension: Productos
+CREATE TABLE dim_producto (
+    producto_key SERIAL PRIMARY KEY,
+    producto_id VARCHAR(20) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    categoria VARCHAR(50),
+    subcategoria VARCHAR(50),
+    precio_unitario DECIMAL(10,2)
+);
+
+-- Inserta datos de ejemplo
+INSERT INTO dim_producto (producto_id, nombre, categoria, subcategoria, precio_unitario) VALUES
+('PROD001', 'Laptop Dell XPS', 'Electronica', 'Computadoras', 1299.99),
+('PROD002', 'Mouse Logitech MX', 'Electronica', 'Accesorios', 79.99),
+('PROD003', 'Monitor Samsung 27"', 'Electronica', 'Monitores', 349.99),
+('PROD004', 'Teclado Mecanico', 'Electronica', 'Accesorios', 129.99),
+('PROD005', 'Webcam HD', 'Electronica', 'Accesorios', 89.99);`,
+                                observa: 'Tabla de dimension con atributos descriptivos'
+                            },
+                            {
+                                instruccion: 'Crea una tabla de hechos',
+                                accion: 'Ejecuta el siguiente SQL',
+                                codigo: `-- Tabla de Hechos: Ventas
+CREATE TABLE fact_ventas (
+    venta_key SERIAL PRIMARY KEY,
+    fecha DATE NOT NULL,
+    producto_key INT REFERENCES dim_producto(producto_key),
+    cantidad INT NOT NULL,
+    monto_total DECIMAL(10,2) NOT NULL
+);
+
+-- Inserta datos de ejemplo
+INSERT INTO fact_ventas (fecha, producto_key, cantidad, monto_total) VALUES
+('2024-01-15', 1, 2, 2599.98),
+('2024-01-15', 2, 5, 399.95),
+('2024-01-16', 3, 1, 349.99),
+('2024-01-16', 1, 1, 1299.99),
+('2024-01-17', 4, 3, 389.97),
+('2024-01-17', 5, 2, 179.98),
+('2024-01-18', 2, 10, 799.90),
+('2024-01-18', 1, 1, 1299.99);`,
+                                observa: 'Tabla de hechos con metricas (cantidad, monto) y claves foraneas'
+                            },
+                            {
+                                instruccion: 'Ejecuta una consulta analitica',
+                                accion: 'Ejecuta el siguiente SQL',
+                                codigo: `-- Consulta analitica: Ventas por categoria
+SELECT
+    p.categoria,
+    COUNT(*) as num_transacciones,
+    SUM(f.cantidad) as unidades_vendidas,
+    SUM(f.monto_total) as revenue_total,
+    ROUND(AVG(f.monto_total), 2) as ticket_promedio
+FROM fact_ventas f
+JOIN dim_producto p ON f.producto_key = p.producto_key
+GROUP BY p.categoria
+ORDER BY revenue_total DESC;`,
+                                observa: 'Esta es una consulta tipica OLAP: agregaciones por dimensiones'
+                            }
+                        ]
+                    },
+                    reflexion: 'Observa como el modelo dimensional facilita las consultas analiticas. Puedes agregar facilmente por cualquier atributo de la dimension.'
+                }
+            },
+            {
+                id: 5,
+                titulo: 'Primera Visualizacion en Tableau',
+                duracion: '15 min',
+                tipo: 'practica',
+                contenido: {
+                    concepto: 'Tableau es una de las herramientas de visualizacion mas populares. Tableau Public es la version gratuita que permite crear y publicar dashboards.',
+                    actividad: {
+                        titulo: 'Crear tu primera visualizacion con datos de muestra',
+                        pasos: [
+                            {
+                                instruccion: 'Accede a Tableau Public',
+                                url: 'https://public.tableau.com/',
+                                accion: 'Crea una cuenta gratuita si no tienes',
+                                observa: 'Podras crear visualizaciones y publicarlas en la web'
+                            },
+                            {
+                                instruccion: 'Descarga Tableau Public Desktop',
+                                url: 'https://www.tableau.com/products/public/download',
+                                accion: 'Instala la aplicacion de escritorio',
+                                observa: 'Es la herramienta completa, gratuita para uso no comercial'
+                            },
+                            {
+                                instruccion: 'Abre Tableau y conecta a datos de muestra',
+                                accion: 'Al abrir, selecciona "Sample - Superstore" en Saved Data Sources',
+                                observa: 'Tableau incluye datasets de muestra para practicar'
+                            },
+                            {
+                                instruccion: 'Crea un grafico de barras',
+                                accion: 'Arrastra "Category" a Columnas y "Sales" a Filas',
+                                observa: 'Tableau automaticamente agrega los valores y crea el grafico'
+                            },
+                            {
+                                instruccion: 'Agrega color por region',
+                                accion: 'Arrastra "Region" a la marca "Color"',
+                                observa: 'Ahora puedes comparar ventas por categoria Y region'
+                            },
+                            {
+                                instruccion: 'Crea un filtro',
+                                accion: 'Arrastra "Order Date" a Filtros, selecciona "Year" y marca 2023',
+                                observa: 'Los filtros permiten analisis interactivo'
+                            }
+                        ]
+                    },
+                    alternativa: 'Si prefieres no instalar software, puedes explorar dashboards existentes en la Galeria de Tableau Public: https://public.tableau.com/app/discover'
+                }
+            },
+            {
+                id: 6,
+                titulo: 'Conectando los Componentes',
+                duracion: '10 min',
+                tipo: 'sintesis',
+                contenido: {
+                    concepto: 'Ahora que has explorado cada capa individualmente, es momento de ver como se conectan en un sistema completo.',
+                    actividad: {
+                        titulo: 'Mapear el flujo de datos completo',
+                        ejercicio: 'Completa el siguiente diagrama mental con las herramientas que exploraste',
+                        flujo: [
+                            { capa: 'Fuentes', herramienta: 'Kaggle (CSV)', tuRespuesta: '' },
+                            { capa: 'ETL', herramienta: 'Pentaho PDI', tuRespuesta: '' },
+                            { capa: 'Data Warehouse', herramienta: 'Supabase/PostgreSQL', tuRespuesta: '' },
+                            { capa: 'Visualizacion', herramienta: 'Tableau Public', tuRespuesta: '' },
+                        ],
+                        preguntas: [
+                            'Que transformaciones harias en ETL antes de cargar los datos de Kaggle?',
+                            'Como diseniarias las tablas de dimension para el dataset que exploraste?',
+                            'Que visualizaciones crearias para un ejecutivo vs un analista?'
+                        ]
+                    },
+                    resumen: 'En un sistema BI real, los datos fluyen automaticamente: las fuentes alimentan el ETL, el ETL carga el DW, y las herramientas de visualizacion consultan el DW para mostrar dashboards actualizados.'
+                }
+            },
+            {
+                id: 7,
+                titulo: 'Entregable del Laboratorio',
+                duracion: '5 min',
+                tipo: 'entrega',
+                contenido: {
+                    instrucciones: 'Captura evidencia de tu trabajo para la participacion en clase.',
+                    entregables: [
+                        {
+                            item: 'Screenshot de tu esquema en Supabase',
+                            descripcion: 'Muestra las tablas dim_producto y fact_ventas creadas'
+                        },
+                        {
+                            item: 'Screenshot del resultado de la consulta analitica',
+                            descripcion: 'El resultado de la consulta de ventas por categoria'
+                        },
+                        {
+                            item: 'Screenshot de una visualizacion en Tableau',
+                            descripcion: 'Puede ser del Sample Superstore o de la galeria'
+                        }
+                    ],
+                    formato: 'Sube las 3 imagenes a la tarea en el campus virtual o muestralas al docente al final de la sesion.',
+                    evaluacion: 'Este laboratorio cuenta para el 5% de participacion en clase.'
+                }
+            }
+        ];
+
+        // ============================================
+        // COMPONENTE: PASO DEL LABORATORIO
+        // ============================================
+
+        const LabStep = ({ step, isActive, isCompleted, onComplete, onActivate }) => {
+            const tipoColors = {
+                contexto: 'bg-blue-500',
+                exploracion: 'bg-yellow-500',
+                demo: 'bg-purple-500',
+                practica: 'bg-emerald-500',
+                sintesis: 'bg-indigo-500',
+                entrega: 'bg-rose-500'
+            };
+
+            const tipoLabels = {
+                contexto: 'Contexto',
+                exploracion: 'Exploracion',
+                demo: 'Demo',
+                practica: 'Practica',
+                sintesis: 'Sintesis',
+                entrega: 'Entrega'
+            };
+
+            return (
+                <div className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all ${isActive ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <div
+                        className={`p-4 cursor-pointer ${isActive ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+                        onClick={onActivate}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                                    isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                                }`}>
+                                    {isCompleted ? 'OK' : step.id}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-gray-800">{step.titulo}</h3>
+                                        <span className={`px-2 py-0.5 rounded text-xs text-white ${tipoColors[step.tipo]}`}>
+                                            {tipoLabels[step.tipo]}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-500">{step.duracion}</p>
+                                </div>
+                            </div>
+                            <span className="text-gray-400">{isActive ? '▼' : '▶'}</span>
+                        </div>
+                    </div>
+
+                    {isActive && (
+                        <div className="p-6 border-t bg-gray-50">
+                            {/* Contenido segun tipo de paso */}
+                            {step.tipo === 'contexto' && (
+                                <div className="space-y-4">
+                                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                                        <h4 className="font-bold text-blue-800 mb-2">Objetivo del Laboratorio</h4>
+                                        <p className="text-gray-700">{step.contenido.objetivo}</p>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-2">Que aprenderas</h4>
+                                        <ul className="space-y-1">
+                                            {step.contenido.queAprenderas.map((item, idx) => (
+                                                <li key={idx} className="flex items-center gap-2 text-gray-700">
+                                                    <span className="text-green-500">✓</span> {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-2">Prerequisitos</h4>
+                                        <ul className="space-y-1">
+                                            {step.contenido.prerequisitos.map((item, idx) => (
+                                                <li key={idx} className="flex items-center gap-2 text-gray-700">
+                                                    <span className="text-blue-500">•</span> {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                                        <p className="text-amber-800">
+                                            <strong>Nota:</strong> {step.contenido.advertencia}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step.tipo === 'exploracion' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-700">{step.contenido.concepto}</p>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-4">{step.contenido.actividad.titulo}</h4>
+                                        <div className="space-y-4">
+                                            {step.contenido.actividad.pasos.map((paso, idx) => (
+                                                <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                                    <div className="flex items-start gap-3">
+                                                        <span className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800">{paso.instruccion}</p>
+                                                            {paso.url && (
+                                                                <a href={paso.url} target="_blank" rel="noopener noreferrer"
+                                                                   className="text-indigo-600 hover:underline text-sm mt-1 block">
+                                                                    {paso.url}
+                                                                </a>
+                                                            )}
+                                                            <p className="text-sm text-gray-600 mt-1"><strong>Accion:</strong> {paso.accion}</p>
+                                                            <p className="text-sm text-emerald-600 mt-1"><strong>Observa:</strong> {paso.observa}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                                        <p className="text-gray-700 italic">{step.contenido.reflexion}</p>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <p className="font-semibold text-gray-800">Pregunta de reflexion:</p>
+                                        <p className="text-gray-600">{step.contenido.pregunta}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step.tipo === 'demo' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-700">{step.contenido.concepto}</p>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-4">{step.contenido.actividad.titulo}</h4>
+                                        <div className="space-y-4">
+                                            {step.contenido.actividad.pasos.map((paso, idx) => (
+                                                <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                                    <div className="flex items-start gap-3">
+                                                        <span className="bg-purple-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800">{paso.instruccion}</p>
+                                                            {paso.url && (
+                                                                <a href={paso.url} target="_blank" rel="noopener noreferrer"
+                                                                   className="text-purple-600 hover:underline text-sm mt-1 block">
+                                                                    Abrir enlace ↗
+                                                                </a>
+                                                            )}
+                                                            <p className="text-sm text-gray-600 mt-1"><strong>Accion:</strong> {paso.accion}</p>
+                                                            <p className="text-sm text-purple-600 mt-1"><strong>Observa:</strong> {paso.observa}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {step.contenido.diagramaEtl && (
+                                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                            <h4 className="font-bold text-yellow-800 mb-3">Flujo ETL Tipico</h4>
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-center">
+                                                    <p className="font-semibold text-blue-700 mb-2">Entrada</p>
+                                                    {step.contenido.diagramaEtl.entrada.map((item, idx) => (
+                                                        <span key={idx} className="block bg-blue-100 px-2 py-1 rounded text-sm mb-1">{item}</span>
+                                                    ))}
+                                                </div>
+                                                <span className="text-2xl text-yellow-500">→</span>
+                                                <div className="text-center">
+                                                    <p className="font-semibold text-yellow-700 mb-2">Transformacion</p>
+                                                    {step.contenido.diagramaEtl.transformacion.map((item, idx) => (
+                                                        <span key={idx} className="block bg-yellow-100 px-2 py-1 rounded text-sm mb-1">{item}</span>
+                                                    ))}
+                                                </div>
+                                                <span className="text-2xl text-yellow-500">→</span>
+                                                <div className="text-center">
+                                                    <p className="font-semibold text-green-700 mb-2">Salida</p>
+                                                    {step.contenido.diagramaEtl.salida.map((item, idx) => (
+                                                        <span key={idx} className="block bg-green-100 px-2 py-1 rounded text-sm mb-1">{item}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                                        <p className="text-purple-800">{step.contenido.nota}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step.tipo === 'practica' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-700">{step.contenido.concepto}</p>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-4">{step.contenido.actividad.titulo}</h4>
+                                        <div className="space-y-4">
+                                            {step.contenido.actividad.pasos.map((paso, idx) => (
+                                                <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                                    <div className="flex items-start gap-3">
+                                                        <span className="bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800">{paso.instruccion}</p>
+                                                            {paso.url && (
+                                                                <a href={paso.url} target="_blank" rel="noopener noreferrer"
+                                                                   className="text-emerald-600 hover:underline text-sm mt-1 block">
+                                                                    Abrir enlace ↗
+                                                                </a>
+                                                            )}
+                                                            <p className="text-sm text-gray-600 mt-1"><strong>Accion:</strong> {paso.accion}</p>
+                                                            <p className="text-sm text-emerald-600 mt-1"><strong>Observa:</strong> {paso.observa}</p>
+                                                            {paso.codigo && (
+                                                                <pre className="mt-3 bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">
+                                                                    {paso.codigo}
+                                                                </pre>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {step.contenido.reflexion && (
+                                        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+                                            <p className="text-gray-700 italic">{step.contenido.reflexion}</p>
+                                        </div>
+                                    )}
+
+                                    {step.contenido.alternativa && (
+                                        <div className="bg-gray-100 p-4 rounded-lg">
+                                            <p className="text-gray-700"><strong>Alternativa:</strong> {step.contenido.alternativa}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {step.tipo === 'sintesis' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-700">{step.contenido.concepto}</p>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-4">{step.contenido.actividad.titulo}</h4>
+                                        <p className="text-gray-600 mb-4">{step.contenido.actividad.ejercicio}</p>
+
+                                        <div className="space-y-3">
+                                            {step.contenido.actividad.flujo.map((item, idx) => (
+                                                <div key={idx} className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg">
+                                                    <span className="font-semibold text-indigo-700 w-32">{item.capa}:</span>
+                                                    <span className="bg-indigo-100 px-3 py-1 rounded">{item.herramienta}</span>
+                                                    {idx < step.contenido.actividad.flujo.length - 1 && (
+                                                        <span className="text-indigo-300">→</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-3">Preguntas de reflexion</h4>
+                                        {step.contenido.actividad.preguntas.map((pregunta, idx) => (
+                                            <div key={idx} className="flex items-start gap-3 mb-3">
+                                                <span className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                                    {idx + 1}
+                                                </span>
+                                                <p className="text-gray-700">{pregunta}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                                        <p className="text-gray-700">{step.contenido.resumen}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step.tipo === 'entrega' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-700">{step.contenido.instrucciones}</p>
+
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <h4 className="font-bold text-gray-800 mb-4">Entregables requeridos</h4>
+                                        <div className="space-y-3">
+                                            {step.contenido.entregables.map((item, idx) => (
+                                                <div key={idx} className="flex items-start gap-3 bg-rose-50 p-4 rounded-lg">
+                                                    <span className="bg-rose-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                                        {idx + 1}
+                                                    </span>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">{item.item}</p>
+                                                        <p className="text-sm text-gray-600">{item.descripcion}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                                        <p className="text-amber-800"><strong>Formato de entrega:</strong> {step.contenido.formato}</p>
+                                    </div>
+
+                                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                                        <p className="text-green-800"><strong>Evaluacion:</strong> {step.contenido.evaluacion}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-6 flex justify-end">
+                                <button
+                                    onClick={onComplete}
+                                    className={`px-6 py-2 rounded-lg font-medium ${
+                                        isCompleted
+                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                            : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                                    }`}
+                                >
+                                    {isCompleted ? 'Completado ✓' : 'Marcar como completado'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const LaboratorioEcosistemaBI = () => {
+            const [activeStep, setActiveStep] = useState(1);
+            const [completedSteps, setCompletedSteps] = useState({});
+
+            const handleComplete = (stepId) => {
+                setCompletedSteps(prev => ({
+                    ...prev,
+                    [stepId]: true
+                }));
+                // Avanzar al siguiente paso automaticamente
+                if (stepId < laboratorioSteps.length) {
+                    setActiveStep(stepId + 1);
+                }
+            };
+
+            const progreso = Object.keys(completedSteps).length;
+            const porcentaje = (progreso / laboratorioSteps.length) * 100;
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-4xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-2">Laboratorio: Explorando el Ecosistema BI</h1>
+                                    <p className="text-emerald-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Simulador
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        Inicio
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span>Progreso del laboratorio</span>
+                                    <span>{progreso} de {laboratorioSteps.length} pasos completados</span>
+                                </div>
+                                <div className="h-2 bg-white/20 rounded-full">
+                                    <div
+                                        className="h-full bg-white rounded-full transition-all duration-500"
+                                        style={{ width: `${porcentaje}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto space-y-4">
+                        {laboratorioSteps.map((step) => (
+                            <LabStep
+                                key={step.id}
+                                step={step}
+                                isActive={activeStep === step.id}
+                                isCompleted={completedSteps[step.id]}
+                                onComplete={() => handleComplete(step.id)}
+                                onActivate={() => setActiveStep(step.id)}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="max-w-4xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 02</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LaboratorioEcosistemaBI />);
+    </script>
+</body>
+</html>
