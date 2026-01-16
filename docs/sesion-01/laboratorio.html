@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio OLTP: Sistema de Reservas de Gimnasio - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; padding: 16px; color: #e2e8f0; }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3); }
+        .header-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 8px; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .header p { opacity: 0.9; }
+
+        /* Progress */
+        .progress-container { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #334155; }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .progress-title { font-weight: 600; color: #10b981; }
+        .progress-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.5s; border-radius: 4px; }
+        .progress-steps { display: flex; justify-content: space-between; margin-top: 12px; }
+        .progress-step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .progress-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .progress-dot.completed { background: #10b981; color: white; }
+        .progress-dot.active { background: #10b981; color: white; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3); transform: scale(1.1); }
+        .progress-dot.pending { background: #334155; color: #64748b; }
+        .progress-dot:hover { transform: scale(1.1); }
+        .progress-label { font-size: 11px; color: #64748b; text-align: center; max-width: 80px; }
+
+        /* Content Card */
+        .content-card { background: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden; margin-bottom: 20px; }
+        .content-header { padding: 20px 24px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 16px; }
+        .step-number { width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; }
+        .step-info h2 { font-size: 20px; color: #f1f5f9; margin-bottom: 4px; }
+        .step-info p { font-size: 14px; color: #94a3b8; }
+        .step-time { margin-left: auto; background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #10b981; }
+        .content-body { padding: 24px; }
+
+        /* Objectives */
+        .objectives { background: linear-gradient(135deg, #164e63 0%, #155e75 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .objectives h3 { color: #22d3ee; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .objectives ul { list-style: none; }
+        .objectives li { padding: 8px 0; color: #e0f2fe; display: flex; align-items: flex-start; gap: 8px; }
+        .objectives li::before { content: "✓"; color: #22d3ee; font-weight: bold; }
+
+        /* Instructions */
+        .instruction { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #10b981; }
+        .instruction-number { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #10b981; color: white; border-radius: 50%; font-size: 12px; font-weight: bold; margin-right: 12px; }
+        .instruction p { color: #cbd5e1; line-height: 1.6; }
+        .instruction strong { color: #10b981; }
+
+        /* Code Block */
+        .code-block { background: #0f172a; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid #334155; }
+        .code-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #1e293b; border-bottom: 1px solid #334155; }
+        .code-label { font-size: 12px; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .code-label::before { content: ""; width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+        .copy-btn { background: #334155; border: none; color: #94a3b8; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .copy-btn:hover { background: #10b981; color: white; }
+        .copy-btn.copied { background: #10b981; color: white; }
+        .code-content { padding: 16px; overflow-x: auto; }
+        .code-content pre { color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+        .code-content .keyword { color: #f472b6; }
+        .code-content .string { color: #a5f3fc; }
+        .code-content .number { color: #fcd34d; }
+        .code-content .comment { color: #64748b; font-style: italic; }
+        .code-content .table-name { color: #34d399; }
+        .code-content .column { color: #93c5fd; }
+
+        /* Prompt Box */
+        .prompt-box { background: linear-gradient(135deg, #312e81 0%, #3730a3 100%); border-radius: 12px; padding: 20px; margin: 16px 0; border: 2px dashed #6366f1; }
+        .prompt-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .prompt-icon { font-size: 24px; }
+        .prompt-title { color: #a5b4fc; font-weight: 600; }
+        .prompt-content { background: #1e1b4b; border-radius: 8px; padding: 16px; color: #e0e7ff; font-style: italic; line-height: 1.6; }
+        .prompt-tip { margin-top: 12px; font-size: 13px; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
+
+        /* Warning/Info Boxes */
+        .info-box { border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; gap: 12px; }
+        .info-box.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; }
+        .info-box.warning { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; }
+        .info-box.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
+        .info-box.info { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; }
+        .info-icon { font-size: 24px; }
+        .info-content h4 { margin-bottom: 4px; }
+        .info-box.success h4 { color: #10b981; }
+        .info-box.warning h4 { color: #f59e0b; }
+        .info-box.error h4 { color: #ef4444; }
+        .info-box.info h4 { color: #3b82f6; }
+        .info-content p { font-size: 14px; color: #94a3b8; }
+
+        /* Experiment Box */
+        .experiment { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); border-radius: 12px; padding: 20px; margin: 16px 0; }
+        .experiment h4 { color: #fca5a5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .experiment-steps { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 16px; }
+        .experiment-step { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fecaca; }
+        .experiment-step:last-child { border-bottom: none; }
+        .experiment-step strong { color: #fca5a5; }
+        .experiment-result { background: #450a0a; border-radius: 8px; padding: 16px; margin-top: 12px; }
+        .experiment-result p { color: #fecaca; }
+
+        /* Explanation Box */
+        .explanation { background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%); border-radius: 12px; padding: 20px; margin: 16px 0; }
+        .explanation h4 { color: #93c5fd; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .explanation p { color: #bfdbfe; line-height: 1.7; }
+        .explanation .highlight { background: rgba(59, 130, 246, 0.3); padding: 2px 8px; border-radius: 4px; color: #93c5fd; font-weight: 500; }
+
+        /* Navigation */
+        .navigation { display: flex; justify-content: space-between; padding: 20px 0; }
+        .nav-btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn.prev { background: #334155; color: #94a3b8; }
+        .nav-btn.prev:hover:not(:disabled) { background: #475569; color: #e2e8f0; }
+        .nav-btn.next { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .nav-btn.next:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+
+        /* Checklist */
+        .checklist { background: #0f172a; border-radius: 12px; padding: 20px; margin: 16px 0; }
+        .checklist h4 { color: #10b981; margin-bottom: 16px; }
+        .checklist-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1e293b; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .checklist-item:hover { background: #334155; }
+        .checklist-box { width: 24px; height: 24px; border: 2px solid #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .checklist-item.checked .checklist-box { background: #10b981; border-color: #10b981; }
+        .checklist-item.checked .checklist-box::after { content: "✓"; color: white; font-size: 14px; }
+        .checklist-text { color: #94a3b8; }
+        .checklist-item.checked .checklist-text { color: #10b981; text-decoration: line-through; }
+
+        /* Table Preview */
+        .table-preview { background: #0f172a; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid #334155; }
+        .table-preview-header { padding: 12px 16px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+        .table-preview-header span { color: #10b981; font-weight: 600; }
+        .preview-table { width: 100%; border-collapse: collapse; }
+        .preview-table th { background: #334155; padding: 10px 12px; text-align: left; color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .preview-table td { padding: 10px 12px; border-top: 1px solid #334155; color: #e2e8f0; font-size: 13px; }
+        .preview-table tr:hover td { background: rgba(16, 185, 129, 0.05); }
+        .pk { color: #fcd34d; font-weight: 600; }
+        .fk { color: #f472b6; font-weight: 600; }
+
+        /* Diagram */
+        .diagram { background: #0f172a; border-radius: 12px; padding: 24px; margin: 16px 0; border: 1px solid #334155; }
+        .diagram-title { color: #10b981; font-weight: 600; margin-bottom: 16px; text-align: center; }
+        .diagram-content { display: flex; justify-content: center; align-items: center; gap: 24px; flex-wrap: wrap; }
+        .diagram-table { background: #1e293b; border-radius: 8px; padding: 16px; min-width: 150px; border: 2px solid #334155; }
+        .diagram-table.highlight { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+        .diagram-table-name { background: #10b981; color: white; padding: 8px 12px; margin: -16px -16px 12px -16px; border-radius: 6px 6px 0 0; font-weight: 600; text-align: center; }
+        .diagram-field { padding: 6px 0; font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+        .diagram-field.pk { color: #fcd34d; }
+        .diagram-field.fk { color: #f472b6; }
+        .diagram-arrow { color: #10b981; font-size: 24px; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 20px; color: #64748b; font-size: 14px; }
+
+        /* Back Link */
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #94a3b8; text-decoration: none; margin-bottom: 16px; font-size: 14px; transition: color 0.2s; }
+        .back-link:hover { color: #10b981; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .diagram-content { flex-direction: column; }
+            .diagram-arrow { transform: rotate(90deg); }
+            .progress-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        var createElement = React.createElement;
+        var useState = React.useState;
+
+        // SQL Code snippets
+        var sqlCreateTables = `-- =============================================
+-- PASO 1: Crear la estructura del OLTP
+-- Sistema de Reservas de Gimnasio
+-- =============================================
+
+-- Tabla de Miembros (Entidad principal)
+CREATE TABLE miembros (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    telefono VARCHAR(20),
+    tipo_membresia VARCHAR(50) DEFAULT 'Básica',
+    fecha_registro DATE DEFAULT CURRENT_DATE,
+    activo BOOLEAN DEFAULT true
+);
+
+-- Tabla de Clases (Catálogo)
+CREATE TABLE clases (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    instructor VARCHAR(100) NOT NULL,
+    dia_semana VARCHAR(20) NOT NULL,
+    hora_inicio TIME NOT NULL,
+    duracion_minutos INTEGER DEFAULT 60,
+    capacidad_maxima INTEGER DEFAULT 20
+);
+
+-- Tabla de Reservas (Transaccional)
+-- Esta tabla CONECTA miembros con clases
+CREATE TABLE reservas (
+    id SERIAL PRIMARY KEY,
+    miembro_id INTEGER NOT NULL,
+    clase_id INTEGER NOT NULL,
+    fecha_reserva DATE NOT NULL,
+    estado VARCHAR(20) DEFAULT 'confirmada',
+    fecha_creacion TIMESTAMP DEFAULT NOW(),
+
+    -- Foreign Keys (Llaves Foráneas)
+    -- Esto es lo que hace "relacional" a la base de datos
+    FOREIGN KEY (miembro_id) REFERENCES miembros(id),
+    FOREIGN KEY (clase_id) REFERENCES clases(id)
+);`;
+
+        var sqlInsertData = `-- =============================================
+-- PASO 2: Poblar las tablas con datos de ejemplo
+-- =============================================
+
+-- Insertar Miembros
+INSERT INTO miembros (nombre, email, telefono, tipo_membresia) VALUES
+('María García', 'maria@email.com', '555-0101', 'Premium'),
+('Carlos López', 'carlos@email.com', '555-0102', 'Básica'),
+('Ana Martínez', 'ana@email.com', '555-0103', 'Premium'),
+('Pedro Sánchez', 'pedro@email.com', '555-0104', 'Básica'),
+('Laura Torres', 'laura@email.com', '555-0105', 'VIP');
+
+-- Insertar Clases
+INSERT INTO clases (nombre, instructor, dia_semana, hora_inicio, capacidad_maxima) VALUES
+('Yoga Matutino', 'Isabel Ruiz', 'Lunes', '07:00', 15),
+('CrossFit Intenso', 'Miguel Ángel', 'Martes', '18:00', 12),
+('Spinning', 'Carmen Vega', 'Miércoles', '19:00', 20),
+('Pilates', 'Isabel Ruiz', 'Jueves', '10:00', 15),
+('Zumba', 'Rosa Mendez', 'Viernes', '17:00', 25);
+
+-- Insertar Reservas (conectando miembros con clases)
+INSERT INTO reservas (miembro_id, clase_id, fecha_reserva, estado) VALUES
+(1, 1, CURRENT_DATE, 'confirmada'),      -- María -> Yoga
+(1, 3, CURRENT_DATE + 2, 'confirmada'),  -- María -> Spinning
+(2, 2, CURRENT_DATE + 1, 'confirmada'),  -- Carlos -> CrossFit
+(3, 1, CURRENT_DATE, 'confirmada'),      -- Ana -> Yoga
+(4, 5, CURRENT_DATE + 4, 'pendiente'),   -- Pedro -> Zumba
+(5, 2, CURRENT_DATE + 1, 'confirmada'),  -- Laura -> CrossFit
+(3, 4, CURRENT_DATE + 3, 'confirmada');  -- Ana -> Pilates`;
+
+        var sqlTestIntegrity = `-- =============================================
+-- EXPERIMENTO: Probar la Integridad Referencial
+-- =============================================
+
+-- INTENTO 1: Borrar una reserva (FUNCIONARÁ)
+DELETE FROM reservas WHERE id = 5;
+
+-- INTENTO 2: Borrar un miembro CON reservas (FALLARÁ)
+-- Descomenta la siguiente línea para probar:
+-- DELETE FROM miembros WHERE id = 1;
+
+-- ERROR esperado:
+-- "update or delete on table "miembros" violates
+-- foreign key constraint on table "reservas""
+
+-- ESTO ES LA INTEGRIDAD REFERENCIAL EN ACCIÓN
+-- El sistema PROTEGE los datos de quedar huérfanos`;
+
+        var sqlQueryExamples = `-- =============================================
+-- CONSULTAS DE EJEMPLO (para explorar)
+-- =============================================
+
+-- Ver todas las reservas con nombres (JOIN)
+SELECT
+    r.id as reserva_id,
+    m.nombre as miembro,
+    c.nombre as clase,
+    c.instructor,
+    r.fecha_reserva,
+    r.estado
+FROM reservas r
+JOIN miembros m ON r.miembro_id = m.id
+JOIN clases c ON r.clase_id = c.id
+ORDER BY r.fecha_reserva;
+
+-- Contar reservas por clase
+SELECT
+    c.nombre as clase,
+    COUNT(r.id) as total_reservas
+FROM clases c
+LEFT JOIN reservas r ON c.id = r.clase_id
+GROUP BY c.nombre
+ORDER BY total_reservas DESC;
+
+-- Miembros con más reservas
+SELECT
+    m.nombre,
+    m.tipo_membresia,
+    COUNT(r.id) as total_reservas
+FROM miembros m
+LEFT JOIN reservas r ON m.id = r.miembro_id
+GROUP BY m.id, m.nombre, m.tipo_membresia
+ORDER BY total_reservas DESC;`;
+
+        // Components
+        function CodeBlock(props) {
+            var label = props.label;
+            var code = props.code;
+            var copiedArr = useState(false);
+            var copied = copiedArr[0];
+            var setCopied = copiedArr[1];
+
+            function copyCode() {
+                navigator.clipboard.writeText(code).then(function() {
+                    setCopied(true);
+                    setTimeout(function() { setCopied(false); }, 2000);
+                });
+            }
+
+            return createElement('div', { className: 'code-block' },
+                createElement('div', { className: 'code-header' },
+                    createElement('span', { className: 'code-label' }, label),
+                    createElement('button', { className: 'copy-btn' + (copied ? ' copied' : ''), onClick: copyCode }, copied ? '✓ Copiado' : '📋 Copiar')
+                ),
+                createElement('div', { className: 'code-content' },
+                    createElement('pre', null, code)
+                )
+            );
+        }
+
+        function ChecklistItem(props) {
+            var text = props.text;
+            var checked = props.checked;
+            var onClick = props.onClick;
+
+            return createElement('div', { className: 'checklist-item' + (checked ? ' checked' : ''), onClick: onClick },
+                createElement('div', { className: 'checklist-box' }),
+                createElement('span', { className: 'checklist-text' }, text)
+            );
+        }
+
+        // Steps Content
+        function Step0() {
+            return createElement('div', null,
+                createElement('div', { className: 'objectives' },
+                    createElement('h3', null, '🎯 Objetivos del Laboratorio'),
+                    createElement('ul', null,
+                        createElement('li', null, 'Entender qué es un sistema OLTP y por qué es importante'),
+                        createElement('li', null, 'Diseñar una base de datos normalizada desde cero'),
+                        createElement('li', null, 'Experimentar la integridad referencial en acción'),
+                        createElement('li', null, 'Comprender la diferencia entre OLTP y una hoja de Excel')
+                    )
+                ),
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '💡 ¿Qué vamos a construir?'),
+                    createElement('p', null,
+                        'Crearemos un ', createElement('span', { className: 'highlight' }, 'Sistema de Reservas para un Gimnasio'),
+                        '. Este es un caso perfecto para entender OLTP porque involucra:'
+                    ),
+                    createElement('ul', { style: { marginTop: '12px', marginLeft: '20px', color: '#bfdbfe' } },
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Miembros que se registran (entidad)'),
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Clases disponibles (catálogo)'),
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Reservas que conectan miembros con clases (transacciones)')
+                    )
+                ),
+                createElement('div', { className: 'diagram' },
+                    createElement('div', { className: 'diagram-title' }, '📊 Estructura que vamos a crear'),
+                    createElement('div', { className: 'diagram-content' },
+                        createElement('div', { className: 'diagram-table' },
+                            createElement('div', { className: 'diagram-table-name' }, 'miembros'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id (PK)'),
+                            createElement('div', { className: 'diagram-field' }, '📝 nombre'),
+                            createElement('div', { className: 'diagram-field' }, '📧 email'),
+                            createElement('div', { className: 'diagram-field' }, '🏷️ tipo_membresia')
+                        ),
+                        createElement('div', { className: 'diagram-arrow' }, '←'),
+                        createElement('div', { className: 'diagram-table highlight' },
+                            createElement('div', { className: 'diagram-table-name' }, 'reservas'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id (PK)'),
+                            createElement('div', { className: 'diagram-field fk' }, '🔗 miembro_id (FK)'),
+                            createElement('div', { className: 'diagram-field fk' }, '🔗 clase_id (FK)'),
+                            createElement('div', { className: 'diagram-field' }, '📅 fecha_reserva')
+                        ),
+                        createElement('div', { className: 'diagram-arrow' }, '→'),
+                        createElement('div', { className: 'diagram-table' },
+                            createElement('div', { className: 'diagram-table-name' }, 'clases'),
+                            createElement('div', { className: 'diagram-field pk' }, '🔑 id (PK)'),
+                            createElement('div', { className: 'diagram-field' }, '🏋️ nombre'),
+                            createElement('div', { className: 'diagram-field' }, '👤 instructor'),
+                            createElement('div', { className: 'diagram-field' }, '📊 capacidad')
+                        )
+                    )
+                ),
+                createElement('div', { className: 'info-box info' },
+                    createElement('span', { className: 'info-icon' }, '📌'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Conceptos clave que aprenderás'),
+                        createElement('p', null, 'Primary Key (PK): Identificador único de cada registro. Foreign Key (FK): Conexión entre tablas que mantiene la integridad.')
+                    )
+                )
+            );
+        }
+
+        function Step1() {
+            var checksArr = useState([false, false, false, false]);
+            var checks = checksArr[0];
+            var setChecks = checksArr[1];
+
+            function toggleCheck(index) {
+                var newChecks = checks.slice();
+                newChecks[index] = !newChecks[index];
+                setChecks(newChecks);
+            }
+
+            return createElement('div', null,
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Abre tu navegador y ve a ', createElement('strong', null, 'supabase.com')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Crea una cuenta gratuita o inicia sesión si ya tienes una'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Haz clic en ', createElement('strong', null, '"New Project"'), ' y configura:'
+                    ),
+                    createElement('ul', { style: { marginTop: '12px', marginLeft: '36px', color: '#94a3b8' } },
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Nombre: Gym_OLTP'),
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Región: La más cercana a ti'),
+                        createElement('li', { style: { marginBottom: '8px' } }, 'Password: (genera uno seguro y guárdalo)')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '4'),
+                        'Espera ~2 minutos mientras Supabase crea tu proyecto'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '5'),
+                        'En el menú izquierdo, busca el icono de ', createElement('strong', null, '"SQL Editor"'), ' (parece >_)'
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '✅'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Cómo sé que está listo?'),
+                        createElement('p', null, 'Verás un editor de texto donde puedes escribir comandos SQL. El proyecto mostrará un punto verde indicando que está activo.')
+                    )
+                ),
+                createElement('div', { className: 'checklist' },
+                    createElement('h4', null, '✓ Lista de verificación'),
+                    ChecklistItem({ text: 'Cuenta de Supabase creada', checked: checks[0], onClick: function() { toggleCheck(0); } }),
+                    ChecklistItem({ text: 'Proyecto "Gym_OLTP" creado', checked: checks[1], onClick: function() { toggleCheck(1); } }),
+                    ChecklistItem({ text: 'Proyecto activo (punto verde)', checked: checks[2], onClick: function() { toggleCheck(2); } }),
+                    ChecklistItem({ text: 'SQL Editor abierto', checked: checks[3], onClick: function() { toggleCheck(3); } })
+                )
+            );
+        }
+
+        function Step2() {
+            return createElement('div', null,
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '🧠 ¿Por qué usamos IA para generar el esquema?'),
+                    createElement('p', null,
+                        'En el mundo real, los arquitectos de datos diseñan esquemas. Pero para aprender, usar IA como ',
+                        createElement('span', { className: 'highlight' }, 'Gemini o ChatGPT'),
+                        ' nos ayuda a ver cómo un problema se traduce a tablas relacionales. Es como tener un tutor que te muestra el "cómo".'
+                    )
+                ),
+                createElement('div', { className: 'prompt-box' },
+                    createElement('div', { className: 'prompt-header' },
+                        createElement('span', { className: 'prompt-icon' }, '🤖'),
+                        createElement('span', { className: 'prompt-title' }, 'Prompt para Gemini/ChatGPT')
+                    ),
+                    createElement('div', { className: 'prompt-content' },
+                        '"Hola, estoy aprendiendo sobre OLTP. Necesito crear una base de datos en Supabase (PostgreSQL) para un gimnasio. Genera el código SQL para crear 3 tablas normalizadas: 1) \'miembros\' (con nombre, email y tipo de membresía). 2) \'clases\' (nombre de clase, instructor y capacidad). 3) \'reservas\' (la tabla que conecta miembros con clases, con fecha). Incluye las llaves primarias (Primary Keys) y foráneas (Foreign Keys) para que sea un sistema relacional real."'
+                    ),
+                    createElement('div', { className: 'prompt-tip' },
+                        '💡 Tip: Puedes modificar el prompt para agregar más campos según tu creatividad'
+                    )
+                ),
+                createElement('div', { className: 'info-box warning' },
+                    createElement('span', { className: 'info-icon' }, '⚠️'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Alternativa: Usa este código directamente'),
+                        createElement('p', null, 'Si no tienes acceso a Gemini, puedes usar el código SQL que preparamos en el siguiente paso. El resultado será similar.')
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '→'),
+                        'Analiza el código que te genera la IA. Observa cómo cada tabla tiene un ', createElement('strong', null, 'id'), ' único y cómo ', createElement('strong', null, 'reservas'), ' usa ', createElement('strong', null, 'FOREIGN KEY'), ' para conectarse con las otras tablas.'
+                    )
+                )
+            );
+        }
+
+        function Step3() {
+            return createElement('div', null,
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Copia el siguiente código SQL (o el que generó tu IA)'
+                    )
+                ),
+                CodeBlock({ label: 'SQL - Crear Estructura de Tablas', code: sqlCreateTables }),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Pégalo en el ', createElement('strong', null, 'SQL Editor'), ' de Supabase'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Haz clic en el botón ', createElement('strong', null, '"Run"'), ' (o presiona Ctrl+Enter)'
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '✅'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Cómo verifico que funcionó?'),
+                        createElement('p', null, 'Ve al icono de "Table Editor" (la cuadrícula) en el menú izquierdo. Deberías ver 3 tablas: miembros, clases y reservas. ¡Están vacías, pero existen!')
+                    )
+                ),
+                createElement('div', { className: 'diagram' },
+                    createElement('div', { className: 'diagram-title' }, '🔍 Lo que debes ver en Table Editor'),
+                    createElement('div', { style: { display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' } },
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' } },
+                            createElement('span', null, '📋'),
+                            createElement('span', null, 'miembros'),
+                            createElement('span', { style: { color: '#64748b', fontSize: '12px' } }, '(0 rows)')
+                        ),
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' } },
+                            createElement('span', null, '📋'),
+                            createElement('span', null, 'clases'),
+                            createElement('span', { style: { color: '#64748b', fontSize: '12px' } }, '(0 rows)')
+                        ),
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' } },
+                            createElement('span', null, '📋'),
+                            createElement('span', null, 'reservas'),
+                            createElement('span', { style: { color: '#64748b', fontSize: '12px' } }, '(0 rows)')
+                        )
+                    )
+                )
+            );
+        }
+
+        function Step4() {
+            return createElement('div', null,
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '💾 Simulando Transacciones Reales'),
+                    createElement('p', null,
+                        'Ahora vamos a "darle vida" al sistema insertando datos. En un gimnasio real, estos datos vendrían de la app cuando un usuario se registra o hace una reserva. Nosotros los insertaremos manualmente para simular ese proceso.'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '1'),
+                        'Copia el siguiente código SQL'
+                    )
+                ),
+                CodeBlock({ label: 'SQL - Insertar Datos de Ejemplo', code: sqlInsertData }),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '2'),
+                        'Pégalo en el SQL Editor (puedes limpiar el anterior o crear una nueva query)'
+                    )
+                ),
+                createElement('div', { className: 'instruction' },
+                    createElement('p', null,
+                        createElement('span', { className: 'instruction-number' }, '3'),
+                        'Ejecuta con ', createElement('strong', null, '"Run"')
+                    )
+                ),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '✅'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Cómo verifico?'),
+                        createElement('p', null, 'Ve al Table Editor y haz clic en cada tabla. Ahora deberías ver datos: 5 miembros, 5 clases, y 7 reservas.')
+                    )
+                ),
+                createElement('div', { className: 'table-preview' },
+                    createElement('div', { className: 'table-preview-header' },
+                        createElement('span', null, '📋'),
+                        createElement('span', null, 'Vista previa: tabla miembros')
+                    ),
+                    createElement('table', { className: 'preview-table' },
+                        createElement('thead', null,
+                            createElement('tr', null,
+                                createElement('th', null, 'id'),
+                                createElement('th', null, 'nombre'),
+                                createElement('th', null, 'email'),
+                                createElement('th', null, 'tipo_membresia')
+                            )
+                        ),
+                        createElement('tbody', null,
+                            createElement('tr', null,
+                                createElement('td', { className: 'pk' }, '1'),
+                                createElement('td', null, 'María García'),
+                                createElement('td', null, 'maria@email.com'),
+                                createElement('td', null, 'Premium')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', { className: 'pk' }, '2'),
+                                createElement('td', null, 'Carlos López'),
+                                createElement('td', null, 'carlos@email.com'),
+                                createElement('td', null, 'Básica')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', { className: 'pk' }, '3'),
+                                createElement('td', null, 'Ana Martínez'),
+                                createElement('td', null, 'ana@email.com'),
+                                createElement('td', null, 'Premium')
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        function Step5() {
+            return createElement('div', null,
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '🔬 El Experimento Crucial'),
+                    createElement('p', null,
+                        'Este es el momento más importante del laboratorio. Vamos a intentar ',
+                        createElement('span', { className: 'highlight' }, 'romper la base de datos'),
+                        ' para ver cómo nos protege. Esto es lo que diferencia a un OLTP de Excel.'
+                    )
+                ),
+                createElement('div', { className: 'experiment' },
+                    createElement('h4', null, '🧪 Experimento: Integridad Referencial'),
+                    createElement('div', { className: 'experiment-steps' },
+                        createElement('div', { className: 'experiment-step' },
+                            createElement('strong', null, 'Prueba 1: '), 'Ve a la tabla ', createElement('strong', null, 'reservas'), ' en el Table Editor. Selecciona cualquier fila y bórrala (icono de basura). ', createElement('span', { style: { color: '#4ade80' } }, '→ Funcionará sin problemas ✓')
+                        ),
+                        createElement('div', { className: 'experiment-step' },
+                            createElement('strong', null, 'Prueba 2: '), 'Ahora ve a la tabla ', createElement('strong', null, 'miembros'), '. Intenta borrar a "María García" (id=1), quien tiene reservas activas.'
+                        ),
+                        createElement('div', { className: 'experiment-step' },
+                            createElement('strong', null, 'Prueba 3 (SQL): '), 'O ejecuta este código en el SQL Editor:'
+                        )
+                    ),
+                    CodeBlock({ label: 'SQL - Probar Integridad', code: sqlTestIntegrity }),
+                    createElement('div', { className: 'experiment-result' },
+                        createElement('p', null,
+                            createElement('strong', null, '❌ Resultado esperado: '),
+                            'ERROR - "violates foreign key constraint"'
+                        )
+                    )
+                ),
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '🎓 ¿Por qué es tan importante?'),
+                    createElement('p', null,
+                        'En ', createElement('span', { className: 'highlight' }, 'Excel'), ', podrías borrar a María y dejar sus reservas "huérfanas", apuntando a un usuario que ya no existe. Eso genera datos inconsistentes, reportes erróneos y decisiones basadas en información falsa.'
+                    ),
+                    createElement('p', { style: { marginTop: '12px' } },
+                        'En un ', createElement('span', { className: 'highlight' }, 'OLTP'), ', el sistema PROTEGE la verdad de los datos. No permite operaciones que rompan las relaciones. Esta es la ', createElement('strong', null, 'Integridad Referencial'), ' en acción.'
+                    )
+                ),
+                createElement('div', { className: 'info-box info' },
+                    createElement('span', { className: 'info-icon' }, '💡'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, '¿Y si necesito borrar al miembro?'),
+                        createElement('p', null, 'Primero debes borrar todas sus reservas, o usar CASCADE DELETE (que borra automáticamente las reservas relacionadas). Esto es una decisión de diseño consciente.')
+                    )
+                )
+            );
+        }
+
+        function Step6() {
+            return createElement('div', null,
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '🔍 Explorando con JOINs'),
+                    createElement('p', null,
+                        'El verdadero poder de un OLTP está en poder ',
+                        createElement('span', { className: 'highlight' }, 'combinar información de múltiples tablas'),
+                        '. Esto se hace con JOINs. Aquí tienes consultas de ejemplo para explorar:'
+                    )
+                ),
+                CodeBlock({ label: 'SQL - Consultas de Exploración', code: sqlQueryExamples }),
+                createElement('div', { className: 'info-box success' },
+                    createElement('span', { className: 'info-icon' }, '🎯'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Desafío Extra'),
+                        createElement('p', null, 'Intenta escribir una consulta que muestre: "¿Cuántas reservas tiene cada tipo de membresía?"')
+                    )
+                ),
+                createElement('div', { className: 'table-preview' },
+                    createElement('div', { className: 'table-preview-header' },
+                        createElement('span', null, '📊'),
+                        createElement('span', null, 'Resultado esperado del primer JOIN')
+                    ),
+                    createElement('table', { className: 'preview-table' },
+                        createElement('thead', null,
+                            createElement('tr', null,
+                                createElement('th', null, 'reserva_id'),
+                                createElement('th', null, 'miembro'),
+                                createElement('th', null, 'clase'),
+                                createElement('th', null, 'instructor'),
+                                createElement('th', null, 'estado')
+                            )
+                        ),
+                        createElement('tbody', null,
+                            createElement('tr', null,
+                                createElement('td', null, '1'),
+                                createElement('td', null, 'María García'),
+                                createElement('td', null, 'Yoga Matutino'),
+                                createElement('td', null, 'Isabel Ruiz'),
+                                createElement('td', null, 'confirmada')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, '2'),
+                                createElement('td', null, 'María García'),
+                                createElement('td', null, 'Spinning'),
+                                createElement('td', null, 'Carmen Vega'),
+                                createElement('td', null, 'confirmada')
+                            ),
+                            createElement('tr', null,
+                                createElement('td', null, '3'),
+                                createElement('td', null, 'Carlos López'),
+                                createElement('td', null, 'CrossFit Intenso'),
+                                createElement('td', null, 'Miguel Ángel'),
+                                createElement('td', null, 'confirmada')
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        function Step7() {
+            return createElement('div', null,
+                createElement('div', { className: 'objectives', style: { background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)' } },
+                    createElement('h3', { style: { color: '#6ee7b7' } }, '🎉 ¡Felicitaciones!'),
+                    createElement('p', { style: { color: '#a7f3d0', fontSize: '16px', marginBottom: '16px' } }, 'Has completado tu primer laboratorio de OLTP. Esto es lo que lograste:'),
+                    createElement('ul', null,
+                        createElement('li', null, 'Diseñaste una base de datos normalizada con 3 tablas relacionadas'),
+                        createElement('li', null, 'Entendiste la diferencia entre Primary Keys y Foreign Keys'),
+                        createElement('li', null, 'Experimentaste la Integridad Referencial en acción'),
+                        createElement('li', null, 'Ejecutaste JOINs para combinar información de múltiples tablas')
+                    )
+                ),
+                createElement('div', { className: 'explanation' },
+                    createElement('h4', null, '📝 Reflexión Final'),
+                    createElement('p', null, 'Este sistema de gimnasio es un ejemplo simplificado, pero los principios son los mismos que usa Netflix para manejar 230 millones de usuarios, o Amazon para procesar millones de pedidos por día.'),
+                    createElement('p', { style: { marginTop: '12px' } },
+                        createElement('strong', null, 'OLTP'), ' = Donde nacen los datos (transacciones en tiempo real)',
+                        createElement('br'),
+                        createElement('strong', null, 'OLAP'), ' = Donde se analizan los datos (después del ETL)'
+                    )
+                ),
+                createElement('div', { className: 'info-box info' },
+                    createElement('span', { className: 'info-icon' }, '🚀'),
+                    createElement('div', { className: 'info-content' },
+                        createElement('h4', null, 'Próximo Paso'),
+                        createElement('p', null, 'En la siguiente sesión, aprenderás a transformar estos datos OLTP en un Data Warehouse (OLAP) usando procesos ETL. ¡Ahí es donde comienza el verdadero Business Intelligence!')
+                    )
+                ),
+                createElement('div', { className: 'diagram' },
+                    createElement('div', { className: 'diagram-title' }, '🔄 El Ciclo Completo de BI'),
+                    createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' } },
+                        createElement('div', { style: { background: '#10b981', padding: '16px 24px', borderRadius: '8px', color: 'white', fontWeight: 'bold' } }, '✅ OLTP (Hoy)'),
+                        createElement('span', { style: { color: '#10b981', fontSize: '24px' } }, '→'),
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', color: '#94a3b8' } }, 'ETL'),
+                        createElement('span', { style: { color: '#64748b', fontSize: '24px' } }, '→'),
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', color: '#94a3b8' } }, 'OLAP'),
+                        createElement('span', { style: { color: '#64748b', fontSize: '24px' } }, '→'),
+                        createElement('div', { style: { background: '#334155', padding: '16px 24px', borderRadius: '8px', color: '#94a3b8' } }, 'Dashboards')
+                    )
+                )
+            );
+        }
+
+        // Main App
+        function App() {
+            var stepArr = useState(0);
+            var currentStep = stepArr[0];
+            var setCurrentStep = stepArr[1];
+
+            var steps = [
+                { num: 0, title: 'Introducción', time: '5 min', emoji: '📋' },
+                { num: 1, title: 'Configurar Supabase', time: '5 min', emoji: '⚙️' },
+                { num: 2, title: 'Diseño con IA', time: '5 min', emoji: '🤖' },
+                { num: 3, title: 'Crear Tablas', time: '10 min', emoji: '🏗️' },
+                { num: 4, title: 'Insertar Datos', time: '10 min', emoji: '💾' },
+                { num: 5, title: 'Experimento', time: '10 min', emoji: '🧪' },
+                { num: 6, title: 'Explorar JOINs', time: '10 min', emoji: '🔍' },
+                { num: 7, title: 'Conclusión', time: '5 min', emoji: '🎉' }
+            ];
+
+            var stepComponents = [Step0, Step1, Step2, Step3, Step4, Step5, Step6, Step7];
+
+            function renderCurrentStep() {
+                var StepComponent = stepComponents[currentStep];
+                return createElement(StepComponent);
+            }
+
+            return createElement('div', { className: 'container' },
+                createElement('a', { href: './', className: 'back-link' }, '← Volver al Simulador'),
+                createElement('div', { className: 'header' },
+                    createElement('div', { className: 'header-badge' }, 'Laboratorio Práctico - Sesión 01'),
+                    createElement('h1', null, '🏋️ Mi Primer Motor OLTP'),
+                    createElement('p', null, 'Sistema de Reservas de Gimnasio con Supabase')
+                ),
+                createElement('div', { className: 'progress-container' },
+                    createElement('div', { className: 'progress-header' },
+                        createElement('span', { className: 'progress-title' }, 'Progreso del Laboratorio'),
+                        createElement('span', null, 'Paso ' + (currentStep + 1) + ' de ' + steps.length)
+                    ),
+                    createElement('div', { className: 'progress-bar' },
+                        createElement('div', { className: 'progress-fill', style: { width: ((currentStep + 1) / steps.length * 100) + '%' } })
+                    ),
+                    createElement('div', { className: 'progress-steps' },
+                        steps.map(function(s, i) {
+                            var dotClass = 'progress-dot ';
+                            if (i < currentStep) dotClass += 'completed';
+                            else if (i === currentStep) dotClass += 'active';
+                            else dotClass += 'pending';
+
+                            return createElement('div', { key: i, className: 'progress-step' },
+                                createElement('div', { className: dotClass, onClick: function() { setCurrentStep(i); } }, i < currentStep ? '✓' : s.emoji),
+                                createElement('span', { className: 'progress-label' }, s.title)
+                            );
+                        })
+                    )
+                ),
+                createElement('div', { className: 'content-card' },
+                    createElement('div', { className: 'content-header' },
+                        createElement('div', { className: 'step-number' }, steps[currentStep].emoji),
+                        createElement('div', { className: 'step-info' },
+                            createElement('h2', null, 'Paso ' + (currentStep + 1) + ': ' + steps[currentStep].title),
+                            createElement('p', null, 'Laboratorio OLTP - Sistema de Gimnasio')
+                        ),
+                        createElement('div', { className: 'step-time' }, '⏱️ ' + steps[currentStep].time)
+                    ),
+                    createElement('div', { className: 'content-body' },
+                        renderCurrentStep()
+                    )
+                ),
+                createElement('div', { className: 'navigation' },
+                    createElement('button', {
+                        className: 'nav-btn prev',
+                        disabled: currentStep === 0,
+                        onClick: function() { setCurrentStep(currentStep - 1); }
+                    }, '← Anterior'),
+                    createElement('button', {
+                        className: 'nav-btn next',
+                        disabled: currentStep === steps.length - 1,
+                        onClick: function() { setCurrentStep(currentStep + 1); }
+                    }, currentStep === steps.length - 1 ? '🎉 ¡Completado!' : 'Siguiente →')
+                ),
+                createElement('div', { className: 'footer' },
+                    'ADEN University - Taller de Tecnología Aplicada - Sesión 01: Introducción al Business Intelligence'
+                )
+            );
+        }
+
+        // Render
+        var root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(createElement(App));
+    })();
+    </script>
+</body>
+</html>

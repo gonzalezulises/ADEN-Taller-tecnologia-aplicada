@@ -11,9 +11,10 @@ Accede a los simuladores y herramientas interactivas del curso:
 
 **[👉 Ver Recursos Interactivos](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/)**
 
-| Sesion | Recurso | Descripcion |
-|--------|---------|-------------|
-| 01 | [Simulador OLTP vs OLAP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/) | Ciclo del dato, modelos de datos, comparativa interactiva |
+| Sesion | Tipo | Recurso | Descripcion |
+|--------|------|---------|-------------|
+| 01 | Simulador | [OLTP vs OLAP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/) | Ciclo del dato, modelos de datos, comparativa interactiva |
+| 01 | Laboratorio | [Sistema de Gimnasio OLTP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/laboratorio.html) | Crea tu primer motor OLTP con Supabase |
 
 ## Documentacion
 
