@@ -7,16 +7,17 @@ meta:
   course_code: CT ING 027
   institution: ADEN University
   last_updated: 2026-01-16
-  last_session_worked: session-02
+  last_session_worked: session-14
   total_sessions: 14
   sessions_with_content: 14
-  sessions_with_interactive_materials: 2
+  sessions_with_interactive_materials: 14
   project_phases_defined: 4
+  course_materials_status: complete
 
 # Fechas del calendario academico
 calendar:
   start_date: 2026-01-16
-  end_date: TBD
+  end_date: 2026-04-17
   sessions:
     - id: sesion-01
       date: 2026-01-16
@@ -34,40 +35,88 @@ calendar:
         - ejercicio_mapear_arquitectura_ia
     - id: sesion-03
       date: 2026-01-30
-      status: planned
+      status: materials_created
+      interactive_resources:
+        - simulador_kpis_metricas
+        - laboratorio_kpi_canvas
+        - ejercicio_definir_kpis_ia
     - id: sesion-04
       date: 2026-02-06
-      status: planned
+      status: materials_created
+      interactive_resources:
+        - simulador_modelado_dimensional
+        - laboratorio_esquema_estrella
+        - ejercicio_proyecto_fase1_ia
     - id: sesion-05
       date: 2026-02-13
-      status: planned
+      status: materials_created
+      interactive_resources:
+        - simulador_olap_etl
+        - laboratorio_operaciones_olap
+        - ejercicio_proceso_etl_ia
     - id: sesion-06
-      date: 2026-02-27
-      status: planned
+      date: 2026-02-20
+      status: materials_created
+      interactive_resources:
+        - simulador_pentaho_pdi
+        - laboratorio_etl_retail
+        - ejercicio_etl_proyecto_ia
     - id: sesion-07
-      date: 2026-03-06
-      status: planned
+      date: 2026-02-27
+      status: materials_created
+      interactive_resources:
+        - simulador_crisp_dm_eda
+        - laboratorio_eda_python
+        - ejercicio_eda_proyecto_ia
     - id: sesion-08
-      date: 2026-03-13
-      status: planned
+      date: 2026-03-06
+      status: materials_created
+      interactive_resources:
+        - simulador_clustering_clasificacion
+        - laboratorio_kmeans_decision_tree
+        - ejercicio_proyecto_fase2_ia
     - id: sesion-09
-      date: 2026-03-20
-      status: planned
+      date: 2026-03-13
+      status: materials_created
+      interactive_resources:
+        - simulador_big_data_5vs
+        - laboratorio_arquitecturas_distribuidas
+        - ejercicio_evaluacion_big_data_ia
     - id: sesion-10
-      date: 2026-03-27
-      status: planned
+      date: 2026-03-20
+      status: materials_created
+      interactive_resources:
+        - simulador_visualizacion_principios
+        - laboratorio_dashboard_design
+        - ejercicio_mockup_dashboard_ia
     - id: sesion-11
-      date: 2026-04-03
-      status: planned
+      date: 2026-03-27
+      status: materials_created
+      interactive_resources:
+        - simulador_tableau_desktop
+        - laboratorio_dashboard_interactivo
+        - ejercicio_proyecto_fase3_ia
     - id: sesion-12
-      date: 2026-04-11
-      status: planned
+      date: 2026-04-03
+      status: materials_created
+      interactive_resources:
+        - simulador_data_storytelling
+        - laboratorio_presentacion_ejecutiva
+        - ejercicio_data_story_ia
     - id: sesion-13
-      date: TBD
-      status: planned
+      date: 2026-04-10
+      status: materials_created
+      interactive_resources:
+        - simulador_estrategias_bi
+        - laboratorio_plan_implementacion
+        - ejercicio_proyecto_fase4_ia
     - id: sesion-14
-      date: TBD
-      status: planned
+      date: 2026-04-17
+      status: materials_created
+      interactive_resources:
+        - guia_presentaciones_finales
+        - laboratorio_preparacion_final
+        - ejercicio_evaluacion_cierre
 
 # Progresion pedagogica explicita - que se ensena en cada sesion
 learning_progression:
@@ -152,6 +201,8 @@ learning_progression:
       - narrativa_visual
       - presentaciones_ejecutivas
       - comunicacion_insights
+      - estructuras_narrativas
+      - audiencia_analisis
     sesion-13:
       - madurez_bi
       - niveles_adopcion
@@ -159,11 +210,17 @@ learning_progression:
       - dama_framework
       - change_management
       - tendencias_bi_cloud
+      - metodologias_implementacion
+      - factores_criticos_exito
+      - gestion_riesgos_bi
     sesion-14:
       - roadmap_implementacion
       - calculo_roi
       - pitch_ejecutivo
       - integracion_proyecto
+      - evaluacion_pares
+      - reflexion_aprendizaje
+      - proximos_pasos_bi
 
   # Prerequisitos por sesion - que debe saber el estudiante antes
   skills_assumed:
@@ -322,7 +379,7 @@ materials_registry:
     guided_lab: true
     individual_exercise_ai: true
     datasets: false
-    quiz: true  # Quiz integrado en el simulador
+    quiz: true
     urls:
       simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/"
       lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-02/laboratorio.html"
@@ -330,75 +387,147 @@ materials_registry:
   sesion-03:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-03/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-03/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-03/ejercicio-individual.html"
   sesion-04:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-04/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-04/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-04/ejercicio-individual.html"
   sesion-05:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-05/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-05/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-05/ejercicio-individual.html"
   sesion-06:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-06/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-06/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-06/ejercicio-individual.html"
   sesion-07:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-07/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-07/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-07/ejercicio-individual.html"
   sesion-08:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-08/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-08/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-08/ejercicio-individual.html"
   sesion-09:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-09/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-09/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-09/ejercicio-individual.html"
   sesion-10:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-10/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-10/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-10/ejercicio-individual.html"
   sesion-11:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-11/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-11/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-11/ejercicio-individual.html"
   sesion-12:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
-    quiz: false
+    quiz: true
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-12/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-12/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-12/ejercicio-individual.html"
   sesion-13:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-13/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-13/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-13/ejercicio-individual.html"
   sesion-14:
     readme: true
     slides: false
-    exercises: false
+    interactive_simulator: true
+    guided_lab: true
+    individual_exercise_ai: true
     datasets: false
     quiz: false
+    urls:
+      simulator: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-14/"
+      lab: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-14/laboratorio.html"
+      exercise: "https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-14/ejercicio-individual.html"
 
 # Proyecto integrador - estado por fase
 project_phases:
@@ -406,7 +535,7 @@ project_phases:
     title: "Analisis de necesidades + Diseno DW"
     weight: 15%
     delivery_session: sesion-04
-    status: defined
+    status: materials_ready
     deliverables:
       - documento_analisis_necesidades
       - modelo_dimensional_estrella
@@ -415,7 +544,7 @@ project_phases:
     title: "Implementacion ETL + Data Mining"
     weight: 15%
     delivery_session: sesion-08
-    status: defined
+    status: materials_ready
     deliverables:
       - notebook_python
       - resultados_clustering
@@ -424,7 +553,7 @@ project_phases:
     title: "Dashboard interactivo Tableau"
     weight: 20%
     delivery_session: sesion-12
-    status: defined
+    status: materials_ready
     deliverables:
       - dashboard_tableau_twbx
       - presentacion_oral
@@ -433,7 +562,7 @@ project_phases:
     title: "Roadmap de implementacion BI"
     weight: 15%
     delivery_session: sesion-14
-    status: defined
+    status: materials_ready
     deliverables:
       - roadmap_documento
       - calculo_roi
@@ -476,34 +605,42 @@ datasets:
     sessions: [3, 4, 5, 6, 10, 11, 12]
     columns: [fecha, producto_id, cliente_id, cantidad, monto, region]
     purpose: "KPIs, modelado dimensional, dashboards"
+    status: pending
 
   clientes_segmentacion:
     sessions: [7, 8]
     columns: [cliente_id, edad, ingresos, frecuencia_compra, ticket_promedio]
     purpose: "Clustering K-means"
+    status: pending
 
   productos_clasificacion:
     sessions: [8]
     columns: [producto_id, categoria, precio, rotacion, margen, es_rentable]
     purpose: "Decision Tree classification"
+    status: pending
 
 # Proximas tareas pendientes - actualizar segun avance
 next_tasks:
   - description: "Crear datasets CSV para las sesiones"
     priority: high
     sessions_affected: [3, 4, 7, 8]
+    status: pending
   - description: "Crear slides de presentacion por sesion"
-    priority: medium
+    priority: low
     sessions_affected: all
-  - description: "Crear quizzes formativos por unidad"
-    priority: medium
-    sessions_affected: [5, 8, 10, 12, 14]
-  - description: "Crear rubricas detalladas del proyecto"
-    priority: medium
-    sessions_affected: [4, 8, 12, 14]
+    status: optional
   - description: "Preparar notebooks Jupyter de ejemplo"
-    priority: high
+    priority: medium
     sessions_affected: [7, 8, 9]
+    status: pending
+
+# Materiales completados
+completed_materials:
+  interactive_simulators: 14
+  guided_labs: 14
+  individual_exercises_ai: 14
+  main_index: true
+  total_html_files: 42
 
 # Notas de implementacion
 implementation_notes:
@@ -521,6 +658,14 @@ implementation_notes:
     note: "Cambio de herramienta BI: Power BI reemplazado por Tableau en el stack del curso"
   - date: 2026-01-16
     note: "GitHub Pages configurado y funcionando para recursos interactivos"
+  - date: 2026-01-16
+    note: "Sesiones 03-14 completadas - 36 archivos HTML interactivos creados"
+  - date: 2026-01-16
+    note: "Curso completo: 14 sesiones x 3 materiales = 42 recursos interactivos"
+  - date: 2026-01-16
+    note: "Stack tecnologico: React 18 + Babel + Tailwind CSS via CDN"
+  - date: 2026-01-16
+    note: "Indice principal actualizado con todas las 14 sesiones"
 
 ---
 # FIN DEL CONTRATO
