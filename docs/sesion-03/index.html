@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPIs y Metricas de Desempeno - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .smart-letter { transition: all 0.3s ease; }
+        .smart-letter:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DE KPIs
+        // ============================================
+
+        const kpisEjemplos = {
+            retail: [
+                { nombre: 'Ventas por Metro Cuadrado', formula: 'Ventas Totales / Metros Cuadrados', benchmark: '$5,000 - $8,000/m2', tipo: 'Eficiencia' },
+                { nombre: 'Conversion Rate', formula: 'Compradores / Visitantes * 100', benchmark: '20-30%', tipo: 'Comercial' },
+                { nombre: 'Ticket Promedio', formula: 'Ventas Totales / Numero de Transacciones', benchmark: '$45-$75', tipo: 'Comercial' },
+                { nombre: 'Rotacion de Inventario', formula: 'Costo de Ventas / Inventario Promedio', benchmark: '8-12 veces/ano', tipo: 'Operacional' },
+                { nombre: 'Shrinkage Rate', formula: 'Perdidas / Inventario Total * 100', benchmark: '<1.5%', tipo: 'Operacional' },
+            ],
+            banca: [
+                { nombre: 'ROE', formula: 'Utilidad Neta / Patrimonio * 100', benchmark: '12-18%', tipo: 'Financiero' },
+                { nombre: 'Ratio de Morosidad', formula: 'Cartera Vencida / Cartera Total * 100', benchmark: '<3%', tipo: 'Riesgo' },
+                { nombre: 'Costo por Transaccion', formula: 'Costos Operativos / Num Transacciones', benchmark: '$0.50-$2.00', tipo: 'Eficiencia' },
+                { nombre: 'NPS', formula: 'Promotores - Detractores', benchmark: '>40', tipo: 'Cliente' },
+                { nombre: 'Tiempo de Aprobacion', formula: 'Promedio dias aprobacion credito', benchmark: '<3 dias', tipo: 'Operacional' },
+            ],
+            tecnologia: [
+                { nombre: 'MRR', formula: 'Suma de ingresos recurrentes mensuales', benchmark: 'Crecimiento >10% MoM', tipo: 'Financiero' },
+                { nombre: 'Churn Rate', formula: 'Clientes perdidos / Clientes inicio * 100', benchmark: '<5% mensual', tipo: 'Cliente' },
+                { nombre: 'CAC', formula: 'Costos Marketing+Ventas / Nuevos Clientes', benchmark: '<1/3 del LTV', tipo: 'Comercial' },
+                { nombre: 'LTV', formula: 'ARPU * Meses de vida promedio', benchmark: '>3x CAC', tipo: 'Cliente' },
+                { nombre: 'Uptime', formula: 'Tiempo disponible / Tiempo total * 100', benchmark: '>99.9%', tipo: 'Operacional' },
+            ],
+            salud: [
+                { nombre: 'Ocupacion de Camas', formula: 'Dias Cama Ocupados / Dias Cama Disponibles * 100', benchmark: '75-85%', tipo: 'Operacional' },
+                { nombre: 'Tiempo Espera Urgencias', formula: 'Promedio minutos hasta atencion', benchmark: '<30 min', tipo: 'Calidad' },
+                { nombre: 'Tasa de Readmision', formula: 'Readmisiones 30 dias / Altas * 100', benchmark: '<10%', tipo: 'Calidad' },
+                { nombre: 'Satisfaccion del Paciente', formula: 'Encuesta post-atencion', benchmark: '>85%', tipo: 'Cliente' },
+                { nombre: 'Costo por Paciente', formula: 'Costos Totales / Pacientes Atendidos', benchmark: 'Benchmark regional', tipo: 'Financiero' },
+            ],
+        };
+
+        const smartCriteria = [
+            { letra: 'S', nombre: 'Specific', espanol: 'Especifico', descripcion: 'Claro y bien definido, sin ambiguedades', pregunta: 'Que exactamente queremos lograr?', ejemplo: { mal: 'Aumentar ventas', bien: 'Aumentar ventas del producto X en la region Sur' } },
+            { letra: 'M', nombre: 'Measurable', espanol: 'Medible', descripcion: 'Cuantificable con numeros concretos', pregunta: 'Como sabremos que lo logramos?', ejemplo: { mal: 'Mejorar satisfaccion', bien: 'Alcanzar NPS de 45 puntos' } },
+            { letra: 'A', nombre: 'Achievable', espanol: 'Alcanzable', descripcion: 'Realista con los recursos disponibles', pregunta: 'Es posible con lo que tenemos?', ejemplo: { mal: 'Triplicar ventas en 1 mes', bien: 'Crecer 15% vs trimestre anterior' } },
+            { letra: 'R', nombre: 'Relevant', espanol: 'Relevante', descripcion: 'Alineado con objetivos estrategicos', pregunta: 'Por que es importante para el negocio?', ejemplo: { mal: 'Aumentar followers en TikTok', bien: 'Reducir costo de adquisicion de clientes' } },
+            { letra: 'T', nombre: 'Time-bound', espanol: 'Temporal', descripcion: 'Con fecha limite definida', pregunta: 'Para cuando debe lograrse?', ejemplo: { mal: 'Eventualmente reducir costos', bien: 'Reducir costos operativos 10% para Q4 2026' } },
+        ];
+
+        const metricasVsKpis = [
+            { tipo: 'metrica', nombre: 'Numero de visitas al sitio web', porque: 'Es un dato sin contexto de objetivo' },
+            { tipo: 'metrica', nombre: 'Cantidad de empleados', porque: 'Es informativo pero no mide desempeno' },
+            { tipo: 'kpi', nombre: 'Conversion rate del sitio (objetivo: 3%)', porque: 'Tiene objetivo y mide resultado clave' },
+            { tipo: 'metrica', nombre: 'Total de llamadas al call center', porque: 'Volumen sin relacion a objetivo' },
+            { tipo: 'kpi', nombre: 'Tiempo promedio de resolucion (meta: <5 min)', porque: 'Mide eficiencia contra objetivo' },
+            { tipo: 'metrica', nombre: 'Numero de productos en catalogo', porque: 'Dato operativo sin meta de rendimiento' },
+            { tipo: 'kpi', nombre: 'Rotacion de inventario (meta: 12x/ano)', porque: 'Indicador clave de eficiencia operativa' },
+            { tipo: 'metrica', nombre: 'Cantidad de correos enviados', porque: 'Actividad sin medir impacto' },
+            { tipo: 'kpi', nombre: 'Tasa de apertura de email (meta: >25%)', porque: 'Mide efectividad de la comunicacion' },
+            { tipo: 'kpi', nombre: 'CAC (meta: <$50)', porque: 'KPI critico para rentabilidad de adquisicion' },
+        ];
+
+        const kpiCanvasTemplate = {
+            secciones: [
+                { id: 'nombre', titulo: 'Nombre del KPI', placeholder: 'Ej: Tasa de Conversion Web', descripcion: 'Nombre claro y descriptivo' },
+                { id: 'objetivo', titulo: 'Objetivo de Negocio', placeholder: 'Ej: Aumentar ventas online', descripcion: 'Que objetivo estrategico soporta?' },
+                { id: 'formula', titulo: 'Formula de Calculo', placeholder: 'Ej: (Compras / Visitas) * 100', descripcion: 'Como se calcula exactamente?' },
+                { id: 'fuente', titulo: 'Fuente de Datos', placeholder: 'Ej: Google Analytics + ERP', descripcion: 'De donde vienen los datos?' },
+                { id: 'frecuencia', titulo: 'Frecuencia de Medicion', placeholder: 'Ej: Diario, consolidado semanal', descripcion: 'Cada cuanto se actualiza?' },
+                { id: 'meta', titulo: 'Meta / Target', placeholder: 'Ej: 3.5% para Q2 2026', descripcion: 'Cual es el objetivo numerico?' },
+                { id: 'responsable', titulo: 'Responsable', placeholder: 'Ej: Director de E-commerce', descripcion: 'Quien es dueno de este KPI?' },
+                { id: 'acciones', titulo: 'Acciones si No se Cumple', placeholder: 'Ej: Revisar UX, optimizar checkout', descripcion: 'Que hacer si esta en rojo?' },
+            ]
+        };
+
+        // ============================================
+        // COMPONENTE: METRICAS VS KPIs
+        // ============================================
+
+        const MetricasVsKPIs = () => {
+            const [respuestas, setRespuestas] = useState({});
+            const [mostrarResultados, setMostrarResultados] = useState(false);
+
+            const handleRespuesta = (index, respuesta) => {
+                setRespuestas(prev => ({ ...prev, [index]: respuesta }));
+            };
+
+            const calcularPuntaje = () => {
+                let correctas = 0;
+                metricasVsKpis.forEach((item, idx) => {
+                    if (respuestas[idx] === item.tipo) correctas++;
+                });
+                return correctas;
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Metrica vs KPI: Cual es la diferencia?</h2>
+                    <p className="text-gray-600 mb-6">
+                        Una <strong>metrica</strong> es un dato cuantificable. Un <strong>KPI</strong> es una metrica
+                        que mide el progreso hacia un objetivo estrategico especifico.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                            <h3 className="font-bold text-blue-800 mb-2">METRICA</h3>
+                            <ul className="text-sm text-gray-700 space-y-1">
+                                <li>• Dato cuantificable</li>
+                                <li>• Puede o no tener objetivo</li>
+                                <li>• Informativa</li>
+                                <li>• Ejemplo: "Visitantes del sitio"</li>
+                            </ul>
+                        </div>
+                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                            <h3 className="font-bold text-green-800 mb-2">KPI</h3>
+                            <ul className="text-sm text-gray-700 space-y-1">
+                                <li>• Metrica + Objetivo + Relevancia</li>
+                                <li>• Siempre tiene meta definida</li>
+                                <li>• Accionable</li>
+                                <li>• Ejemplo: "Conversion rate (meta: 3%)"</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="border-t pt-6">
+                        <h3 className="font-bold text-gray-800 mb-4">Ejercicio: Clasifica cada indicador</h3>
+                        <div className="space-y-3">
+                            {metricasVsKpis.map((item, idx) => (
+                                <div key={idx} className={`p-4 rounded-lg border-2 transition-all ${
+                                    mostrarResultados
+                                        ? respuestas[idx] === item.tipo
+                                            ? 'border-green-400 bg-green-50'
+                                            : respuestas[idx]
+                                                ? 'border-red-400 bg-red-50'
+                                                : 'border-gray-200'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-gray-800">{item.nombre}</span>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRespuesta(idx, 'metrica')}
+                                                disabled={mostrarResultados}
+                                                className={`px-4 py-1 rounded-lg text-sm font-medium transition-all ${
+                                                    respuestas[idx] === 'metrica'
+                                                        ? 'bg-blue-500 text-white'
+                                                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                                }`}
+                                            >
+                                                Metrica
+                                            </button>
+                                            <button
+                                                onClick={() => handleRespuesta(idx, 'kpi')}
+                                                disabled={mostrarResultados}
+                                                className={`px-4 py-1 rounded-lg text-sm font-medium transition-all ${
+                                                    respuestas[idx] === 'kpi'
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                }`}
+                                            >
+                                                KPI
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {mostrarResultados && (
+                                        <p className={`mt-2 text-sm ${respuestas[idx] === item.tipo ? 'text-green-700' : 'text-red-700'}`}>
+                                            {respuestas[idx] === item.tipo ? '✓ Correcto: ' : '✗ Incorrecto: '}
+                                            {item.porque}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-6 flex justify-between items-center">
+                            <button
+                                onClick={() => setMostrarResultados(true)}
+                                disabled={Object.keys(respuestas).length < metricasVsKpis.length}
+                                className="px-6 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50"
+                            >
+                                Verificar Respuestas
+                            </button>
+                            {mostrarResultados && (
+                                <div className="text-lg font-bold">
+                                    Puntaje: {calcularPuntaje()}/{metricasVsKpis.length}
+                                    {calcularPuntaje() === metricasVsKpis.length && ' 🎉'}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: CRITERIOS SMART
+        // ============================================
+
+        const CriteriosSMART = () => {
+            const [criterioActivo, setCriterioActivo] = useState(null);
+            const [evaluacion, setEvaluacion] = useState({});
+
+            const kpiParaEvaluar = "Aumentar las ventas del proximo trimestre";
+
+            const colores = {
+                S: 'from-blue-500 to-blue-600',
+                M: 'from-green-500 to-green-600',
+                A: 'from-yellow-500 to-yellow-600',
+                R: 'from-orange-500 to-orange-600',
+                T: 'from-red-500 to-red-600',
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Criterios SMART para KPIs</h2>
+                    <p className="text-gray-600 mb-6">
+                        Un buen KPI debe cumplir los 5 criterios SMART para ser efectivo y accionable.
+                    </p>
+
+                    {/* Letras SMART interactivas */}
+                    <div className="flex justify-center gap-4 mb-8">
+                        {smartCriteria.map((criterio) => (
+                            <button
+                                key={criterio.letra}
+                                onClick={() => setCriterioActivo(criterioActivo === criterio.letra ? null : criterio.letra)}
+                                className={`smart-letter w-16 h-16 rounded-xl bg-gradient-to-br ${colores[criterio.letra]} text-white text-2xl font-bold flex items-center justify-center shadow-lg hover:shadow-xl ${
+                                    criterioActivo === criterio.letra ? 'ring-4 ring-offset-2 ring-indigo-400 scale-110' : ''
+                                }`}
+                            >
+                                {criterio.letra}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Detalle del criterio seleccionado */}
+                    {criterioActivo && (
+                        <div className={`bg-gradient-to-r ${colores[criterioActivo]} text-white rounded-xl p-6 mb-6`}>
+                            {(() => {
+                                const criterio = smartCriteria.find(c => c.letra === criterioActivo);
+                                return (
+                                    <>
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <span className="text-4xl font-bold">{criterio.letra}</span>
+                                            <div>
+                                                <h3 className="text-xl font-bold">{criterio.nombre}</h3>
+                                                <p className="text-white/80">{criterio.espanol}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-lg mb-4">{criterio.descripcion}</p>
+                                        <p className="text-white/90 mb-4"><strong>Pregunta clave:</strong> {criterio.pregunta}</p>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div className="bg-white/20 rounded-lg p-3">
+                                                <p className="font-semibold mb-1">❌ No cumple:</p>
+                                                <p className="text-sm">"{criterio.ejemplo.mal}"</p>
+                                            </div>
+                                            <div className="bg-white/20 rounded-lg p-3">
+                                                <p className="font-semibold mb-1">✓ Si cumple:</p>
+                                                <p className="text-sm">"{criterio.ejemplo.bien}"</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {!criterioActivo && (
+                        <div className="bg-gray-50 rounded-xl p-6 text-center mb-6">
+                            <p className="text-gray-500">Haz clic en una letra para ver los detalles del criterio</p>
+                        </div>
+                    )}
+
+                    {/* Ejercicio de evaluacion */}
+                    <div className="border-t pt-6">
+                        <h3 className="font-bold text-gray-800 mb-4">Ejercicio: Evalua este KPI</h3>
+                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-4">
+                            <p className="text-lg text-amber-800 font-medium">"{kpiParaEvaluar}"</p>
+                        </div>
+                        <p className="text-gray-600 mb-4">Para cada criterio SMART, indica si el KPI lo cumple o no:</p>
+                        <div className="grid gap-3">
+                            {smartCriteria.map((criterio) => (
+                                <div key={criterio.letra} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${colores[criterio.letra]} text-white font-bold flex items-center justify-center`}>
+                                            {criterio.letra}
+                                        </span>
+                                        <span className="font-medium">{criterio.espanol}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setEvaluacion(prev => ({ ...prev, [criterio.letra]: true }))}
+                                            className={`px-3 py-1 rounded text-sm ${
+                                                evaluacion[criterio.letra] === true
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-green-100 text-green-700'
+                                            }`}
+                                        >
+                                            Cumple
+                                        </button>
+                                        <button
+                                            onClick={() => setEvaluacion(prev => ({ ...prev, [criterio.letra]: false }))}
+                                            className={`px-3 py-1 rounded text-sm ${
+                                                evaluacion[criterio.letra] === false
+                                                    ? 'bg-red-500 text-white'
+                                                    : 'bg-red-100 text-red-700'
+                                            }`}
+                                        >
+                                            No cumple
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {Object.keys(evaluacion).length === 5 && (
+                            <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                <p className="font-bold text-indigo-800 mb-2">Retroalimentacion:</p>
+                                <p className="text-gray-700">
+                                    El KPI "{kpiParaEvaluar}" <strong>no cumple ninguno</strong> de los criterios SMART:
+                                    no es especifico (que ventas?), no es medible (cuanto?), no sabemos si es alcanzable,
+                                    no indica relevancia, y no tiene fecha limite.
+                                </p>
+                                <p className="text-gray-700 mt-2">
+                                    <strong>Version SMART:</strong> "Aumentar las ventas del producto Premium en la region Centro
+                                    en un 15% respecto al Q1 2026, alcanzando $2.5M para el 30 de junio de 2026."
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: KPI CANVAS
+        // ============================================
+
+        const KPICanvas = () => {
+            const [canvas, setCanvas] = useState({});
+
+            const handleChange = (id, value) => {
+                setCanvas(prev => ({ ...prev, [id]: value }));
+            };
+
+            const canvasCompleto = Object.keys(canvas).length === kpiCanvasTemplate.secciones.length &&
+                                   Object.values(canvas).every(v => v.trim() !== '');
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">KPI Canvas</h2>
+                    <p className="text-gray-600 mb-6">
+                        El KPI Canvas es una herramienta para documentar completamente un KPI,
+                        asegurando que todos los aspectos esten definidos.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {kpiCanvasTemplate.secciones.map((seccion) => (
+                            <div key={seccion.id} className="bg-gray-50 rounded-xl p-4">
+                                <label className="block font-bold text-gray-800 mb-1">{seccion.titulo}</label>
+                                <p className="text-xs text-gray-500 mb-2">{seccion.descripcion}</p>
+                                <input
+                                    type="text"
+                                    placeholder={seccion.placeholder}
+                                    value={canvas[seccion.id] || ''}
+                                    onChange={(e) => handleChange(seccion.id, e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {canvasCompleto && (
+                        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <h3 className="font-bold text-green-800 mb-3">Tu KPI Canvas Completo:</h3>
+                            <div className="bg-white rounded-lg p-4 border">
+                                <h4 className="text-xl font-bold text-indigo-600 mb-2">{canvas.nombre}</h4>
+                                <div className="grid md:grid-cols-2 gap-2 text-sm">
+                                    <p><strong>Objetivo:</strong> {canvas.objetivo}</p>
+                                    <p><strong>Formula:</strong> {canvas.formula}</p>
+                                    <p><strong>Fuente:</strong> {canvas.fuente}</p>
+                                    <p><strong>Frecuencia:</strong> {canvas.frecuencia}</p>
+                                    <p><strong>Meta:</strong> {canvas.meta}</p>
+                                    <p><strong>Responsable:</strong> {canvas.responsable}</p>
+                                    <p className="md:col-span-2"><strong>Plan de accion:</strong> {canvas.acciones}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: BENCHMARK POR INDUSTRIA
+        // ============================================
+
+        const BenchmarkIndustria = () => {
+            const [industriaActiva, setIndustriaActiva] = useState('retail');
+
+            const industrias = [
+                { id: 'retail', nombre: 'Retail', icon: 'SHOP' },
+                { id: 'banca', nombre: 'Banca', icon: 'BANK' },
+                { id: 'tecnologia', nombre: 'Tecnologia', icon: 'TECH' },
+                { id: 'salud', nombre: 'Salud', icon: 'MED' },
+            ];
+
+            const tipoColores = {
+                Financiero: 'bg-green-100 text-green-800',
+                Comercial: 'bg-blue-100 text-blue-800',
+                Operacional: 'bg-yellow-100 text-yellow-800',
+                Cliente: 'bg-purple-100 text-purple-800',
+                Eficiencia: 'bg-orange-100 text-orange-800',
+                Riesgo: 'bg-red-100 text-red-800',
+                Calidad: 'bg-teal-100 text-teal-800',
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Benchmark de KPIs por Industria</h2>
+                    <p className="text-gray-600 mb-6">
+                        Cada industria tiene KPIs especificos. Conocer los benchmarks te permite comparar tu desempeno.
+                    </p>
+
+                    <div className="flex gap-2 mb-6">
+                        {industrias.map((ind) => (
+                            <button
+                                key={ind.id}
+                                onClick={() => setIndustriaActiva(ind.id)}
+                                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                                    industriaActiva === ind.id
+                                        ? 'bg-indigo-500 text-white shadow-lg'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                <span className="block text-xs opacity-70">{ind.icon}</span>
+                                {ind.nombre}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-gray-50">
+                                    <th className="px-4 py-3 text-left font-bold text-gray-700">KPI</th>
+                                    <th className="px-4 py-3 text-left font-bold text-gray-700">Formula</th>
+                                    <th className="px-4 py-3 text-left font-bold text-gray-700">Benchmark</th>
+                                    <th className="px-4 py-3 text-left font-bold text-gray-700">Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {kpisEjemplos[industriaActiva].map((kpi, idx) => (
+                                    <tr key={idx} className="border-b hover:bg-gray-50">
+                                        <td className="px-4 py-3 font-medium text-gray-800">{kpi.nombre}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600 font-mono">{kpi.formula}</td>
+                                        <td className="px-4 py-3">
+                                            <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-sm font-medium">
+                                                {kpi.benchmark}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${tipoColores[kpi.tipo]}`}>
+                                                {kpi.tipo}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-amber-800">
+                            <strong>Nota:</strong> Los benchmarks son referencias de la industria. Tu objetivo debe considerar
+                            tu situacion actual, recursos disponibles, y objetivos estrategicos especificos.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const KPIsSimulator = () => {
+            const [activeTab, setActiveTab] = useState('concepto');
+
+            const tabs = [
+                { id: 'concepto', label: 'Metrica vs KPI' },
+                { id: 'smart', label: 'Criterios SMART' },
+                { id: 'canvas', label: 'KPI Canvas' },
+                { id: 'benchmark', label: 'Benchmark' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-2">KPIs y Metricas de Desempeno</h1>
+                                    <p className="text-indigo-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 03</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Lab Guiado
+                                    </a>
+                                    <a href="ejercicio-individual.html" className="bg-violet-500 hover:bg-violet-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Ejercicio Individual
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Inicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-500 text-white shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto">
+                        {activeTab === 'concepto' && <MetricasVsKPIs />}
+                        {activeTab === 'smart' && <CriteriosSMART />}
+                        {activeTab === 'canvas' && <KPICanvas />}
+                        {activeTab === 'benchmark' && <BenchmarkIndustria />}
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 03</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<KPIsSimulator />);
+    </script>
+</body>
+</html>

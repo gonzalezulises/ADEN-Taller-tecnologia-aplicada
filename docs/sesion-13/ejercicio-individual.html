@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 13: Ejercicio Roadmap BI | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // EJERCICIO: ROADMAP BI - FASE 4 DEL PROYECTO
+        // ==========================================
+
+        function App() {
+            const [currentPhase, setCurrentPhase] = useState(0);
+            const [completedPhases, setCompletedPhases] = useState([]);
+
+            const markComplete = (phase) => {
+                if (!completedPhases.includes(phase)) {
+                    setCompletedPhases([...completedPhases, phase]);
+                }
+            };
+
+            const phases = [
+                { titulo: 'Recordatorio del Proyecto', descripcion: 'Revisar lo construido en Fases 1-3' },
+                { titulo: 'Evaluar Estado Actual', descripcion: 'Diagnosticar madurez alcanzada' },
+                { titulo: 'Identificar Brechas', descripcion: 'Qué falta para una solución completa' },
+                { titulo: 'Diseñar Roadmap Fase 2', descripcion: 'Próximos 12 meses de evolución' },
+                { titulo: 'Plan de Sostenibilidad', descripcion: 'Mantenimiento y mejora continua' },
+                { titulo: 'Preparar Presentación Final', descripcion: 'Consolidar para defensa' }
+            ];
+
+            const progress = (completedPhases.length / phases.length) * 100;
+
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-violet-600 to-purple-600 text-white py-8">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <a href="index.html" className="text-violet-200 hover:text-white text-sm mb-4 inline-block">
+                                ← Volver al simulador
+                            </a>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold">Fase 4 del Proyecto: Roadmap de Implementación BI</h1>
+                                <span className="bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-bold">
+                                    15% de la nota
+                                </span>
+                            </div>
+                            <p className="text-violet-100 mt-2">Sesión 13-14 | Última fase del Proyecto Integrador</p>
+                        </div>
+                    </header>
+
+                    {/* Progress Bar */}
+                    <div className="bg-white border-b sticky top-0 z-10">
+                        <div className="max-w-6xl mx-auto px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-slate-700">Progreso del Ejercicio</span>
+                                <span className="text-sm font-medium text-violet-600">{completedPhases.length}/{phases.length} fases</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                <div
+                                    className="bg-violet-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="max-w-6xl mx-auto px-6 py-8">
+                        <div className="grid lg:grid-cols-4 gap-6">
+                            {/* Sidebar - Fases */}
+                            <div className="lg:col-span-1">
+                                <div className="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                                    <h3 className="font-semibold text-slate-800 mb-4">Fases</h3>
+                                    <nav className="space-y-2">
+                                        {phases.map((phase, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentPhase(idx)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                                    currentPhase === idx
+                                                        ? 'bg-violet-100 text-violet-700'
+                                                        : completedPhases.includes(idx)
+                                                            ? 'bg-slate-50 text-slate-600'
+                                                            : 'text-slate-500 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                                        completedPhases.includes(idx)
+                                                            ? 'bg-violet-500 text-white'
+                                                            : currentPhase === idx
+                                                                ? 'bg-violet-600 text-white'
+                                                                : 'bg-slate-200 text-slate-600'
+                                                    }`}>
+                                                        {completedPhases.includes(idx) ? '✓' : idx + 1}
+                                                    </span>
+                                                    <span className="truncate">{phase.titulo}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </nav>
+
+                                    {/* Resumen de proyecto */}
+                                    <div className="mt-6 pt-4 border-t">
+                                        <h4 className="font-semibold text-slate-800 mb-2 text-sm">Tu Proyecto</h4>
+                                        <div className="text-xs text-slate-500 space-y-1">
+                                            <p>Fase 1: Data Warehouse ✓</p>
+                                            <p>Fase 2: ETL + Mining ✓</p>
+                                            <p>Fase 3: Dashboard ✓</p>
+                                            <p className="text-violet-600 font-medium">Fase 4: Roadmap BI ←</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contenido Principal */}
+                            <div className="lg:col-span-3 space-y-6">
+
+                                {/* Fase 0: Recordatorio */}
+                                {currentPhase === 0 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 1: Recordatorio del Proyecto</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Antes de diseñar el futuro, revisemos lo que has construido.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">📋 Resumen de tu Proyecto Integrador</h3>
+
+                                            <div className="grid md:grid-cols-3 gap-4">
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-cyan-700 mb-2">Fase 1: Data Warehouse</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        <li>• Modelo dimensional diseñado</li>
+                                                        <li>• Tabla de hechos definida</li>
+                                                        <li>• Dimensiones creadas</li>
+                                                        <li>• Esquema estrella implementado</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-emerald-700 mb-2">Fase 2: ETL + Mining</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        <li>• Pipeline ETL documentado</li>
+                                                        <li>• Proceso CRISP-DM aplicado</li>
+                                                        <li>• Modelo ML entrenado</li>
+                                                        <li>• Insights generados</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-violet-700 mb-2">Fase 3: Dashboard</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        <li>• Dashboard en Tableau</li>
+                                                        <li>• KPIs visualizados</li>
+                                                        <li>• Filtros interactivos</li>
+                                                        <li>• Data story presentada</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-violet-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-violet-800 mb-2">🎯 Objetivo de la Fase 4</h4>
+                                            <p className="text-violet-700">
+                                                Crear un roadmap de implementación que responda: "Si una empresa real
+                                                quisiera implementar esto, ¿cómo lo haría en los próximos 12-18 meses?"
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {markComplete(0); setCurrentPhase(1);}}
+                                            className="w-full py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                        >
+                                            Continuar →
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Fase 1: Evaluar Estado Actual */}
+                                {currentPhase === 1 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 2: Evaluar Estado Actual</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Evalúa el nivel de madurez que alcanzaría la empresa con tu solución.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Evaluación de Madurez</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">He desarrollado un proyecto de BI para [EMPRESA/INDUSTRIA] que incluye:</p>
+                                                <p className="mb-2">- Data Warehouse con [DESCRIBIR MODELO]</p>
+                                                <p className="mb-2">- Proceso ETL desde [FUENTES]</p>
+                                                <p className="mb-2">- Modelo de [CLASIFICACIÓN/CLUSTERING] para [OBJETIVO]</p>
+                                                <p className="mb-2">- Dashboard con KPIs: [LISTAR KPIs]</p>
+                                                <p className="mb-4"></p>
+                                                <p className="mb-2">Usando el modelo de madurez de analytics (5 niveles):</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                                                    <li>¿En qué nivel estaría la empresa antes vs después de mi solución?</li>
+                                                    <li>¿Qué capacidades específicas aporta mi solución?</li>
+                                                    <li>¿Qué brechas quedan para el siguiente nivel?</li>
+                                                </ol>
+                                            </div>
+                                            <button className="mt-4 text-cyan-600 hover:text-cyan-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Tu Evaluación</h4>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Nivel ANTES de tu solución (1-5):
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        {[1,2,3,4,5].map(n => (
+                                                            <button key={n} className="w-10 h-10 rounded-full border-2 border-slate-300 hover:border-violet-500 text-slate-700 font-medium">
+                                                                {n}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Nivel DESPUÉS de tu solución (1-5):
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        {[1,2,3,4,5].map(n => (
+                                                            <button key={n} className="w-10 h-10 rounded-full border-2 border-slate-300 hover:border-violet-500 text-slate-700 font-medium">
+                                                                {n}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Justificación del nivel alcanzado:
+                                                    </label>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="3"
+                                                        placeholder="Ej: La solución lleva a nivel 3 porque establece KPIs corporativos, tiene DW integrado y permite self-service básico..."
+                                                    ></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(0)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(1); setCurrentPhase(2);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 2: Identificar Brechas */}
+                                {currentPhase === 2 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 3: Identificar Brechas</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            ¿Qué le falta a tu solución para ser una implementación BI completa?
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Identificar Brechas</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">Mi solución de BI actual incluye: [DESCRIBIR]</p>
+                                                <p className="mb-4">La empresa es del sector [INDUSTRIA] con [CONTEXTO].</p>
+                                                <p className="mb-2">Identifica las brechas en estas dimensiones:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                                                    <li><strong>Datos:</strong> ¿Qué fuentes adicionales deberían integrarse?</li>
+                                                    <li><strong>Tecnología:</strong> ¿Qué herramientas o infraestructura falta?</li>
+                                                    <li><strong>Procesos:</strong> ¿Qué procesos de gobierno faltan?</li>
+                                                    <li><strong>Personas:</strong> ¿Qué skills o roles faltan?</li>
+                                                    <li><strong>Cultura:</strong> ¿Qué cambios culturales se necesitan?</li>
+                                                </ol>
+                                            </div>
+                                            <button className="mt-4 text-rose-600 hover:text-rose-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Análisis de Brechas</h4>
+
+                                            {[
+                                                { dimension: 'Datos', placeholder: 'Ej: Falta integrar sistema de RRHH, datos de satisfacción cliente...' },
+                                                { dimension: 'Tecnología', placeholder: 'Ej: No hay catálogo de datos, falta monitoreo de calidad...' },
+                                                { dimension: 'Procesos', placeholder: 'Ej: No hay proceso formal de solicitud de reportes...' },
+                                                { dimension: 'Personas', placeholder: 'Ej: No hay data stewards, analistas sin capacitación formal...' },
+                                                { dimension: 'Cultura', placeholder: 'Ej: Decisiones aún se toman por intuición, no hay accountability...' }
+                                            ].map((item, idx) => (
+                                                <div key={idx} className="mb-4">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Brechas en {item.dimension}:
+                                                    </label>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="2"
+                                                        placeholder={item.placeholder}
+                                                    ></textarea>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(1)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(2); setCurrentPhase(3);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 3: Diseñar Roadmap */}
+                                {currentPhase === 3 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 4: Diseñar Roadmap de Evolución</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Planifica los próximos 12-18 meses para cerrar las brechas identificadas.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Diseñar Roadmap</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">Tengo estas brechas identificadas: [LISTAR BRECHAS]</p>
+                                                <p className="mb-2">El objetivo es llevar la empresa del nivel [X] al nivel [Y] de madurez.</p>
+                                                <p className="mb-4">Presupuesto estimado: [MONTO]. Equipo: [DESCRIBIR].</p>
+                                                <p className="mb-2">Diseña un roadmap de 12-18 meses con:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                                                    <li>4-6 iniciativas priorizadas</li>
+                                                    <li>Dependencias entre iniciativas</li>
+                                                    <li>Quick wins para los primeros 3 meses</li>
+                                                    <li>Hitos y criterios de éxito</li>
+                                                    <li>Recursos necesarios por fase</li>
+                                                </ol>
+                                            </div>
+                                            <button className="mt-4 text-emerald-600 hover:text-emerald-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Tu Roadmap (4-6 Iniciativas)</h4>
+
+                                            <div className="space-y-4">
+                                                {[1, 2, 3, 4].map((num) => (
+                                                    <div key={num} className="border rounded-lg p-4 bg-slate-50">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <span className="w-8 h-8 bg-violet-500 text-white rounded-full flex items-center justify-center font-bold">
+                                                                {num}
+                                                            </span>
+                                                            <input
+                                                                type="text"
+                                                                className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium"
+                                                                placeholder={`Iniciativa ${num}: Nombre de la iniciativa...`}
+                                                            />
+                                                        </div>
+                                                        <div className="grid md:grid-cols-3 gap-3">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Timeline</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: Meses 1-3"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Recursos</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: 1 analista, $20K"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Dependencia</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: Ninguna / Iniciativa 1"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1">Entregables y Criterios de Éxito</label>
+                                                            <textarea
+                                                                className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                rows="2"
+                                                                placeholder="Ej: Dashboard financiero desplegado, 80% usuarios capacitados, NPS > 4.0..."
+                                                            ></textarea>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(2)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(3); setCurrentPhase(4);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 4: Plan de Sostenibilidad */}
+                                {currentPhase === 4 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 5: Plan de Sostenibilidad</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            ¿Cómo se mantendrá y evolucionará la solución después del proyecto inicial?
+                                        </p>
+
+                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                            <div className="border rounded-lg p-4">
+                                                <h4 className="font-semibold text-slate-800 mb-3">🔧 Mantenimiento Operativo</h4>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Frecuencia de actualización de datos:
+                                                        </label>
+                                                        <select className="w-full px-3 py-2 border rounded-lg text-sm">
+                                                            <option>Seleccionar...</option>
+                                                            <option>Tiempo real</option>
+                                                            <option>Cada hora</option>
+                                                            <option>Diario</option>
+                                                            <option>Semanal</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Responsable de monitoreo:
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                            placeholder="Ej: Analista BI / TI"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Proceso de reporte de errores:
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                            placeholder="Ej: Ticket en Jira, email a soporte..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="border rounded-lg p-4">
+                                                <h4 className="font-semibold text-slate-800 mb-3">📈 Mejora Continua</h4>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Revisión de KPIs:
+                                                        </label>
+                                                        <select className="w-full px-3 py-2 border rounded-lg text-sm">
+                                                            <option>Seleccionar...</option>
+                                                            <option>Mensual</option>
+                                                            <option>Trimestral</option>
+                                                            <option>Semestral</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Proceso de solicitud de mejoras:
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                            placeholder="Ej: Backlog priorizado, comité mensual..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                            Capacitación a nuevos usuarios:
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                            placeholder="Ej: Onboarding + videos + documentación..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-amber-800 mb-2">💰 Presupuesto de Mantenimiento Anual</h4>
+                                            <div className="grid md:grid-cols-4 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">Licencias</label>
+                                                    <input type="text" className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="$X,XXX" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">Infraestructura</label>
+                                                    <input type="text" className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="$X,XXX" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">Personal</label>
+                                                    <input type="text" className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="$X,XXX" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">Contingencia</label>
+                                                    <input type="text" className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="$X,XXX" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(3)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(4); setCurrentPhase(5);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 5: Preparar Presentación */}
+                                {currentPhase === 5 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 6: Preparar Presentación Final</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Consolida todo tu trabajo para la defensa del proyecto.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">📊 Estructura de Presentación Final (20 min)</h3>
+
+                                            <div className="space-y-3">
+                                                {[
+                                                    { seccion: '1. Contexto y Problema', tiempo: '2 min', contenido: 'Empresa, industria, dolor de negocio' },
+                                                    { seccion: '2. Solución Propuesta', tiempo: '5 min', contenido: 'DW + ETL + ML + Dashboard (resumen de Fases 1-3)' },
+                                                    { seccion: '3. Demo del Dashboard', tiempo: '5 min', contenido: 'Navegación por KPIs, filtros, insights' },
+                                                    { seccion: '4. Roadmap de Evolución', tiempo: '4 min', contenido: 'Brechas, iniciativas, timeline 12-18 meses' },
+                                                    { seccion: '5. Plan de Sostenibilidad', tiempo: '2 min', contenido: 'Mantenimiento, mejora continua, presupuesto' },
+                                                    { seccion: '6. Conclusiones y Q&A', tiempo: '2 min', contenido: 'Beneficios esperados, aprendizajes, preguntas' }
+                                                ].map((item, idx) => (
+                                                    <div key={idx} className="flex items-center gap-4 p-3 bg-white rounded-lg">
+                                                        <span className="w-8 h-8 bg-violet-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-medium text-slate-800">{item.seccion}</span>
+                                                                <span className="text-sm text-violet-600 font-medium">{item.tiempo}</span>
+                                                            </div>
+                                                            <p className="text-sm text-slate-600">{item.contenido}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-emerald-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-emerald-800 mb-2">✅ Checklist de Entrega</h4>
+                                            <div className="grid md:grid-cols-2 gap-2">
+                                                {[
+                                                    'Presentación PPT/PDF (máx 20 slides)',
+                                                    'Dashboard funcional en Tableau Public',
+                                                    'Documento de Roadmap (este ejercicio)',
+                                                    'Código/notebook del modelo ML',
+                                                    'Esquema del Data Warehouse',
+                                                    'Documentación del ETL'
+                                                ].map((item, idx) => (
+                                                    <label key={idx} className="flex items-center gap-2 text-sm text-emerald-700">
+                                                        <input type="checkbox" className="rounded text-emerald-500" />
+                                                        {item}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-violet-100 to-purple-100 rounded-lg p-6 mb-6">
+                                            <div className="text-center">
+                                                <span className="text-4xl">🎓</span>
+                                                <h3 className="text-xl font-bold text-slate-800 mt-2">¡Fase 4 Completada!</h3>
+                                                <p className="text-slate-600 mt-2 max-w-lg mx-auto">
+                                                    Has diseñado un roadmap profesional de implementación BI.
+                                                    Este documento demuestra tu capacidad de pensar estratégicamente
+                                                    sobre proyectos de datos.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-amber-800 mb-2">📤 Entrega Sesión 14</h4>
+                                            <p className="text-sm text-amber-700">
+                                                Prepárate para la presentación final. Cada equipo tendrá 20 minutos
+                                                para presentar + 10 minutos de Q&A. La rúbrica incluye: claridad del
+                                                problema, calidad técnica, viabilidad del roadmap, y habilidades de presentación.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(4)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => markComplete(5)}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Marcar como completado ✓
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-800 text-white py-8 mt-12">
+                        <div className="max-w-6xl mx-auto px-6 text-center">
+                            <p className="text-slate-400">
+                                Fase 4 Proyecto Integrador | ADEN University
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <a href="index.html" className="text-violet-400 hover:text-violet-300">
+                                    ← Volver al Simulador
+                                </a>
+                                <a href="laboratorio.html" className="text-violet-400 hover:text-violet-300">
+                                    Laboratorio
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

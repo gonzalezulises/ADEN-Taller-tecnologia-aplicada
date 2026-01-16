@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 06: Implementacion ETL con Pentaho - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Datos de componentes Pentaho
+        const pentahoComponents = [
+            {
+                name: 'Spoon',
+                icon: '🥄',
+                description: 'Interfaz grafica para disenar transformaciones y jobs',
+                uso: 'Desarrollo y diseno visual',
+                archivo: '.ktr (transformaciones), .kjb (jobs)'
+            },
+            {
+                name: 'Pan',
+                icon: '🍳',
+                description: 'Ejecutor de transformaciones desde linea de comandos',
+                uso: 'Ejecucion batch de transformaciones',
+                comando: 'pan.sh -file=mi_transformacion.ktr'
+            },
+            {
+                name: 'Kitchen',
+                icon: '🍴',
+                description: 'Ejecutor de jobs desde linea de comandos',
+                uso: 'Ejecucion batch de jobs',
+                comando: 'kitchen.sh -file=mi_job.kjb'
+            },
+            {
+                name: 'Carte',
+                icon: '🗺️',
+                description: 'Servidor web ligero para ejecucion remota',
+                uso: 'Clustering y ejecucion distribuida',
+                puerto: '8080 (por defecto)'
+            }
+        ];
+
+        // Pasos comunes de transformacion
+        const transformationSteps = {
+            input: [
+                { name: 'Table input', icon: '📥', desc: 'Lee datos de una tabla SQL' },
+                { name: 'CSV file input', icon: '📄', desc: 'Lee archivos CSV' },
+                { name: 'Excel input', icon: '📊', desc: 'Lee archivos Excel' },
+                { name: 'Text file input', icon: '📝', desc: 'Lee archivos de texto' },
+                { name: 'JSON input', icon: '{}', desc: 'Lee archivos JSON' }
+            ],
+            transform: [
+                { name: 'Select values', icon: '✅', desc: 'Selecciona y renombra campos' },
+                { name: 'Filter rows', icon: '🔍', desc: 'Filtra filas por condicion' },
+                { name: 'Sort rows', icon: '↕️', desc: 'Ordena filas' },
+                { name: 'Calculator', icon: '🧮', desc: 'Calculos matematicos' },
+                { name: 'String operations', icon: '✂️', desc: 'Manipula cadenas de texto' },
+                { name: 'Replace in string', icon: '🔄', desc: 'Reemplaza valores en texto' },
+                { name: 'Value mapper', icon: '🗺️', desc: 'Mapea valores a otros' },
+                { name: 'Merge join', icon: '🔗', desc: 'Une dos flujos de datos' },
+                { name: 'Group by', icon: '📦', desc: 'Agrupa y resume datos' },
+                { name: 'Unique rows', icon: '🎯', desc: 'Elimina duplicados' }
+            ],
+            output: [
+                { name: 'Table output', icon: '📤', desc: 'Escribe en tabla SQL' },
+                { name: 'Insert/Update', icon: '🔄', desc: 'Inserta o actualiza registros' },
+                { name: 'Text file output', icon: '📝', desc: 'Escribe archivo de texto' },
+                { name: 'Excel writer', icon: '📊', desc: 'Escribe archivo Excel' }
+            ]
+        };
+
+        // Ejercicios de identificacion de pasos
+        const stepExercises = [
+            {
+                scenario: 'Necesitas leer un archivo CSV de ventas, filtrar solo las del mes actual, y cargar en una tabla del DW.',
+                steps: ['CSV file input', 'Filter rows', 'Table output'],
+                explanation: 'Lees el CSV, aplicas filtro por fecha, y cargas en la tabla destino.'
+            },
+            {
+                scenario: 'Debes combinar datos de clientes de dos sistemas diferentes, eliminar duplicados, y generar un Excel.',
+                steps: ['Table input (x2)', 'Merge join', 'Unique rows', 'Excel writer'],
+                explanation: 'Lees ambas fuentes, las unes, eliminas duplicados, y exportas a Excel.'
+            },
+            {
+                scenario: 'Tu proceso debe leer ventas, calcular el IVA, categorizar montos (alto/bajo), y guardar en BD.',
+                steps: ['Table input', 'Calculator', 'Value mapper', 'Insert/Update'],
+                explanation: 'Lees ventas, calculas IVA, categorizas con mapper, y guardas con upsert.'
+            }
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedComponent, setSelectedComponent] = useState(null);
+            const [selectedCategory, setSelectedCategory] = useState('input');
+            const [currentExercise, setCurrentExercise] = useState(0);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [draggedSteps, setDraggedSteps] = useState([]);
+            const [jobSteps, setJobSteps] = useState([]);
+
+            const tabs = [
+                { id: 0, label: 'Pentaho PDI', icon: '🔷' },
+                { id: 1, label: 'Componentes', icon: '🧩' },
+                { id: 2, label: 'Transformaciones', icon: '🔄' },
+                { id: 3, label: 'Jobs', icon: '📋' }
+            ];
+
+            // Agregar paso al pipeline visual
+            const addStepToPipeline = (step) => {
+                setDraggedSteps([...draggedSteps, step]);
+            };
+
+            // Agregar paso al job
+            const addStepToJob = (step) => {
+                setJobSteps([...jobSteps, step]);
+            };
+
+            // Limpiar pipeline
+            const clearPipeline = () => {
+                setDraggedSteps([]);
+            };
+
+            // Limpiar job
+            const clearJob = () => {
+                setJobSteps([]);
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-cyan-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 06: Implementacion ETL con Pentaho</h1>
+                        <p className="text-cyan-100">Pentaho Data Integration (PDI/Kettle) - Diseno visual de pipelines ETL</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-cyan-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-cyan-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: Intro Pentaho */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Pentaho Data Integration (PDI)</h2>
+
+                                <div className="bg-gradient-to-r from-cyan-50 to-teal-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg text-cyan-800 mb-4">¿Que es Pentaho?</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Pentaho Data Integration (tambien conocido como <strong>Kettle</strong>) es una
+                                        plataforma open source para disenar e implementar procesos ETL de forma visual.
+                                        Permite extraer, transformar y cargar datos sin escribir codigo.
+                                    </p>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-white p-4 rounded-lg border-l-4 border-cyan-500">
+                                            <h4 className="font-bold text-cyan-700 mb-2">Ventajas</h4>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Interfaz visual drag-and-drop</li>
+                                                <li>• Open source y gratuito (Community Edition)</li>
+                                                <li>• Conectores para multiples fuentes</li>
+                                                <li>• Escalable y extensible</li>
+                                                <li>• Documentacion abundante</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg border-l-4 border-teal-500">
+                                            <h4 className="font-bold text-teal-700 mb-2">Casos de Uso</h4>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Carga inicial de Data Warehouse</li>
+                                                <li>• Migracion de datos entre sistemas</li>
+                                                <li>• Integracion de fuentes heterogeneas</li>
+                                                <li>• Limpieza y calidad de datos</li>
+                                                <li>• Sincronizacion periodica</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Arquitectura */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Arquitectura de Pentaho ETL</h3>
+                                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                        <div className="text-center p-4 bg-blue-50 rounded-xl flex-1">
+                                            <div className="text-4xl mb-2">📥</div>
+                                            <div className="font-bold text-blue-700">EXTRACT</div>
+                                            <div className="text-sm text-gray-600 mt-2">
+                                                Bases de datos<br/>
+                                                Archivos (CSV, Excel)<br/>
+                                                APIs REST<br/>
+                                                Web scraping
+                                            </div>
+                                        </div>
+                                        <div className="text-3xl text-gray-400">→</div>
+                                        <div className="text-center p-4 bg-amber-50 rounded-xl flex-1">
+                                            <div className="text-4xl mb-2">⚙️</div>
+                                            <div className="font-bold text-amber-700">TRANSFORM</div>
+                                            <div className="text-sm text-gray-600 mt-2">
+                                                Limpieza<br/>
+                                                Mapeo<br/>
+                                                Calculos<br/>
+                                                Validaciones
+                                            </div>
+                                        </div>
+                                        <div className="text-3xl text-gray-400">→</div>
+                                        <div className="text-center p-4 bg-green-50 rounded-xl flex-1">
+                                            <div className="text-4xl mb-2">📤</div>
+                                            <div className="font-bold text-green-700">LOAD</div>
+                                            <div className="text-sm text-gray-600 mt-2">
+                                                Data Warehouse<br/>
+                                                Data Marts<br/>
+                                                Archivos destino<br/>
+                                                Reportes
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Conceptos clave */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="border rounded-xl p-4 hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="text-3xl">🔄</span>
+                                            <h4 className="font-bold text-lg">Transformacion (.ktr)</h4>
+                                        </div>
+                                        <p className="text-gray-600 text-sm">
+                                            Unidad basica de trabajo. Define el flujo de datos desde origen hasta destino,
+                                            incluyendo todos los pasos de transformacion. Se ejecuta como un flujo continuo.
+                                        </p>
+                                        <div className="mt-3 bg-gray-100 p-2 rounded text-xs font-mono">
+                                            mi_transformacion.ktr
+                                        </div>
+                                    </div>
+                                    <div className="border rounded-xl p-4 hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="text-3xl">📋</span>
+                                            <h4 className="font-bold text-lg">Job (.kjb)</h4>
+                                        </div>
+                                        <p className="text-gray-600 text-sm">
+                                            Orquestador de trabajo. Coordina la ejecucion de multiples transformaciones,
+                                            maneja errores, envia notificaciones y controla el flujo de trabajo.
+                                        </p>
+                                        <div className="mt-3 bg-gray-100 p-2 rounded text-xs font-mono">
+                                            mi_proceso_etl.kjb
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: Componentes */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Componentes de Pentaho PDI</h2>
+
+                                <p className="text-gray-600">
+                                    Haz clic en cada componente para ver sus detalles y uso.
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {pentahoComponents.map((comp, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedComponent(selectedComponent === idx ? null : idx)}
+                                            className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                                                selectedComponent === idx
+                                                    ? 'border-cyan-500 bg-cyan-50 shadow-lg'
+                                                    : 'border-gray-200 hover:border-cyan-300 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className="text-4xl">{comp.icon}</span>
+                                                <h3 className="font-bold text-xl text-gray-800">{comp.name}</h3>
+                                            </div>
+                                            <p className="text-gray-600">{comp.description}</p>
+
+                                            {selectedComponent === idx && (
+                                                <div className="mt-4 pt-4 border-t border-cyan-200 space-y-2">
+                                                    <div className="flex gap-2">
+                                                        <span className="font-medium text-cyan-700">Uso:</span>
+                                                        <span className="text-gray-600">{comp.uso}</span>
+                                                    </div>
+                                                    {comp.archivo && (
+                                                        <div className="flex gap-2">
+                                                            <span className="font-medium text-cyan-700">Archivos:</span>
+                                                            <span className="text-gray-600">{comp.archivo}</span>
+                                                        </div>
+                                                    )}
+                                                    {comp.comando && (
+                                                        <div className="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-sm">
+                                                            $ {comp.comando}
+                                                        </div>
+                                                    )}
+                                                    {comp.puerto && (
+                                                        <div className="flex gap-2">
+                                                            <span className="font-medium text-cyan-700">Puerto:</span>
+                                                            <span className="text-gray-600">{comp.puerto}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Flujo de trabajo */}
+                                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Flujo de Trabajo Tipico</h3>
+                                    <div className="flex flex-wrap items-center justify-center gap-4">
+                                        <div className="bg-white p-4 rounded-xl shadow text-center">
+                                            <div className="text-2xl mb-1">🥄</div>
+                                            <div className="font-bold text-sm">1. Disenar</div>
+                                            <div className="text-xs text-gray-500">Spoon</div>
+                                        </div>
+                                        <div className="text-2xl text-gray-400">→</div>
+                                        <div className="bg-white p-4 rounded-xl shadow text-center">
+                                            <div className="text-2xl mb-1">🧪</div>
+                                            <div className="font-bold text-sm">2. Probar</div>
+                                            <div className="text-xs text-gray-500">Spoon (Preview)</div>
+                                        </div>
+                                        <div className="text-2xl text-gray-400">→</div>
+                                        <div className="bg-white p-4 rounded-xl shadow text-center">
+                                            <div className="text-2xl mb-1">🍳</div>
+                                            <div className="font-bold text-sm">3. Ejecutar</div>
+                                            <div className="text-xs text-gray-500">Pan/Kitchen</div>
+                                        </div>
+                                        <div className="text-2xl text-gray-400">→</div>
+                                        <div className="bg-white p-4 rounded-xl shadow text-center">
+                                            <div className="text-2xl mb-1">⏰</div>
+                                            <div className="font-bold text-sm">4. Programar</div>
+                                            <div className="text-xs text-gray-500">Cron + Kitchen</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Transformaciones */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Pasos de Transformacion</h2>
+
+                                {/* Selector de categoria */}
+                                <div className="flex gap-2">
+                                    {Object.keys(transformationSteps).map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setSelectedCategory(cat)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                selectedCategory === cat
+                                                    ? cat === 'input' ? 'bg-blue-500 text-white'
+                                                    : cat === 'transform' ? 'bg-amber-500 text-white'
+                                                    : 'bg-green-500 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {cat === 'input' ? '📥 Input' : cat === 'transform' ? '⚙️ Transform' : '📤 Output'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Lista de pasos */}
+                                <div className="grid md:grid-cols-2 gap-3">
+                                    {transformationSteps[selectedCategory].map((step, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => addStepToPipeline(step)}
+                                            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-all hover:shadow"
+                                        >
+                                            <span className="text-2xl">{step.icon}</span>
+                                            <div>
+                                                <div className="font-medium text-gray-800">{step.name}</div>
+                                                <div className="text-sm text-gray-500">{step.desc}</div>
+                                            </div>
+                                            <span className="ml-auto text-gray-300 text-xl">+</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Pipeline visual */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 min-h-32">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-gray-700">Tu Pipeline (haz clic en pasos para agregar)</h4>
+                                        {draggedSteps.length > 0 && (
+                                            <button
+                                                onClick={clearPipeline}
+                                                className="text-sm text-red-500 hover:text-red-700"
+                                            >
+                                                Limpiar
+                                            </button>
+                                        )}
+                                    </div>
+                                    {draggedSteps.length === 0 ? (
+                                        <p className="text-gray-400 text-center py-4">
+                                            Haz clic en los pasos de arriba para construir tu pipeline
+                                        </p>
+                                    ) : (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {draggedSteps.map((step, idx) => (
+                                                <React.Fragment key={idx}>
+                                                    <div className="flex items-center gap-2 bg-cyan-100 px-3 py-2 rounded-lg">
+                                                        <span>{step.icon}</span>
+                                                        <span className="text-sm font-medium">{step.name}</span>
+                                                    </div>
+                                                    {idx < draggedSteps.length - 1 && (
+                                                        <span className="text-gray-400">→</span>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Ejercicio */}
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                                    <h3 className="font-bold text-lg text-amber-800 mb-3">
+                                        Ejercicio: ¿Que pasos usarias?
+                                    </h3>
+                                    <div className="bg-white p-4 rounded-lg mb-4">
+                                        <p className="text-gray-700 font-medium">
+                                            {stepExercises[currentExercise].scenario}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAnswer(!showAnswer)}
+                                        className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600"
+                                    >
+                                        {showAnswer ? 'Ocultar respuesta' : 'Ver respuesta'}
+                                    </button>
+                                    {showAnswer && (
+                                        <div className="mt-4 bg-white p-4 rounded-lg border-l-4 border-amber-500">
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {stepExercises[currentExercise].steps.map((step, idx) => (
+                                                    <React.Fragment key={idx}>
+                                                        <span className="bg-cyan-100 px-3 py-1 rounded-full text-sm font-medium">
+                                                            {step}
+                                                        </span>
+                                                        {idx < stepExercises[currentExercise].steps.length - 1 && (
+                                                            <span className="text-gray-400">→</span>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+                                            <p className="text-gray-600 text-sm">
+                                                {stepExercises[currentExercise].explanation}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-2 mt-4">
+                                        {stepExercises.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => { setCurrentExercise(idx); setShowAnswer(false); }}
+                                                className={`w-8 h-8 rounded-full ${
+                                                    currentExercise === idx
+                                                        ? 'bg-amber-500 text-white'
+                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                }`}
+                                            >
+                                                {idx + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Jobs */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Jobs y Orquestacion</h2>
+
+                                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg text-purple-800 mb-3">¿Que es un Job?</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Un Job es un contenedor que orquesta la ejecucion de transformaciones y otros
+                                        trabajos. Define el orden de ejecucion, manejo de errores y notificaciones.
+                                    </p>
+                                    <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-bold text-purple-700 mb-1">Transformacion</div>
+                                            <div className="text-gray-600">Flujo de datos continuo</div>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-bold text-purple-700 mb-1">Job</div>
+                                            <div className="text-gray-600">Secuencia de pasos discretos</div>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-bold text-purple-700 mb-1">Diferencia</div>
+                                            <div className="text-gray-600">Job controla, Trans procesa</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Pasos de Job */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Componentes de un Job</h3>
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {[
+                                            { icon: '🟢', name: 'START', desc: 'Inicio del job', color: 'green' },
+                                            { icon: '🔄', name: 'Transformation', desc: 'Ejecuta un .ktr', color: 'cyan' },
+                                            { icon: '📋', name: 'Job', desc: 'Ejecuta otro job', color: 'purple' },
+                                            { icon: '📧', name: 'Mail', desc: 'Envia email', color: 'blue' },
+                                            { icon: '✅', name: 'Success', desc: 'Exito del job', color: 'green' },
+                                            { icon: '❌', name: 'Abort', desc: 'Abortar job', color: 'red' },
+                                            { icon: '📁', name: 'Create folder', desc: 'Crea directorio', color: 'amber' },
+                                            { icon: '🗑️', name: 'Delete files', desc: 'Elimina archivos', color: 'red' },
+                                            { icon: '📄', name: 'File exists', desc: 'Verifica archivo', color: 'gray' },
+                                            { icon: '🔀', name: 'Evaluate', desc: 'Condicion IF', color: 'amber' },
+                                            { icon: '⏸️', name: 'Wait', desc: 'Espera tiempo', color: 'gray' },
+                                            { icon: '💾', name: 'SQL', desc: 'Ejecuta SQL', color: 'blue' }
+                                        ].map((step, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => addStepToJob(step)}
+                                                className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                                            >
+                                                <span className="text-xl">{step.icon}</span>
+                                                <div>
+                                                    <div className="font-medium text-sm">{step.name}</div>
+                                                    <div className="text-xs text-gray-500">{step.desc}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Constructor de Job */}
+                                <div className="border-2 border-dashed border-purple-300 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-purple-700">Diseña tu Job</h4>
+                                        {jobSteps.length > 0 && (
+                                            <button onClick={clearJob} className="text-sm text-red-500">
+                                                Limpiar
+                                            </button>
+                                        )}
+                                    </div>
+                                    {jobSteps.length === 0 ? (
+                                        <p className="text-gray-400 text-center py-4">
+                                            Haz clic en los componentes de arriba para disenar tu job
+                                        </p>
+                                    ) : (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {jobSteps.map((step, idx) => (
+                                                <React.Fragment key={idx}>
+                                                    <div className="flex items-center gap-2 bg-purple-100 px-3 py-2 rounded-lg">
+                                                        <span>{step.icon}</span>
+                                                        <span className="text-sm font-medium">{step.name}</span>
+                                                    </div>
+                                                    {idx < jobSteps.length - 1 && (
+                                                        <span className="text-gray-400">→</span>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Ejemplo de Job tipico */}
+                                <div className="bg-gray-50 rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Ejemplo: Job ETL Diario</h3>
+                                    <div className="flex flex-wrap items-center justify-center gap-3">
+                                        {[
+                                            { icon: '🟢', name: 'START' },
+                                            { icon: '📁', name: 'Crear Logs' },
+                                            { icon: '🔄', name: 'ETL Ventas' },
+                                            { icon: '🔀', name: '¿Exito?' },
+                                        ].map((step, idx) => (
+                                            <React.Fragment key={idx}>
+                                                <div className="bg-white p-3 rounded-lg shadow text-center">
+                                                    <div className="text-2xl mb-1">{step.icon}</div>
+                                                    <div className="text-xs font-medium">{step.name}</div>
+                                                </div>
+                                                {idx < 3 && <span className="text-gray-400">→</span>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-center gap-8 mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-500">↓ Si</span>
+                                            <div className="bg-green-100 p-2 rounded-lg text-center">
+                                                <div className="text-xl">📧</div>
+                                                <div className="text-xs">Email OK</div>
+                                            </div>
+                                            <span>→</span>
+                                            <div className="bg-green-100 p-2 rounded-lg text-center">
+                                                <div className="text-xl">✅</div>
+                                                <div className="text-xs">Success</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-red-500">↓ No</span>
+                                            <div className="bg-red-100 p-2 rounded-lg text-center">
+                                                <div className="text-xl">📧</div>
+                                                <div className="text-xs">Email Error</div>
+                                            </div>
+                                            <span>→</span>
+                                            <div className="bg-red-100 p-2 rounded-lg text-center">
+                                                <div className="text-xl">❌</div>
+                                                <div className="text-xs">Abort</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Programacion */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Programacion con Cron</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        Para ejecutar jobs automaticamente, usamos cron (Linux/Mac) o Task Scheduler (Windows).
+                                    </p>
+                                    <div className="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm space-y-2">
+                                        <div className="text-gray-500"># Ejecutar ETL todos los dias a las 2:00 AM</div>
+                                        <div>0 2 * * * /opt/pentaho/kitchen.sh -file=/etl/carga_diaria.kjb</div>
+                                        <div className="text-gray-500 mt-3"># Ejecutar cada hora de lunes a viernes</div>
+                                        <div>0 * * * 1-5 /opt/pentaho/kitchen.sh -file=/etl/sync_ventas.kjb</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a
+                            href="laboratorio.html"
+                            className="bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-cyan-700 transition-colors flex items-center gap-2"
+                        >
+                            Ir al Laboratorio →
+                        </a>
+                        <a
+                            href="ejercicio-individual.html"
+                            className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700 transition-colors flex items-center gap-2"
+                        >
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 06 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

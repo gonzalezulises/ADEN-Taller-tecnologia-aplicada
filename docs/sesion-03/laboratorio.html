@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: Definiendo KPIs para tu Empresa - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .step-connector { height: 2px; background: linear-gradient(to right, #4f46e5, #7c3aed); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL LABORATORIO
+        // ============================================
+
+        const pasos = [
+            {
+                id: 1,
+                titulo: "Analizar la Estrategia",
+                descripcion: "Antes de definir KPIs, debemos entender los objetivos estrategicos de la empresa.",
+                duracion: "15 min",
+                tipo: "analisis"
+            },
+            {
+                id: 2,
+                titulo: "Identificar Metricas Candidatas",
+                descripcion: "Listar todas las metricas que se podrian medir en cada area de negocio.",
+                duracion: "20 min",
+                tipo: "brainstorm"
+            },
+            {
+                id: 3,
+                titulo: "Filtrar con Criterios SMART",
+                descripcion: "Aplicar el filtro SMART para convertir metricas en KPIs validos.",
+                duracion: "25 min",
+                tipo: "evaluacion"
+            },
+            {
+                id: 4,
+                titulo: "Definir Metas y Umbrales",
+                descripcion: "Establecer valores objetivo (verde), alerta (amarillo) y critico (rojo).",
+                duracion: "20 min",
+                tipo: "configuracion"
+            },
+            {
+                id: 5,
+                titulo: "Crear Dashboard de KPIs",
+                descripcion: "Disenar la visualizacion del tablero de control con los KPIs seleccionados.",
+                duracion: "25 min",
+                tipo: "diseno"
+            },
+            {
+                id: 6,
+                titulo: "Documentar con KPI Canvas",
+                descripcion: "Completar el Canvas para cada KPI definido.",
+                duracion: "20 min",
+                tipo: "documentacion"
+            },
+            {
+                id: 7,
+                titulo: "Presentar y Validar",
+                descripcion: "Compartir los KPIs con el equipo y recibir retroalimentacion.",
+                duracion: "15 min",
+                tipo: "presentacion"
+            }
+        ];
+
+        const empresaCaso = {
+            nombre: "TechStart Panama",
+            industria: "SaaS (Software as a Service)",
+            descripcion: "Startup de software B2B con 50 empleados, 3 anios en el mercado. Ofrece una plataforma de gestion de inventarios para PYMEs. Tiene 450 clientes activos y busca expandirse a Colombia y Costa Rica.",
+            objetivos: [
+                "Alcanzar 1,000 clientes activos para fin de 2026",
+                "Reducir el churn rate al 3% mensual",
+                "Aumentar el ticket promedio de $99 a $149/mes",
+                "Expandir a 2 nuevos paises en LATAM"
+            ],
+            areas: [
+                { nombre: "Ventas", responsable: "Director Comercial", metricas: ["Leads generados", "Demos realizadas", "Propuestas enviadas", "Cierres", "Ciclo de venta"] },
+                { nombre: "Producto", responsable: "CTO", metricas: ["Uptime", "Bugs reportados", "Features lanzados", "Tiempo carga", "Usuarios activos"] },
+                { nombre: "Exito del Cliente", responsable: "CS Manager", metricas: ["NPS", "Tickets soporte", "Tiempo resolucion", "Renovaciones", "Upsells"] },
+                { nombre: "Finanzas", responsable: "CFO", metricas: ["MRR", "CAC", "LTV", "Burn rate", "Runway"] }
+            ]
+        };
+
+        const kpisEjemplo = [
+            {
+                nombre: "Monthly Recurring Revenue (MRR)",
+                area: "Finanzas",
+                formula: "Suma de ingresos recurrentes mensuales",
+                meta: "$67,000 para Q4 2026",
+                verde: ">= $67,000",
+                amarillo: "$60,000 - $66,999",
+                rojo: "< $60,000",
+                frecuencia: "Mensual",
+                fuente: "Sistema de facturacion"
+            },
+            {
+                nombre: "Churn Rate",
+                area: "Exito del Cliente",
+                formula: "(Clientes perdidos / Clientes inicio del mes) * 100",
+                meta: "< 3% mensual",
+                verde: "< 3%",
+                amarillo: "3% - 5%",
+                rojo: "> 5%",
+                frecuencia: "Mensual",
+                fuente: "CRM"
+            },
+            {
+                nombre: "Customer Acquisition Cost (CAC)",
+                area: "Ventas",
+                formula: "(Gasto Marketing + Gasto Ventas) / Nuevos Clientes",
+                meta: "< $500 por cliente",
+                verde: "< $500",
+                amarillo: "$500 - $700",
+                rojo: "> $700",
+                frecuencia: "Mensual",
+                fuente: "ERP + CRM"
+            },
+            {
+                nombre: "Net Promoter Score (NPS)",
+                area: "Exito del Cliente",
+                formula: "% Promotores - % Detractores",
+                meta: "> 50",
+                verde: "> 50",
+                amarillo: "30 - 50",
+                rojo: "< 30",
+                frecuencia: "Trimestral",
+                fuente: "Encuestas automatizadas"
+            }
+        ];
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const StepIndicator = ({ currentStep, totalSteps, onStepClick }) => {
+            return (
+                <div className="flex items-center justify-between mb-8 bg-white rounded-xl p-4 shadow-sm">
+                    {pasos.map((paso, idx) => (
+                        <React.Fragment key={paso.id}>
+                            <button
+                                onClick={() => onStepClick(paso.id)}
+                                className={`flex flex-col items-center transition-all ${
+                                    currentStep >= paso.id ? 'opacity-100' : 'opacity-40'
+                                }`}
+                            >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                                    currentStep === paso.id
+                                        ? 'bg-indigo-500 text-white ring-4 ring-indigo-200'
+                                        : currentStep > paso.id
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-gray-200 text-gray-500'
+                                }`}>
+                                    {currentStep > paso.id ? '✓' : paso.id}
+                                </div>
+                                <span className="text-xs mt-1 text-gray-600 hidden md:block max-w-20 text-center">
+                                    {paso.titulo}
+                                </span>
+                            </button>
+                            {idx < pasos.length - 1 && (
+                                <div className={`flex-1 h-1 mx-2 rounded ${
+                                    currentStep > paso.id ? 'bg-green-400' : 'bg-gray-200'
+                                }`} />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            );
+        };
+
+        const Paso1Estrategia = ({ onComplete }) => {
+            const [objetivosIdentificados, setObjetivosIdentificados] = useState([]);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 1</span>
+                        <span className="text-gray-400">15 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Analizar la Estrategia</h2>
+                    <p className="text-gray-600 mb-6">Lee el caso de la empresa y marca los objetivos estrategicos que identificas.</p>
+
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+                        <h3 className="text-xl font-bold text-indigo-800 mb-2">{empresaCaso.nombre}</h3>
+                        <p className="text-gray-700 mb-4">{empresaCaso.descripcion}</p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {empresaCaso.areas.map((area, idx) => (
+                                <div key={idx} className="bg-white/80 rounded-lg p-3">
+                                    <p className="font-bold text-gray-800">{area.nombre}</p>
+                                    <p className="text-sm text-gray-500">{area.responsable}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="border-t pt-6">
+                        <h3 className="font-bold text-gray-800 mb-4">Marca los objetivos estrategicos que identificaste:</h3>
+                        <div className="space-y-3">
+                            {empresaCaso.objetivos.map((obj, idx) => (
+                                <label key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                                    <input
+                                        type="checkbox"
+                                        checked={objetivosIdentificados.includes(idx)}
+                                        onChange={() => {
+                                            if (objetivosIdentificados.includes(idx)) {
+                                                setObjetivosIdentificados(objetivosIdentificados.filter(i => i !== idx));
+                                            } else {
+                                                setObjetivosIdentificados([...objetivosIdentificados, idx]);
+                                            }
+                                        }}
+                                        className="w-5 h-5 text-indigo-600"
+                                    />
+                                    <span className="text-gray-700">{obj}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        {objetivosIdentificados.length === empresaCaso.objetivos.length && (
+                            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                <p className="text-green-800">
+                                    <strong>Excelente!</strong> Has identificado los 4 objetivos estrategicos. Estos seran
+                                    la base para definir los KPIs que mediran el progreso de la empresa.
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={onComplete}
+                            disabled={objetivosIdentificados.length < empresaCaso.objetivos.length}
+                            className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Continuar al Paso 2 →
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const Paso2Metricas = ({ onComplete }) => {
+            const [metricasSeleccionadas, setMetricasSeleccionadas] = useState({});
+
+            const toggleMetrica = (area, metrica) => {
+                const areaMetricas = metricasSeleccionadas[area] || [];
+                if (areaMetricas.includes(metrica)) {
+                    setMetricasSeleccionadas({
+                        ...metricasSeleccionadas,
+                        [area]: areaMetricas.filter(m => m !== metrica)
+                    });
+                } else {
+                    setMetricasSeleccionadas({
+                        ...metricasSeleccionadas,
+                        [area]: [...areaMetricas, metrica]
+                    });
+                }
+            };
+
+            const totalSeleccionadas = Object.values(metricasSeleccionadas).flat().length;
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 2</span>
+                        <span className="text-gray-400">20 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Identificar Metricas Candidatas</h2>
+                    <p className="text-gray-600 mb-6">
+                        Selecciona las metricas que consideras mas relevantes para medir los objetivos estrategicos.
+                        Selecciona al menos 2-3 por area.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {empresaCaso.areas.map((area, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="font-bold text-gray-800 mb-3">{area.nombre}</h3>
+                                <div className="space-y-2">
+                                    {area.metricas.map((metrica, mIdx) => (
+                                        <button
+                                            key={mIdx}
+                                            onClick={() => toggleMetrica(area.nombre, metrica)}
+                                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                                                (metricasSeleccionadas[area.nombre] || []).includes(metrica)
+                                                    ? 'bg-indigo-500 text-white'
+                                                    : 'bg-white hover:bg-gray-100 text-gray-700'
+                                            }`}
+                                        >
+                                            {metrica}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p className="text-blue-800">
+                            <strong>Metricas seleccionadas:</strong> {totalSeleccionadas} de {empresaCaso.areas.reduce((sum, a) => sum + a.metricas.length, 0)}
+                        </p>
+                        <p className="text-sm text-blue-600 mt-1">
+                            En el siguiente paso filtraremos estas metricas para convertirlas en KPIs.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        disabled={totalSeleccionadas < 6}
+                        className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Continuar al Paso 3 →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso3SMART = ({ onComplete }) => {
+            const [evaluaciones, setEvaluaciones] = useState({});
+
+            const metricasEvaluar = [
+                { nombre: "Leads generados", smart: { S: false, M: true, A: true, R: true, T: false } },
+                { nombre: "MRR", smart: { S: true, M: true, A: true, R: true, T: true } },
+                { nombre: "NPS", smart: { S: true, M: true, A: true, R: true, T: true } },
+                { nombre: "Bugs reportados", smart: { S: true, M: true, A: true, R: false, T: false } },
+            ];
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 3</span>
+                        <span className="text-gray-400">25 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Filtrar con Criterios SMART</h2>
+                    <p className="text-gray-600 mb-6">
+                        Evalua cada metrica contra los 5 criterios SMART. Solo las que cumplan todos se convertiran en KPIs.
+                    </p>
+
+                    <div className="space-y-4">
+                        {metricasEvaluar.map((metrica, idx) => {
+                            const esKPI = Object.values(metrica.smart).every(v => v);
+                            return (
+                                <div key={idx} className={`p-4 rounded-xl border-2 ${esKPI ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="font-bold text-gray-800">{metrica.nombre}</span>
+                                        {esKPI && (
+                                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+                                                ✓ Es KPI
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {Object.entries(metrica.smart).map(([letra, cumple]) => (
+                                            <div
+                                                key={letra}
+                                                className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
+                                                    cumple
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-red-100 text-red-600'
+                                                }`}
+                                            >
+                                                {letra}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {!esKPI && (
+                                        <p className="mt-2 text-sm text-gray-500">
+                                            No cumple todos los criterios. Necesita: {
+                                                Object.entries(metrica.smart)
+                                                    .filter(([_, v]) => !v)
+                                                    .map(([k]) => k)
+                                                    .join(', ')
+                                            }
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-amber-800">
+                            <strong>Reflexion:</strong> "Leads generados" no es un KPI porque le falta ser Especifico
+                            (que tipo de leads?) y Temporal (en que periodo?). Podria mejorarse a:
+                            "Leads calificados generados por mes (meta: 50)"
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                    >
+                        Continuar al Paso 4 →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso4Metas = ({ onComplete }) => {
+            const [metas, setMetas] = useState({});
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 4</span>
+                        <span className="text-gray-400">20 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Definir Metas y Umbrales</h2>
+                    <p className="text-gray-600 mb-6">
+                        Para cada KPI, define el valor objetivo y los umbrales de alerta usando el sistema de semaforo.
+                    </p>
+
+                    <div className="space-y-6">
+                        {kpisEjemplo.slice(0, 2).map((kpi, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="font-bold text-gray-800 mb-3">{kpi.nombre}</h3>
+                                <div className="grid md:grid-cols-3 gap-3">
+                                    <div className="bg-green-100 border-2 border-green-400 rounded-lg p-3">
+                                        <p className="font-bold text-green-800 mb-1">Verde (Meta)</p>
+                                        <p className="text-green-700">{kpi.verde}</p>
+                                    </div>
+                                    <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-3">
+                                        <p className="font-bold text-yellow-800 mb-1">Amarillo (Alerta)</p>
+                                        <p className="text-yellow-700">{kpi.amarillo}</p>
+                                    </div>
+                                    <div className="bg-red-100 border-2 border-red-400 rounded-lg p-3">
+                                        <p className="font-bold text-red-800 mb-1">Rojo (Critico)</p>
+                                        <p className="text-red-700">{kpi.rojo}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p className="text-blue-800">
+                            <strong>Tip:</strong> Los umbrales deben basarse en datos historicos, benchmarks de la industria,
+                            y capacidad operativa. Un MRR verde de $67,000 implica 450 clientes a $149 promedio.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                    >
+                        Continuar al Paso 5 →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso5Dashboard = ({ onComplete }) => {
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 5</span>
+                        <span className="text-gray-400">25 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Crear Dashboard de KPIs</h2>
+                    <p className="text-gray-600 mb-6">
+                        Visualiza como se veria un dashboard ejecutivo con los KPIs definidos.
+                    </p>
+
+                    <div className="bg-slate-800 rounded-xl p-6 text-white">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold">TechStart Panama - Dashboard Ejecutivo</h3>
+                            <span className="text-slate-400 text-sm">Enero 2026</span>
+                        </div>
+
+                        <div className="grid md:grid-cols-4 gap-4">
+                            {kpisEjemplo.map((kpi, idx) => {
+                                const valores = ['$65,200', '2.8%', '$480', '52'];
+                                const estados = ['amarillo', 'verde', 'verde', 'verde'];
+                                const coloresEstado = {
+                                    verde: 'border-green-400 bg-green-900/30',
+                                    amarillo: 'border-yellow-400 bg-yellow-900/30',
+                                    rojo: 'border-red-400 bg-red-900/30'
+                                };
+                                return (
+                                    <div key={idx} className={`rounded-xl p-4 border-2 ${coloresEstado[estados[idx]]}`}>
+                                        <p className="text-slate-400 text-sm mb-1">{kpi.area}</p>
+                                        <p className="font-bold text-lg mb-2">{kpi.nombre.split(' ')[0]}</p>
+                                        <p className="text-3xl font-bold">{valores[idx]}</p>
+                                        <p className="text-slate-400 text-xs mt-1">Meta: {kpi.meta}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-6 grid md:grid-cols-2 gap-4">
+                            <div className="bg-slate-700/50 rounded-xl p-4">
+                                <p className="font-bold mb-3">Tendencia MRR</p>
+                                <div className="flex items-end gap-1 h-24">
+                                    {[45, 52, 58, 61, 63, 65].map((v, i) => (
+                                        <div key={i} className="flex-1 bg-indigo-500 rounded-t" style={{height: `${v}%`}} />
+                                    ))}
+                                </div>
+                                <div className="flex justify-between text-xs text-slate-400 mt-2">
+                                    <span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span><span>Ene</span>
+                                </div>
+                            </div>
+                            <div className="bg-slate-700/50 rounded-xl p-4">
+                                <p className="font-bold mb-3">Churn por Mes</p>
+                                <div className="flex items-end gap-1 h-24">
+                                    {[60, 55, 45, 40, 35, 28].map((v, i) => (
+                                        <div key={i} className="flex-1 bg-emerald-500 rounded-t" style={{height: `${v}%`}} />
+                                    ))}
+                                </div>
+                                <div className="flex justify-between text-xs text-slate-400 mt-2">
+                                    <span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span><span>Ene</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                        <p className="text-purple-800">
+                            <strong>Principios de diseno:</strong> El dashboard ejecutivo debe mostrar los KPIs mas criticos
+                            "above the fold" (sin scroll), usar colores para indicar estado, y permitir drill-down a detalles.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                    >
+                        Continuar al Paso 6 →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso6Canvas = ({ onComplete }) => {
+            const [canvasActivo, setCanvasActivo] = useState(0);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 6</span>
+                        <span className="text-gray-400">20 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Documentar con KPI Canvas</h2>
+                    <p className="text-gray-600 mb-6">
+                        Completa el KPI Canvas para documentar formalmente cada indicador.
+                    </p>
+
+                    <div className="flex gap-2 mb-4">
+                        {kpisEjemplo.map((kpi, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCanvasActivo(idx)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                    canvasActivo === idx
+                                        ? 'bg-indigo-500 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {kpi.nombre.split(' ')[0]}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6">
+                        <h3 className="text-xl font-bold text-indigo-800 mb-4">
+                            KPI Canvas: {kpisEjemplo[canvasActivo].nombre}
+                        </h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Nombre del KPI</p>
+                                <p className="font-bold">{kpisEjemplo[canvasActivo].nombre}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Area Responsable</p>
+                                <p className="font-bold">{kpisEjemplo[canvasActivo].area}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Formula de Calculo</p>
+                                <p className="font-mono text-sm">{kpisEjemplo[canvasActivo].formula}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Fuente de Datos</p>
+                                <p className="font-bold">{kpisEjemplo[canvasActivo].fuente}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Frecuencia</p>
+                                <p className="font-bold">{kpisEjemplo[canvasActivo].frecuencia}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-500 mb-1">Meta</p>
+                                <p className="font-bold text-green-600">{kpisEjemplo[canvasActivo].meta}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 md:col-span-2">
+                                <p className="text-xs text-gray-500 mb-1">Umbrales</p>
+                                <div className="flex gap-4">
+                                    <span className="text-green-600">Verde: {kpisEjemplo[canvasActivo].verde}</span>
+                                    <span className="text-yellow-600">Amarillo: {kpisEjemplo[canvasActivo].amarillo}</span>
+                                    <span className="text-red-600">Rojo: {kpisEjemplo[canvasActivo].rojo}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                    >
+                        Continuar al Paso 7 →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso7Presentar = ({ onComplete }) => {
+            const [completado, setCompletado] = useState(false);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 7</span>
+                        <span className="text-gray-400">15 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Presentar y Validar</h2>
+                    <p className="text-gray-600 mb-6">
+                        Prepara tu presentacion ejecutiva de los KPIs definidos.
+                    </p>
+
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6">
+                        <h3 className="font-bold text-green-800 mb-4">Checklist de Presentacion</h3>
+                        <div className="space-y-3">
+                            {[
+                                "Explicar el contexto estrategico de la empresa",
+                                "Presentar cada KPI con su formula y fuente",
+                                "Justificar las metas y umbrales definidos",
+                                "Mostrar el mockup del dashboard",
+                                "Explicar el proceso de monitoreo propuesto"
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-3 bg-white rounded-lg p-3">
+                                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">
+                                        ✓
+                                    </div>
+                                    <span className="text-gray-700">{item}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                        <p className="text-amber-800">
+                            <strong>Preguntas que te haran:</strong>
+                        </p>
+                        <ul className="mt-2 text-amber-700 space-y-1">
+                            <li>• Por que ese KPI y no otro?</li>
+                            <li>• Como definiste la meta?</li>
+                            <li>• Que pasa si el KPI esta en rojo?</li>
+                            <li>• Quien es responsable de cada KPI?</li>
+                        </ul>
+                    </div>
+
+                    {!completado ? (
+                        <button
+                            onClick={() => setCompletado(true)}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600"
+                        >
+                            Marcar Laboratorio como Completado
+                        </button>
+                    ) : (
+                        <div className="text-center p-8 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl">
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h3 className="text-2xl font-bold text-green-800 mb-2">Laboratorio Completado!</h3>
+                            <p className="text-green-700">
+                                Has aprendido a definir KPIs empresariales siguiendo el proceso completo:
+                                desde el analisis estrategico hasta la documentacion formal.
+                            </p>
+                            <a
+                                href="ejercicio-individual.html"
+                                className="inline-block mt-4 px-6 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                            >
+                                Continuar con Ejercicio Individual →
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const KPIsLab = () => {
+            const [currentStep, setCurrentStep] = useState(1);
+
+            const renderStep = () => {
+                switch(currentStep) {
+                    case 1: return <Paso1Estrategia onComplete={() => setCurrentStep(2)} />;
+                    case 2: return <Paso2Metricas onComplete={() => setCurrentStep(3)} />;
+                    case 3: return <Paso3SMART onComplete={() => setCurrentStep(4)} />;
+                    case 4: return <Paso4Metas onComplete={() => setCurrentStep(5)} />;
+                    case 5: return <Paso5Dashboard onComplete={() => setCurrentStep(6)} />;
+                    case 6: return <Paso6Canvas onComplete={() => setCurrentStep(7)} />;
+                    case 7: return <Paso7Presentar />;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold mb-1">Laboratorio: Definiendo KPIs para tu Empresa</h1>
+                                    <p className="text-emerald-100">Sesion 03 - Taller de Tecnologia Aplicada</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Simulador
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        Inicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <StepIndicator
+                            currentStep={currentStep}
+                            totalSteps={pasos.length}
+                            onStepClick={setCurrentStep}
+                        />
+
+                        {renderStep()}
+
+                        <div className="mt-6 text-center text-gray-500 text-sm">
+                            <p>ADEN University - Taller de Tecnologia Aplicada</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<KPIsLab />);
+    </script>
+</body>
+</html>

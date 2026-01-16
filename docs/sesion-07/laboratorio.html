@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: EDA con Python - Sesion 07</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function App() {
+            const [currentStep, setCurrentStep] = useState(0);
+            const [completedSteps, setCompletedSteps] = useState([]);
+
+            const labSteps = [
+                {
+                    title: 'Preparar Google Colab',
+                    duration: '10 min',
+                    icon: '🚀',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Configurar Google Colab y cargar el dataset de ventas retail.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Paso 1: Abrir Google Colab</h4>
+                            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                <li>Ve a <a href="https://colab.research.google.com" target="_blank" class="text-amber-600 hover:underline">colab.research.google.com</a></li>
+                                <li>Inicia sesion con tu cuenta de Google</li>
+                                <li>Crea un nuevo notebook: File → New notebook</li>
+                                <li>Renombra como: <code class="bg-gray-200 px-1 rounded">EDA_Retail_[TuNombre].ipynb</code></li>
+                            </ol>
+
+                            <h4 class="font-bold text-lg mt-4">Paso 2: Descargar Dataset</h4>
+                            <p class="text-gray-700 mb-2">Usaremos un dataset de ventas de retail. Ejecuta esta celda:</p>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre># Descargar dataset de ejemplo
+import pandas as pd
+
+# Dataset de ventas retail (simulado para el ejercicio)
+url = "https://raw.githubusercontent.com/datasets/retail/main/data/retail.csv"
+
+# Si el URL no funciona, creamos datos de ejemplo
+try:
+    df = pd.read_csv(url)
+except:
+    # Crear dataset de ejemplo
+    import numpy as np
+    np.random.seed(42)
+    n = 5000
+
+    df = pd.DataFrame({
+        'fecha': pd.date_range('2025-01-01', periods=n, freq='H'),
+        'cliente_id': np.random.randint(1, 500, n),
+        'producto_id': np.random.choice(['PROD_A', 'PROD_B', 'PROD_C', 'PROD_D', 'PROD_E'], n),
+        'categoria': np.random.choice(['Electronica', 'Ropa', 'Alimentos', 'Hogar'], n),
+        'cantidad': np.random.randint(1, 10, n),
+        'precio_unitario': np.round(np.random.uniform(5, 500, n), 2),
+        'descuento': np.random.choice([0, 0, 0, 0.1, 0.15, 0.2], n),
+        'region': np.random.choice(['Panama', 'Colon', 'Chiriqui', 'Veraguas'], n),
+        'canal': np.random.choice(['Tienda', 'Online', 'Telefono'], n),
+        'edad_cliente': np.random.randint(18, 70, n),
+        'genero': np.random.choice(['M', 'F'], n)
+    })
+
+    # Agregar algunos nulos para practicar
+    df.loc[np.random.choice(df.index, 100), 'edad_cliente'] = np.nan
+    df.loc[np.random.choice(df.index, 50), 'descuento'] = np.nan
+
+print(f"Dataset cargado: {df.shape[0]} filas, {df.shape[1]} columnas")
+df.head()</pre>
+                            </div>
+
+                            <div class="bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+                                <h4 class="font-bold text-green-800">Verificacion</h4>
+                                <p class="text-sm text-gray-700">
+                                    Deberias ver: "Dataset cargado: 5000 filas, 11 columnas" y las primeras 5 filas.
+                                </p>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Fase 1: Estructura del Dataset',
+                    duration: '15 min',
+                    icon: '📋',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Entender la estructura basica: dimensiones, tipos de datos y valores unicos.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Dimensiones</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Dimensiones del dataset
+print("="*50)
+print("ESTRUCTURA DEL DATASET")
+print("="*50)
+print(f"Filas: {df.shape[0]:,}")
+print(f"Columnas: {df.shape[1]}")
+print(f"Total de datos: {df.size:,}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Informacion de columnas</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Tipos de datos
+print("\\nTIPOS DE DATOS:")
+print("-"*50)
+print(df.dtypes)
+
+# Resumen de info
+print("\\n")
+df.info()</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 3: Valores unicos</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Valores unicos por columna
+print("\\nVALORES UNICOS:")
+print("-"*50)
+for col in df.columns:
+    print(f"{col}: {df[col].nunique()} valores unicos")</pre>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mt-4">
+                                <h4 class="font-bold text-blue-800">Preguntas a Responder</h4>
+                                <ul class="text-sm text-gray-700 space-y-1 mt-2">
+                                    <li>• ¿Cuantos clientes unicos hay?</li>
+                                    <li>• ¿Cuantas categorias de producto?</li>
+                                    <li>• ¿Que tipos de datos tenemos (numericos vs categoricos)?</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Fase 2: Calidad de Datos',
+                    duration: '15 min',
+                    icon: '🔍',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Identificar problemas de calidad: nulos, duplicados y outliers.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Valores nulos</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Analisis de valores nulos
+print("="*50)
+print("ANALISIS DE VALORES NULOS")
+print("="*50)
+
+nulos = df.isnull().sum()
+porcentaje_nulos = (nulos / len(df)) * 100
+
+nulos_df = pd.DataFrame({
+    'Nulos': nulos,
+    'Porcentaje': porcentaje_nulos.round(2)
+})
+
+print(nulos_df[nulos_df['Nulos'] > 0])
+print(f"\\nTotal de valores nulos: {df.isnull().sum().sum()}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Duplicados</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Analisis de duplicados
+print("\\nANALISIS DE DUPLICADOS")
+print("-"*50)
+
+duplicados = df.duplicated().sum()
+print(f"Filas duplicadas exactas: {duplicados}")
+
+# Duplicados por cliente en misma fecha
+dup_cliente_fecha = df.duplicated(subset=['cliente_id', 'fecha']).sum()
+print(f"Mismo cliente, misma fecha: {dup_cliente_fecha}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 3: Outliers</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre>import matplotlib.pyplot as plt
+
+# Boxplots para detectar outliers
+fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+
+df['cantidad'].plot(kind='box', ax=axes[0], title='Cantidad')
+df['precio_unitario'].plot(kind='box', ax=axes[1], title='Precio Unitario')
+df['edad_cliente'].plot(kind='box', ax=axes[2], title='Edad Cliente')
+
+plt.tight_layout()
+plt.show()
+
+# Metodo IQR para precio
+Q1 = df['precio_unitario'].quantile(0.25)
+Q3 = df['precio_unitario'].quantile(0.75)
+IQR = Q3 - Q1
+outliers = df[(df['precio_unitario'] < Q1 - 1.5*IQR) |
+              (df['precio_unitario'] > Q3 + 1.5*IQR)]
+print(f"\\nOutliers en precio_unitario: {len(outliers)} ({len(outliers)/len(df)*100:.2f}%)")</pre>
+                            </div>
+
+                            <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg mt-4">
+                                <h4 class="font-bold text-rose-800">Hallazgos Esperados</h4>
+                                <ul class="text-sm text-gray-700 space-y-1 mt-2">
+                                    <li>• edad_cliente: ~100 nulos (2%)</li>
+                                    <li>• descuento: ~50 nulos (1%)</li>
+                                    <li>• Posibles outliers en precio_unitario</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Fase 3: Estadisticas Descriptivas',
+                    duration: '15 min',
+                    icon: '📊',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Calcular estadisticas descriptivas para variables numericas y categoricas.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Variables numericas</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Estadisticas descriptivas numericas
+print("="*50)
+print("ESTADISTICAS NUMERICAS")
+print("="*50)
+
+# Describe completo
+desc = df.describe()
+print(desc.round(2))
+
+# Calcular total de ventas
+df['total_venta'] = df['cantidad'] * df['precio_unitario'] * (1 - df['descuento'].fillna(0))
+print(f"\\nVenta promedio: ${df['total_venta'].mean():.2f}")
+print(f"Venta total: ${df['total_venta'].sum():,.2f}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Variables categoricas</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Analisis de categoricas
+print("\\nDISTRIBUCION DE CATEGORICAS")
+print("-"*50)
+
+categoricas = ['categoria', 'region', 'canal', 'genero']
+
+for col in categoricas:
+    print(f"\\n{col.upper()}:")
+    print(df[col].value_counts())
+    print(f"Moda: {df[col].mode()[0]}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 3: Visualizar distribuciones</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre>import seaborn as sns
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Distribucion de ventas por categoria
+df.groupby('categoria')['total_venta'].sum().plot(kind='bar', ax=axes[0,0], color='steelblue')
+axes[0,0].set_title('Ventas por Categoria')
+axes[0,0].set_xlabel('')
+
+# Distribucion por region
+df.groupby('region')['total_venta'].sum().plot(kind='bar', ax=axes[0,1], color='coral')
+axes[0,1].set_title('Ventas por Region')
+axes[0,1].set_xlabel('')
+
+# Distribucion por canal
+df.groupby('canal')['total_venta'].sum().plot(kind='pie', ax=axes[1,0], autopct='%1.1f%%')
+axes[1,0].set_title('Ventas por Canal')
+
+# Histograma de edad
+df['edad_cliente'].hist(bins=20, ax=axes[1,1], color='green', alpha=0.7)
+axes[1,1].set_title('Distribucion de Edad de Clientes')
+axes[1,1].set_xlabel('Edad')
+
+plt.tight_layout()
+plt.show()</pre>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Fase 4: Analisis de Relaciones',
+                    duration: '20 min',
+                    icon: '🔗',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Explorar correlaciones y relaciones entre variables.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Matriz de correlacion</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Correlacion entre variables numericas
+numericas = df.select_dtypes(include=[np.number])
+
+plt.figure(figsize=(10, 8))
+corr_matrix = numericas.corr()
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f')
+plt.title('Matriz de Correlacion')
+plt.tight_layout()
+plt.show()
+
+# Correlaciones mas fuertes
+print("\\nCorrelaciones mas fuertes con total_venta:")
+print(corr_matrix['total_venta'].sort_values(ascending=False))</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Analisis bivariado</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Scatter plots
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+# Cantidad vs Total Venta
+axes[0].scatter(df['cantidad'], df['total_venta'], alpha=0.5)
+axes[0].set_xlabel('Cantidad')
+axes[0].set_ylabel('Total Venta')
+axes[0].set_title('Cantidad vs Total Venta')
+
+# Precio vs Total Venta
+axes[1].scatter(df['precio_unitario'], df['total_venta'], alpha=0.5, color='coral')
+axes[1].set_xlabel('Precio Unitario')
+axes[1].set_ylabel('Total Venta')
+axes[1].set_title('Precio vs Total Venta')
+
+plt.tight_layout()
+plt.show()</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 3: Segmentacion cruzada</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Tabla de contingencia: Canal vs Categoria
+cross_tab = pd.crosstab(df['canal'], df['categoria'], values=df['total_venta'],
+                         aggfunc='sum', margins=True)
+print("VENTAS POR CANAL Y CATEGORIA:")
+print(cross_tab.round(0))
+
+# Heatmap
+plt.figure(figsize=(10, 6))
+pivot = df.pivot_table(values='total_venta', index='canal', columns='categoria', aggfunc='sum')
+sns.heatmap(pivot, annot=True, fmt='.0f', cmap='YlOrRd')
+plt.title('Ventas: Canal vs Categoria')
+plt.show()</pre>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mt-4">
+                                <h4 class="font-bold text-blue-800">Insights a Buscar</h4>
+                                <ul class="text-sm text-gray-700 space-y-1 mt-2">
+                                    <li>• ¿Que canal vende mas en cada categoria?</li>
+                                    <li>• ¿Hay correlacion entre cantidad y precio?</li>
+                                    <li>• ¿La edad del cliente afecta el monto de compra?</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Fase 5: Analisis Temporal',
+                    duration: '15 min',
+                    icon: '📈',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Analizar patrones temporales en las ventas.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Preparar datos temporales</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Extraer componentes de fecha
+df['fecha'] = pd.to_datetime(df['fecha'])
+df['dia_semana'] = df['fecha'].dt.day_name()
+df['hora'] = df['fecha'].dt.hour
+df['dia'] = df['fecha'].dt.day
+df['mes'] = df['fecha'].dt.month
+
+print("Componentes temporales agregados:")
+print(df[['fecha', 'dia_semana', 'hora', 'dia', 'mes']].head())</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Ventas por hora y dia</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre>fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Ventas por hora
+ventas_hora = df.groupby('hora')['total_venta'].sum()
+ventas_hora.plot(kind='line', ax=axes[0], marker='o', color='steelblue')
+axes[0].set_title('Ventas por Hora del Dia')
+axes[0].set_xlabel('Hora')
+axes[0].set_ylabel('Total Ventas ($)')
+axes[0].grid(True, alpha=0.3)
+
+# Ventas por dia de semana
+orden_dias = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+ventas_dia = df.groupby('dia_semana')['total_venta'].sum()
+ventas_dia = ventas_dia.reindex(orden_dias)
+ventas_dia.plot(kind='bar', ax=axes[1], color='coral')
+axes[1].set_title('Ventas por Dia de Semana')
+axes[1].set_xlabel('')
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.show()
+
+# Insights
+print(f"\\nHora pico: {ventas_hora.idxmax()}:00 hrs")
+print(f"Dia mas fuerte: {ventas_dia.idxmax()}")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 3: Tendencia</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Ventas diarias (tendencia)
+ventas_diarias = df.groupby(df['fecha'].dt.date)['total_venta'].sum()
+
+plt.figure(figsize=(14, 5))
+ventas_diarias.plot(kind='line', alpha=0.7)
+
+# Agregar media movil
+media_movil = ventas_diarias.rolling(window=7).mean()
+media_movil.plot(kind='line', color='red', linewidth=2, label='Media Movil 7 dias')
+
+plt.title('Tendencia de Ventas Diarias')
+plt.xlabel('Fecha')
+plt.ylabel('Total Ventas ($)')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()</pre>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: 'Generar Informe EDA',
+                    duration: '15 min',
+                    icon: '📝',
+                    content: `
+                        <div class="space-y-4">
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 class="font-bold text-amber-800">Objetivo</h4>
+                                <p class="text-gray-700">Consolidar hallazgos en un informe estructurado.</p>
+                            </div>
+
+                            <h4 class="font-bold text-lg">Celda 1: Resumen ejecutivo</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre># Generar resumen ejecutivo
+print("="*60)
+print("INFORME DE ANALISIS EXPLORATORIO DE DATOS (EDA)")
+print("Dataset: Ventas Retail")
+print("="*60)
+
+print(f"""
+1. ALCANCE DEL ANALISIS
+   - Registros analizados: {len(df):,}
+   - Periodo: {df['fecha'].min()} a {df['fecha'].max()}
+   - Variables: {len(df.columns)}
+
+2. CALIDAD DE DATOS
+   - Valores nulos: {df.isnull().sum().sum()} ({df.isnull().sum().sum()/df.size*100:.2f}%)
+   - Duplicados: {df.duplicated().sum()}
+   - Outliers en precio: ~{len(outliers)} registros
+
+3. METRICAS CLAVE
+   - Venta total: ${df['total_venta'].sum():,.2f}
+   - Ticket promedio: ${df['total_venta'].mean():.2f}
+   - Clientes unicos: {df['cliente_id'].nunique():,}
+
+4. INSIGHTS PRINCIPALES
+   - Categoria top: {df.groupby('categoria')['total_venta'].sum().idxmax()}
+   - Region top: {df.groupby('region')['total_venta'].sum().idxmax()}
+   - Canal top: {df.groupby('canal')['total_venta'].sum().idxmax()}
+""")</pre>
+                            </div>
+
+                            <h4 class="font-bold text-lg mt-4">Celda 2: Recomendaciones</h4>
+                            <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm">
+<pre>print("""
+5. RECOMENDACIONES PARA MODELADO
+
+   a) Tratamiento de datos:
+      - Imputar edad_cliente con mediana por region
+      - Imputar descuento con 0 (asumiendo sin descuento)
+      - Evaluar eliminar outliers extremos de precio
+
+   b) Feature Engineering sugerido:
+      - Crear segmento de cliente por frecuencia de compra
+      - Calcular recencia (dias desde ultima compra)
+      - Agregar indicador de fin de semana
+      - Crear bins de edad (joven, adulto, senior)
+
+   c) Variables candidatas para modelo:
+      - Predictores: categoria, region, canal, hora, dia_semana, edad_cliente
+      - Target potencial: total_venta (regresion) o cliente_frecuente (clasificacion)
+
+6. PROXIMOS PASOS
+   - Profundizar analisis de segmentacion de clientes
+   - Evaluar estacionalidad a nivel mensual
+   - Analizar cesta de productos (market basket)
+""")</pre>
+                            </div>
+
+                            <div class="bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+                                <h4 class="font-bold text-green-800">Entregable del Laboratorio</h4>
+                                <ul class="text-sm text-gray-700 space-y-1 mt-2">
+                                    <li>✓ Notebook de Google Colab con todas las celdas ejecutadas</li>
+                                    <li>✓ Al menos 5 visualizaciones</li>
+                                    <li>✓ Resumen de hallazgos de calidad de datos</li>
+                                    <li>✓ Insights de negocio identificados</li>
+                                    <li>✓ Recomendaciones para modelado</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `
+                }
+            ];
+
+            const markComplete = (stepIndex) => {
+                if (!completedSteps.includes(stepIndex)) {
+                    setCompletedSteps([...completedSteps, stepIndex]);
+                }
+                if (stepIndex < labSteps.length - 1) {
+                    setCurrentStep(stepIndex + 1);
+                }
+            };
+
+            const progress = (completedSteps.length / labSteps.length) * 100;
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-emerald-100 mb-2">
+                            <a href="./" className="hover:text-white">← Volver al simulador</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Laboratorio: EDA con Python</h1>
+                        <p className="text-emerald-100">Analisis Exploratorio de Datos - Dataset Ventas Retail</p>
+
+                        {/* Progress bar */}
+                        <div className="mt-4">
+                            <div className="flex justify-between text-sm mb-1">
+                                <span>Progreso</span>
+                                <span>{completedSteps.length} de {labSteps.length} pasos</span>
+                            </div>
+                            <div className="w-full bg-emerald-800 rounded-full h-2">
+                                <div
+                                    className="bg-white rounded-full h-2 transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-4 gap-6">
+                        {/* Sidebar */}
+                        <div className="md:col-span-1 space-y-2">
+                            {labSteps.map((step, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentStep(index)}
+                                    className={`w-full text-left p-3 rounded-lg transition-all ${
+                                        currentStep === index
+                                            ? 'bg-emerald-100 border-2 border-emerald-500'
+                                            : completedSteps.includes(index)
+                                            ? 'bg-green-50 border border-green-300'
+                                            : 'bg-white border border-gray-200 hover:border-emerald-300'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {completedSteps.includes(index) ? (
+                                            <span className="text-green-500">✓</span>
+                                        ) : (
+                                            <span>{step.icon}</span>
+                                        )}
+                                        <span className="text-sm font-medium">{step.title}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 ml-6">{step.duration}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Main content */}
+                        <div className="md:col-span-3">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                        <span>{labSteps[currentStep].icon}</span>
+                                        {labSteps[currentStep].title}
+                                    </h2>
+                                    <span className="text-sm text-gray-500">
+                                        {labSteps[currentStep].duration}
+                                    </span>
+                                </div>
+
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: labSteps[currentStep].content }}
+                                />
+
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                                        disabled={currentStep === 0}
+                                        className="px-4 py-2 text-gray-600 disabled:opacity-50"
+                                    >
+                                        ← Anterior
+                                    </button>
+
+                                    <button
+                                        onClick={() => markComplete(currentStep)}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                                            completedSteps.includes(currentStep)
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                        }`}
+                                    >
+                                        {completedSteps.includes(currentStep)
+                                            ? '✓ Completado'
+                                            : currentStep === labSteps.length - 1
+                                            ? 'Finalizar'
+                                            : 'Marcar como completado →'
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Laboratorio Sesion 07 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

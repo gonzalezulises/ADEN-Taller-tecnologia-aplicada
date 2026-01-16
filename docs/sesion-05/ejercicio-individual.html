@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio: Disena tu Pipeline ETL - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL EJERCICIO
+        // ============================================
+
+        const empresas = [
+            {
+                id: 'fintech',
+                nombre: 'PayRapido',
+                industria: 'Fintech / Pagos',
+                icon: 'CARD',
+                color: 'from-emerald-500 to-green-500',
+                descripcion: 'Plataforma de pagos digitales con 500,000 transacciones diarias. Necesita consolidar datos de multiples canales.',
+                fuentes: ['API de transacciones en tiempo real', 'Base de datos de comercios (MySQL)', 'Logs de fraude (JSON)', 'Reportes bancarios (SFTP/CSV)'],
+                problemas: ['Transacciones duplicadas por reintentos', 'Montos en diferentes monedas', 'Timestamps en diferentes zonas horarias']
+            },
+            {
+                id: 'healthcare',
+                nombre: 'SaludDigital',
+                industria: 'Salud',
+                icon: 'MED',
+                color: 'from-cyan-500 to-blue-500',
+                descripcion: 'Red de clinicas con sistema de citas, historia clinica electronica y facturacion. Requiere integrar datos para analisis clinico.',
+                fuentes: ['Sistema HIS (Historia Clinica)', 'Sistema de citas (PostgreSQL)', 'Facturacion SAP', 'Resultados de laboratorio (HL7)'],
+                problemas: ['Pacientes duplicados con diferentes IDs', 'Diagnosticos en texto libre vs codificados', 'Fechas de citas vs fechas reales de atencion']
+            },
+            {
+                id: 'telco',
+                nombre: 'MovilMax',
+                industria: 'Telecomunicaciones',
+                icon: 'SIGNAL',
+                color: 'from-purple-500 to-violet-500',
+                descripcion: 'Operador movil con 2M de clientes. Necesita analizar consumo, facturacion y comportamiento de clientes.',
+                fuentes: ['CDRs (Call Detail Records) - millones/dia', 'Sistema de facturacion Oracle', 'CRM Salesforce (API)', 'Redes sociales (menciones)'],
+                problemas: ['Volumen masivo de CDRs (Big Data)', 'Planes tarifarios con reglas complejas', 'Portabilidad numerica entre operadores']
+            },
+            {
+                id: 'ecommerce',
+                nombre: 'TiendaOnline.pa',
+                industria: 'E-commerce',
+                icon: 'CART',
+                color: 'from-orange-500 to-red-500',
+                descripcion: 'Marketplace con 1000 vendedores y 50,000 productos. Multiples canales de venta y logistica tercerizada.',
+                fuentes: ['Plataforma web (MongoDB)', 'App movil (Firebase)', 'Inventario vendedores (APIs variadas)', 'Logistica (webhooks)'],
+                problemas: ['Productos con SKUs inconsistentes entre vendedores', 'Estados de orden de multiples sistemas', 'Precios y promociones en tiempo real']
+            }
+        ];
+
+        const fases = [
+            {
+                id: 1,
+                titulo: 'Inventario de Fuentes',
+                promptTemplate: `Actua como un ingeniero de datos. Estoy disenando el ETL para [EMPRESA], una empresa de [INDUSTRIA].
+
+Descripcion: [DESCRIPCION]
+
+Fuentes de datos identificadas:
+[FUENTES]
+
+Problemas conocidos:
+[PROBLEMAS]
+
+Por favor:
+1. Para cada fuente, define:
+   - Tipo de conexion (API, JDBC, archivo, etc.)
+   - Frecuencia de extraccion recomendada
+   - Volumen estimado
+   - Consideraciones de seguridad
+
+2. Identifica dependencias entre fuentes
+
+3. Propone una arquitectura de staging
+
+Responde de forma tecnica y practica.`
+            },
+            {
+                id: 2,
+                titulo: 'Reglas de Transformacion',
+                promptTemplate: `Para el ETL de [EMPRESA], necesito definir las reglas de transformacion.
+
+Problemas de calidad identificados:
+[PROBLEMAS]
+
+Por cada problema, define:
+
+1. REGLA DE VALIDACION
+   - Que condiciones debe cumplir el dato para ser valido
+   - Query SQL o pseudocodigo para validar
+
+2. REGLA DE TRANSFORMACION
+   - Como se corrige o estandariza el dato
+   - Funcion SQL para transformar
+
+3. MANEJO DE EXCEPCIONES
+   - Que hacer con los datos que no pasan validacion
+   - Estrategia de rechazo vs correccion
+
+4. METRICAS DE CALIDAD
+   - KPIs para medir la calidad del proceso
+
+Incluye ejemplos concretos con SQL.`
+            },
+            {
+                id: 3,
+                titulo: 'Orquestacion del Pipeline',
+                promptTemplate: `Disena la orquestacion completa del pipeline ETL para [EMPRESA].
+
+Incluye:
+
+1. DIAGRAMA DE FLUJO
+   - Secuencia de pasos del ETL
+   - Dependencias entre tareas
+   - Puntos de control y validacion
+
+2. SCHEDULING
+   - Frecuencia de cada proceso
+   - Ventanas de mantenimiento
+   - Manejo de retrasos
+
+3. MANEJO DE ERRORES
+   - Tipos de errores esperados
+   - Estrategia de reintentos
+   - Alertas y notificaciones
+   - Rollback si es necesario
+
+4. MONITOREO
+   - Metricas del pipeline
+   - Dashboards recomendados
+   - SLAs sugeridos
+
+Considera que usaremos una herramienta como Pentaho o Airflow.`
+            },
+            {
+                id: 4,
+                titulo: 'Implementacion SQL',
+                promptTemplate: `Genera el codigo SQL para implementar el ETL de [EMPRESA] en PostgreSQL/Supabase.
+
+Incluye:
+
+1. TABLAS DE STAGING
+   - CREATE TABLE para cada fuente
+   - Columnas de control (fecha_carga, es_valido, error)
+
+2. PROCEDIMIENTOS DE LIMPIEZA
+   - Stored procedures o CTEs para transformar
+   - Validaciones inline
+
+3. CARGA A DIMENSIONES
+   - Logica de SCD Tipo 1 o Tipo 2 segun corresponda
+   - Generacion de claves sustitutas
+
+4. CARGA A HECHOS
+   - INSERT incremental con marca de agua
+   - Manejo de late-arriving facts
+
+5. QUERIES DE VALIDACION
+   - Verificar completitud
+   - Verificar integridad referencial
+   - Comparar totales con fuente
+
+El codigo debe estar listo para ejecutar.`
+            },
+            {
+                id: 5,
+                titulo: 'Documentacion',
+                promptTemplate: `Crea la documentacion completa del pipeline ETL para [EMPRESA].
+
+Genera:
+
+1. FICHA TECNICA DEL ETL
+   - Nombre, version, responsable
+   - Fuentes y destinos
+   - Frecuencia y duracion esperada
+
+2. DICCIONARIO DE TRANSFORMACIONES
+   - Mapeo campo origen → campo destino
+   - Reglas aplicadas
+   - Valores por defecto
+
+3. PROCEDIMIENTO OPERATIVO
+   - Pasos para ejecutar manualmente
+   - Como monitorear la ejecucion
+   - Troubleshooting comun
+
+4. METRICAS DE EXITO
+   - KPIs del pipeline
+   - Umbrales aceptables
+   - Acciones correctivas
+
+5. PLAN DE CONTINGENCIA
+   - Que hacer si falla
+   - Contactos de escalacion
+   - Recovery point objective (RPO)
+
+Formato profesional listo para entregar.`
+            }
+        ];
+
+        const recursos = [
+            { titulo: 'Pentaho Data Integration (PDI)', url: 'https://www.hitachivantara.com/en-us/products/pentaho-platform/data-integration-analytics.html', tipo: 'Herramienta' },
+            { titulo: 'Apache Airflow', url: 'https://airflow.apache.org/', tipo: 'Orquestador' },
+            { titulo: 'DBT (Data Build Tool)', url: 'https://www.getdbt.com/', tipo: 'Transformacion' },
+            { titulo: 'Great Expectations', url: 'https://greatexpectations.io/', tipo: 'Calidad' }
+        ];
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const EmpresaCard = ({ empresa, isSelected, onSelect }) => (
+            <button
+                onClick={onSelect}
+                className={`w-full text-left p-4 rounded-xl transition-all ${
+                    isSelected
+                        ? `bg-gradient-to-r ${empresa.color} text-white shadow-lg scale-105`
+                        : 'bg-white hover:shadow-md'
+                }`}
+            >
+                <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-lg ${isSelected ? 'text-white' : 'text-gray-400'}`}>{empresa.icon}</span>
+                    <div>
+                        <h3 className="font-bold">{empresa.nombre}</h3>
+                        <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>{empresa.industria}</p>
+                    </div>
+                </div>
+                <p className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-600'}`}>
+                    {empresa.descripcion.substring(0, 100)}...
+                </p>
+            </button>
+        );
+
+        const PromptCard = ({ fase, empresa }) => {
+            const [copied, setCopied] = useState(false);
+
+            const generarPrompt = () => {
+                return fase.promptTemplate
+                    .replace(/\[EMPRESA\]/g, empresa.nombre)
+                    .replace(/\[INDUSTRIA\]/g, empresa.industria)
+                    .replace(/\[DESCRIPCION\]/g, empresa.descripcion)
+                    .replace(/\[FUENTES\]/g, empresa.fuentes.map((f, i) => `${i+1}. ${f}`).join('\n'))
+                    .replace(/\[PROBLEMAS\]/g, empresa.problemas.map((p, i) => `${i+1}. ${p}`).join('\n'));
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full text-sm font-bold">
+                            Fase {fase.id}
+                        </span>
+                        <h3 className="font-bold text-gray-800">{fase.titulo}</h3>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500">PROMPT</span>
+                            <button
+                                onClick={() => { navigator.clipboard.writeText(generarPrompt()); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium ${copied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-600'}`}
+                            >
+                                {copied ? '✓ Copiado!' : 'Copiar'}
+                            </button>
+                        </div>
+                        <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono bg-white p-3 rounded-lg border max-h-48 overflow-y-auto">
+                            {generarPrompt()}
+                        </pre>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <a href="https://chat.openai.com" target="_blank" className="flex-1 text-center py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600">ChatGPT</a>
+                        <a href="https://claude.ai" target="_blank" className="flex-1 text-center py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">Claude</a>
+                        <a href="https://gemini.google.com" target="_blank" className="flex-1 text-center py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">Gemini</a>
+                    </div>
+                </div>
+            );
+        };
+
+        const EntregablePanel = () => {
+            const [items, setItems] = useState({});
+            const checklistItems = [
+                'Inventario completo de fuentes de datos',
+                'Reglas de transformacion documentadas',
+                'Diagrama de orquestacion del pipeline',
+                'Scripts SQL para staging y transformacion',
+                'Queries de validacion de calidad',
+                'Documentacion tecnica del ETL',
+                'Capturas de conversaciones con IA'
+            ];
+
+            const toggleItem = (idx) => setItems(prev => ({ ...prev, [idx]: !prev[idx] }));
+            const completados = Object.values(items).filter(Boolean).length;
+
+            return (
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-6">
+                    <h3 className="font-bold text-violet-800 mb-4">Checklist de Entregables</h3>
+                    <div className="space-y-2 mb-4">
+                        {checklistItems.map((item, idx) => (
+                            <label key={idx} className="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" checked={items[idx] || false} onChange={() => toggleItem(idx)} className="w-5 h-5 text-violet-600 rounded" />
+                                <span className={items[idx] ? 'text-gray-500 line-through' : 'text-gray-700'}>{item}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                        <div className="flex justify-between text-sm mb-1">
+                            <span>Progreso</span>
+                            <span className="font-bold">{completados}/{checklistItems.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="bg-violet-500 rounded-full h-2 transition-all" style={{ width: `${(completados / checklistItems.length) * 100}%` }} />
+                        </div>
+                    </div>
+                    {completados === checklistItems.length && (
+                        <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-lg text-center">
+                            <p className="text-green-800 font-bold">🎉 Listo para Entregar!</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const ETLExercise = () => {
+            const [empresaSeleccionada, setEmpresaSeleccionada] = useState(null);
+            const [faseActiva, setFaseActiva] = useState(1);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold mb-1">Ejercicio: Disena tu Pipeline ETL</h1>
+                                    <p className="text-violet-100">Sesion 05 - Quiz Unidad 2</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">← Simulador</a>
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm">Lab</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-3">Instrucciones</h2>
+                            <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                <div className="bg-amber-50 rounded-lg p-4">
+                                    <p className="font-bold text-amber-800 mb-1">1. Selecciona Industria</p>
+                                    <p className="text-gray-600">Elige un caso diferente al laboratorio.</p>
+                                </div>
+                                <div className="bg-amber-50 rounded-lg p-4">
+                                    <p className="font-bold text-amber-800 mb-1">2. Sigue las 5 Fases</p>
+                                    <p className="text-gray-600">Usa los prompts con IA generativa.</p>
+                                </div>
+                                <div className="bg-amber-50 rounded-lg p-4">
+                                    <p className="font-bold text-amber-800 mb-1">3. Documenta Todo</p>
+                                    <p className="text-gray-600">Compila tu diseno de ETL.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {!empresaSeleccionada ? (
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Selecciona tu Caso</h2>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {empresas.map((empresa) => (
+                                        <EmpresaCard key={empresa.id} empresa={empresa} isSelected={false} onSelect={() => setEmpresaSeleccionada(empresa)} />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div className="space-y-6">
+                                    <div className={`bg-gradient-to-r ${empresaSeleccionada.color} text-white p-6 rounded-xl`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold">{empresaSeleccionada.nombre}</h3>
+                                                <p className="text-white/80">{empresaSeleccionada.industria}</p>
+                                            </div>
+                                            <button onClick={() => setEmpresaSeleccionada(null)} className="text-white/60 hover:text-white">Cambiar</button>
+                                        </div>
+                                        <p className="text-sm text-white/90">{empresaSeleccionada.descripcion}</p>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm p-4">
+                                        <h4 className="font-bold text-gray-800 mb-3">Fuentes de Datos</h4>
+                                        <ul className="space-y-2">
+                                            {empresaSeleccionada.fuentes.map((f, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                                    <span className="text-indigo-500">•</span>{f}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <EntregablePanel />
+                                </div>
+
+                                <div className="md:col-span-2 space-y-6">
+                                    <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm overflow-x-auto">
+                                        {fases.map((fase) => (
+                                            <button
+                                                key={fase.id}
+                                                onClick={() => setFaseActiva(fase.id)}
+                                                className={`flex-shrink-0 py-2 px-4 rounded-lg font-medium transition-all ${
+                                                    faseActiva === fase.id ? 'bg-violet-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                Fase {fase.id}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <PromptCard fase={fases.find(f => f.id === faseActiva)} empresa={empresaSeleccionada} />
+
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h3 className="font-bold text-gray-800 mb-4">Recursos de Apoyo</h3>
+                                        <div className="grid md:grid-cols-2 gap-3">
+                                            {recursos.map((r, idx) => (
+                                                <a key={idx} href={r.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                                                    <p className="font-medium text-gray-800">{r.titulo}</p>
+                                                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">{r.tipo}</span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-8 text-center text-gray-500 text-sm">
+                            <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 05</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ETLExercise />);
+    </script>
+</body>
+</html>

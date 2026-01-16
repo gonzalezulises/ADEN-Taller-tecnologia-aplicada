@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 12: Data Storytelling - Simulador | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // SIMULADOR DE DATA STORYTELLING
+        // ==========================================
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('narrativa');
+            const [selectedStory, setSelectedStory] = useState(null);
+            const [storyPhase, setStoryPhase] = useState(0);
+            const [audienceType, setAudienceType] = useState('ejecutivo');
+            const [quizAnswers, setQuizAnswers] = useState({});
+            const [showResults, setShowResults] = useState(false);
+
+            // Estructuras narrativas
+            const narrativeStructures = [
+                {
+                    id: 'piramide',
+                    nombre: 'Pirámide Invertida',
+                    descripcion: 'Conclusión primero, luego detalles de soporte',
+                    icono: '🔺',
+                    fases: ['Conclusión clave', 'Hallazgos principales', 'Datos de soporte', 'Metodología'],
+                    mejorPara: 'Ejecutivos con poco tiempo',
+                    ejemplo: {
+                        contexto: 'Reporte mensual de ventas',
+                        contenido: [
+                            'Las ventas aumentaron 23% vs. mes anterior, superando la meta en $2.1M',
+                            'Canal digital lidera crecimiento (+45%), retail estable (+5%)',
+                            'Top 3 productos: Laptop Pro ($1.2M), Monitor 4K ($890K), Teclado Ergo ($340K)',
+                            'Análisis basado en 15,420 transacciones del CRM Salesforce'
+                        ]
+                    }
+                },
+                {
+                    id: 'hero',
+                    nombre: 'Viaje del Héroe',
+                    descripcion: 'Problema → Lucha → Solución → Transformación',
+                    icono: '⚔️',
+                    fases: ['El mundo ordinario', 'El problema/llamado', 'La travesía (análisis)', 'La transformación'],
+                    mejorPara: 'Presentaciones de proyectos de cambio',
+                    ejemplo: {
+                        contexto: 'Proyecto de optimización de inventario',
+                        contenido: [
+                            'DistribuPTY manejaba inventario manualmente con Excel, 15% de productos agotados',
+                            'Los clientes se quejaban: NPS cayó a 32, perdimos $450K en ventas no realizadas',
+                            'Implementamos ML para predicción de demanda, analizamos 3 años de datos',
+                            'Hoy: 2% agotados, NPS 72, ROI del proyecto: 340% en 8 meses'
+                        ]
+                    }
+                },
+                {
+                    id: 'situacion',
+                    nombre: 'Situación-Complicación-Resolución',
+                    descripcion: 'Estructura clásica de consultoría McKinsey',
+                    icono: '📊',
+                    fases: ['Situación actual', 'Complicación/problema', 'Pregunta clave', 'Resolución'],
+                    mejorPara: 'Propuestas y recomendaciones',
+                    ejemplo: {
+                        contexto: 'Propuesta de expansión regional',
+                        contenido: [
+                            'CaféPanama opera 12 tiendas en Ciudad de Panamá con margen del 18%',
+                            'Competidores abrirán 20 tiendas en 2026; nuestro crecimiento se estanca',
+                            '¿Debemos expandir a provincias o defender mercado actual?',
+                            'Recomendamos abrir 5 tiendas en David y Chitré: mercado desatendido, menor competencia, margen proyectado 22%'
+                        ]
+                    }
+                },
+                {
+                    id: 'what',
+                    nombre: 'What-So What-Now What',
+                    descripcion: 'Datos → Significado → Acción',
+                    icono: '💡',
+                    fases: ['What (qué vemos)', 'So What (por qué importa)', 'Now What (qué hacer)'],
+                    mejorPara: 'Insights rápidos y actionables',
+                    ejemplo: {
+                        contexto: 'Análisis de churn de clientes',
+                        contenido: [
+                            'El 34% de clientes que llaman 3+ veces al call center cancelan en 60 días',
+                            'Estamos perdiendo $180K/mes; estos clientes tienen LTV promedio de $2,400',
+                            'Implementar programa proactivo: cuando cliente llame 2da vez, asignar agente dedicado'
+                        ]
+                    }
+                }
+            ];
+
+            // Tipos de audiencia
+            const audienceProfiles = {
+                ejecutivo: {
+                    nombre: 'C-Level / Ejecutivo',
+                    icono: '👔',
+                    tiempo: '5-10 min',
+                    prioridades: ['ROI e impacto financiero', 'Decisiones a tomar', 'Riesgos principales'],
+                    evitar: ['Detalles técnicos', 'Metodología extensa', 'Jerga analítica'],
+                    visuales: ['KPIs destacados', 'Comparativos simples', 'Tendencias claras'],
+                    tono: 'Directo, orientado a acción'
+                },
+                gerente: {
+                    nombre: 'Gerente Operativo',
+                    icono: '📋',
+                    tiempo: '15-20 min',
+                    prioridades: ['Impacto en operaciones', 'Recursos necesarios', 'Timeline de implementación'],
+                    evitar: ['Abstracciones sin contexto', 'Métricas sin benchmark'],
+                    visuales: ['Dashboards operativos', 'Comparativos vs. meta', 'Drill-downs disponibles'],
+                    tono: 'Práctico, con detalles relevantes'
+                },
+                tecnico: {
+                    nombre: 'Equipo Técnico/Analistas',
+                    icono: '💻',
+                    tiempo: '30-45 min',
+                    prioridades: ['Metodología rigurosa', 'Calidad de datos', 'Limitaciones del análisis'],
+                    evitar: ['Simplificación excesiva', 'Conclusiones sin evidencia'],
+                    visuales: ['Gráficos detallados', 'Intervalos de confianza', 'Código/queries disponibles'],
+                    tono: 'Técnico, con transparencia metodológica'
+                },
+                mixta: {
+                    nombre: 'Audiencia Mixta',
+                    icono: '👥',
+                    tiempo: '20-30 min',
+                    prioridades: ['Historia clara', 'Niveles de detalle opcionales', 'Anexos técnicos'],
+                    evitar: ['Un solo nivel de profundidad', 'Asumir conocimiento uniforme'],
+                    visuales: ['Resumen ejecutivo + detalles', 'Gráficos con anotaciones', 'Links a análisis profundo'],
+                    tono: 'Balanceado, con capas de información'
+                }
+            };
+
+            // Técnicas de visualización narrativa
+            const visualTechniques = [
+                {
+                    nombre: 'Anotaciones Estratégicas',
+                    descripcion: 'Guiar la atención con notas explicativas',
+                    ejemplo: 'Agregar "↑ +23% vs Q3" directamente en el gráfico',
+                    buenaPractica: 'Máximo 2-3 anotaciones por visual',
+                    malaPractica: 'Saturar con múltiples callouts'
+                },
+                {
+                    nombre: 'Color con Propósito',
+                    descripcion: 'Usar color para encodificar significado',
+                    ejemplo: 'Rojo para bajo objetivo, verde para superado',
+                    buenaPractica: 'Consistencia semántica en toda la presentación',
+                    malaPractica: 'Colores aleatorios o decorativos'
+                },
+                {
+                    nombre: 'Progresión Visual',
+                    descripcion: 'Revelar información gradualmente',
+                    ejemplo: 'Mostrar primero total, luego breakdown por categoría',
+                    buenaPractica: 'Build up para mantener atención',
+                    malaPractica: 'Mostrar todo de golpe sin contexto'
+                },
+                {
+                    nombre: 'Contraste Focal',
+                    descripcion: 'Destacar lo importante, atenuar lo secundario',
+                    ejemplo: 'Producto estrella en color, resto en gris',
+                    buenaPractica: 'Un punto focal claro por visual',
+                    malaPractica: 'Todo con igual énfasis visual'
+                },
+                {
+                    nombre: 'Comparación Efectiva',
+                    descripcion: 'Hacer el "antes y después" evidente',
+                    ejemplo: 'Lado a lado: Proceso anterior (8 pasos) vs nuevo (3 pasos)',
+                    buenaPractica: 'Usar la misma escala para comparar',
+                    malaPractica: 'Escalas diferentes que distorsionan'
+                }
+            ];
+
+            // Errores comunes
+            const commonMistakes = [
+                {
+                    error: 'Data Dump',
+                    descripcion: 'Mostrar todos los datos sin curar',
+                    sintoma: 'Slides con tablas de 50 filas',
+                    solucion: 'Filtrar al top 5-10 más relevante',
+                    icono: '📊'
+                },
+                {
+                    error: 'Ausencia de "So What"',
+                    descripcion: 'Datos sin interpretación',
+                    sintoma: '"Las ventas fueron $5M"... ¿y?',
+                    solucion: 'Siempre agregar contexto: vs. meta, vs. anterior, implicación',
+                    icono: '❓'
+                },
+                {
+                    error: 'Chart Junk',
+                    descripcion: 'Decoración que distrae',
+                    sintoma: 'Gráficos 3D, gradientes, imágenes de fondo',
+                    solucion: 'Minimalismo: cada pixel debe informar',
+                    icono: '🎨'
+                },
+                {
+                    error: 'Falta de Jerarquía',
+                    descripcion: 'Todo tiene el mismo peso visual',
+                    sintoma: 'Bullet points interminables del mismo tamaño',
+                    solucion: 'Títulos claros, KPIs grandes, detalles pequeños',
+                    icono: '📝'
+                },
+                {
+                    error: 'Narrativa Fragmentada',
+                    descripcion: 'Slides inconexas',
+                    sintoma: 'Cada slide es un tema nuevo sin transición',
+                    solucion: 'Usar conectores: "Esto nos lleva a...", "Como resultado..."',
+                    icono: '🔗'
+                },
+                {
+                    error: 'Conclusiones Enterradas',
+                    descripcion: 'La recomendación está en el slide 45',
+                    sintoma: 'Ejecutivo perdió interés en slide 10',
+                    solucion: 'Pirámide invertida: conclusión primero',
+                    icono: '⏰'
+                }
+            ];
+
+            // Preguntas del quiz
+            const quizQuestions = [
+                {
+                    id: 'q1',
+                    pregunta: 'Tu CFO tiene 5 minutos antes de una junta. ¿Qué estructura narrativa usas?',
+                    opciones: [
+                        { id: 'a', texto: 'Viaje del Héroe - para inspirar', correcta: false },
+                        { id: 'b', texto: 'Pirámide Invertida - conclusión primero', correcta: true },
+                        { id: 'c', texto: 'Análisis detallado por categoría', correcta: false }
+                    ],
+                    explicacion: 'Con tiempo limitado, la Pirámide Invertida asegura que el mensaje clave se comunique aunque la reunión se acorte.'
+                },
+                {
+                    id: 'q2',
+                    pregunta: 'Tu gráfico muestra 12 productos. ¿Cómo enfocas la atención en el producto estrella?',
+                    opciones: [
+                        { id: 'a', texto: 'Agregar borde grueso al producto', correcta: false },
+                        { id: 'b', texto: 'Producto en color, resto en gris', correcta: true },
+                        { id: 'c', texto: 'Hacer el producto más grande (escala diferente)', correcta: false }
+                    ],
+                    explicacion: 'El contraste de color mantiene la escala precisa mientras dirige la atención. Cambiar escalas puede distorsionar la interpretación.'
+                },
+                {
+                    id: 'q3',
+                    pregunta: '"Las ventas de Q4 fueron $2.3M". ¿Qué falta en esta afirmación?',
+                    opciones: [
+                        { id: 'a', texto: 'El "So What" - contexto y significado', correcta: true },
+                        { id: 'b', texto: 'Más decimales para precisión', correcta: false },
+                        { id: 'c', texto: 'El nombre del analista que calculó', correcta: false }
+                    ],
+                    explicacion: '$2.3M no dice nada solo. ¿Es bueno? ¿Malo? Necesita: vs. meta (+15%), vs. Q3 (-5%), o vs. competencia.'
+                },
+                {
+                    id: 'q4',
+                    pregunta: 'Presentas a audiencia mixta (CEO + gerentes + analistas). ¿Cuál es la mejor estrategia?',
+                    opciones: [
+                        { id: 'a', texto: 'Presentar solo para el CEO, otros se adaptan', correcta: false },
+                        { id: 'b', texto: 'Capas: resumen ejecutivo + detalles opcionales + anexo técnico', correcta: true },
+                        { id: 'c', texto: 'Tres presentaciones separadas', correcta: false }
+                    ],
+                    explicacion: 'La estructura en capas permite que cada audiencia profundice a su nivel sin perder a los demás.'
+                },
+                {
+                    id: 'q5',
+                    pregunta: 'Quieres mostrar la transformación de un proceso (antes/después). ¿Qué técnica usas?',
+                    opciones: [
+                        { id: 'a', texto: 'Dos slides separadas con muchos detalles', correcta: false },
+                        { id: 'b', texto: 'Comparación lado a lado en el mismo visual', correcta: true },
+                        { id: 'c', texto: 'Solo mostrar el "después" - el antes no importa', correcta: false }
+                    ],
+                    explicacion: 'La comparación lado a lado hace el contraste inmediato y memorable. El "antes" justifica el esfuerzo del cambio.'
+                }
+            ];
+
+            const handleQuizAnswer = (questionId, answerId) => {
+                setQuizAnswers({...quizAnswers, [questionId]: answerId});
+            };
+
+            const calculateScore = () => {
+                let correct = 0;
+                quizQuestions.forEach(q => {
+                    const userAnswer = quizAnswers[q.id];
+                    const correctAnswer = q.opciones.find(o => o.correcta)?.id;
+                    if (userAnswer === correctAnswer) correct++;
+                });
+                return correct;
+            };
+
+            const tabs = [
+                { id: 'narrativa', label: 'Estructuras Narrativas', icon: '📖' },
+                { id: 'audiencia', label: 'Conocer tu Audiencia', icon: '👥' },
+                { id: 'visual', label: 'Técnicas Visuales', icon: '🎨' },
+                { id: 'errores', label: 'Errores Comunes', icon: '⚠️' },
+                { id: 'quiz', label: 'Quiz', icon: '✅' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-rose-600 to-pink-600 text-white py-8">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <a href="../index.html" className="text-rose-200 hover:text-white text-sm mb-4 inline-block">
+                                ← Volver al índice
+                            </a>
+                            <h1 className="text-3xl font-bold mb-2">Sesión 12: Data Storytelling y Presentaciones</h1>
+                            <p className="text-rose-100">3 de abril, 2026 | Simulador Interactivo</p>
+                        </div>
+                    </header>
+
+                    {/* Tabs */}
+                    <nav className="bg-white shadow-sm sticky top-0 z-10">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <div className="flex space-x-1 overflow-x-auto py-2">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                            activeTab === tab.id
+                                                ? 'bg-rose-100 text-rose-700'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        <span className="mr-2">{tab.icon}</span>
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Content */}
+                    <main className="max-w-6xl mx-auto px-6 py-8">
+
+                        {/* Tab: Estructuras Narrativas */}
+                        {activeTab === 'narrativa' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Estructuras Narrativas para Datos</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Los datos por sí solos no cuentan historias. La estructura narrativa transforma números
+                                        en mensajes que inspiran acción. Selecciona una estructura para explorar su flujo.
+                                    </p>
+
+                                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                        {narrativeStructures.map(struct => (
+                                            <button
+                                                key={struct.id}
+                                                onClick={() => {setSelectedStory(struct); setStoryPhase(0);}}
+                                                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                                    selectedStory?.id === struct.id
+                                                        ? 'border-rose-500 bg-rose-50'
+                                                        : 'border-slate-200 hover:border-rose-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-2xl">{struct.icono}</span>
+                                                    <span className="font-semibold text-slate-800">{struct.nombre}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-600 mb-2">{struct.descripcion}</p>
+                                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                                    Mejor para: {struct.mejorPara}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {selectedStory && (
+                                        <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-bold text-slate-800">
+                                                    {selectedStory.icono} {selectedStory.nombre} en Acción
+                                                </h3>
+                                                <span className="text-sm text-slate-500">
+                                                    Ejemplo: {selectedStory.ejemplo.contexto}
+                                                </span>
+                                            </div>
+
+                                            {/* Fases visuales */}
+                                            <div className="flex items-center gap-2 mb-6">
+                                                {selectedStory.fases.map((fase, idx) => (
+                                                    <React.Fragment key={idx}>
+                                                        <button
+                                                            onClick={() => setStoryPhase(idx)}
+                                                            className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                                                                storyPhase === idx
+                                                                    ? 'bg-rose-500 text-white'
+                                                                    : storyPhase > idx
+                                                                        ? 'bg-rose-200 text-rose-800'
+                                                                        : 'bg-white text-slate-600'
+                                                            }`}
+                                                        >
+                                                            {idx + 1}. {fase}
+                                                        </button>
+                                                        {idx < selectedStory.fases.length - 1 && (
+                                                            <span className="text-rose-300">→</span>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+
+                                            {/* Contenido de la fase actual */}
+                                            <div className="bg-white rounded-lg p-6 shadow-sm">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="bg-rose-100 text-rose-700 text-xs font-semibold px-2 py-1 rounded">
+                                                        Fase {storyPhase + 1}
+                                                    </span>
+                                                    <span className="font-medium text-slate-800">
+                                                        {selectedStory.fases[storyPhase]}
+                                                    </span>
+                                                </div>
+                                                <p className="text-slate-700 text-lg italic">
+                                                    "{selectedStory.ejemplo.contenido[storyPhase]}"
+                                                </p>
+
+                                                <div className="flex gap-2 mt-4">
+                                                    <button
+                                                        onClick={() => setStoryPhase(Math.max(0, storyPhase - 1))}
+                                                        disabled={storyPhase === 0}
+                                                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg disabled:opacity-50"
+                                                    >
+                                                        ← Anterior
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setStoryPhase(Math.min(selectedStory.fases.length - 1, storyPhase + 1))}
+                                                        disabled={storyPhase === selectedStory.fases.length - 1}
+                                                        className="px-4 py-2 bg-rose-500 text-white rounded-lg disabled:opacity-50"
+                                                    >
+                                                        Siguiente →
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Conocer tu Audiencia */}
+                        {activeTab === 'audiencia' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Adapta tu Mensaje a la Audiencia</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        El mismo insight requiere presentaciones muy diferentes según quién lo reciba.
+                                        Selecciona un perfil de audiencia para ver las mejores prácticas.
+                                    </p>
+
+                                    <div className="flex flex-wrap gap-2 mb-6">
+                                        {Object.entries(audienceProfiles).map(([key, profile]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => setAudienceType(key)}
+                                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                    audienceType === key
+                                                        ? 'bg-rose-500 text-white'
+                                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                <span className="mr-2">{profile.icono}</span>
+                                                {profile.nombre}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {audienceType && (
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <div className="bg-emerald-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-emerald-800 mb-2">✅ Prioridades</h4>
+                                                    <ul className="space-y-1">
+                                                        {audienceProfiles[audienceType].prioridades.map((item, idx) => (
+                                                            <li key={idx} className="text-emerald-700 text-sm">• {item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-blue-800 mb-2">📊 Visuales Recomendados</h4>
+                                                    <ul className="space-y-1">
+                                                        {audienceProfiles[audienceType].visuales.map((item, idx) => (
+                                                            <li key={idx} className="text-blue-700 text-sm">• {item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="bg-red-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-red-800 mb-2">❌ Evitar</h4>
+                                                    <ul className="space-y-1">
+                                                        {audienceProfiles[audienceType].evitar.map((item, idx) => (
+                                                            <li key={idx} className="text-red-700 text-sm">• {item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <div className="bg-purple-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-purple-800 mb-2">⏱️ Tiempo Típico</h4>
+                                                    <p className="text-purple-700 text-2xl font-bold">
+                                                        {audienceProfiles[audienceType].tiempo}
+                                                    </p>
+                                                    <p className="text-purple-600 text-sm mt-1">
+                                                        Tono: {audienceProfiles[audienceType].tono}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Caso práctico */}
+                                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6">
+                                    <h3 className="font-bold text-slate-800 mb-4">💡 Caso Práctico: El Mismo Dato, Diferente Mensaje</h3>
+                                    <p className="text-slate-600 mb-4">
+                                        <strong>Dato:</strong> La tasa de churn aumentó de 5% a 8% en el último trimestre.
+                                    </p>
+
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-white rounded-lg p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span>👔</span>
+                                                <span className="font-semibold">Para el CEO:</span>
+                                            </div>
+                                            <p className="text-slate-700 italic">
+                                                "El churn nos cuesta $540K adicionales/mes. Recomiendo aprobar
+                                                programa de retención con ROI proyectado de 280%."
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white rounded-lg p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span>📋</span>
+                                                <span className="font-semibold">Para Gerente de Operaciones:</span>
+                                            </div>
+                                            <p className="text-slate-700 italic">
+                                                "El 60% del churn viene de clientes con 3+ tickets sin resolver.
+                                                Necesitamos 2 agentes adicionales en soporte premium."
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white rounded-lg p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span>💻</span>
+                                                <span className="font-semibold">Para Equipo de Analytics:</span>
+                                            </div>
+                                            <p className="text-slate-700 italic">
+                                                "Modelo de churn muestra AUC 0.82 con top features: días_sin_login,
+                                                tickets_abiertos, NPS_último. Cohorte enero anómala, revisar datos."
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-white rounded-lg p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span>👥</span>
+                                                <span className="font-semibold">Para Junta Mixta:</span>
+                                            </div>
+                                            <p className="text-slate-700 italic">
+                                                "Churn subió a 8% (costo: $540K/mes). Causa: soporte insuficiente.
+                                                Slide 5: detalle operativo. Anexo A: modelo predictivo."
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Técnicas Visuales */}
+                        {activeTab === 'visual' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Técnicas de Visualización Narrativa</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        El diseño visual no es decoración—es comunicación. Cada elemento debe
+                                        servir al mensaje.
+                                    </p>
+
+                                    <div className="space-y-4">
+                                        {visualTechniques.map((tecnica, idx) => (
+                                            <div key={idx} className="border rounded-lg overflow-hidden">
+                                                <div className="bg-slate-50 px-4 py-3">
+                                                    <h3 className="font-semibold text-slate-800">{tecnica.nombre}</h3>
+                                                    <p className="text-sm text-slate-600">{tecnica.descripcion}</p>
+                                                </div>
+                                                <div className="p-4 grid md:grid-cols-3 gap-4">
+                                                    <div className="bg-blue-50 rounded-lg p-3">
+                                                        <span className="text-xs font-semibold text-blue-700 uppercase">Ejemplo</span>
+                                                        <p className="text-sm text-blue-800 mt-1">{tecnica.ejemplo}</p>
+                                                    </div>
+                                                    <div className="bg-emerald-50 rounded-lg p-3">
+                                                        <span className="text-xs font-semibold text-emerald-700 uppercase">✅ Buena Práctica</span>
+                                                        <p className="text-sm text-emerald-800 mt-1">{tecnica.buenaPractica}</p>
+                                                    </div>
+                                                    <div className="bg-red-50 rounded-lg p-3">
+                                                        <span className="text-xs font-semibold text-red-700 uppercase">❌ Mala Práctica</span>
+                                                        <p className="text-sm text-red-800 mt-1">{tecnica.malaPractica}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Principio CRAP */}
+                                <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-6">
+                                    <h3 className="font-bold text-slate-800 mb-4">📐 Principios CRAP del Diseño</h3>
+                                    <div className="grid md:grid-cols-4 gap-4">
+                                        <div className="bg-white rounded-lg p-4 text-center">
+                                            <div className="text-3xl mb-2">⚡</div>
+                                            <h4 className="font-bold text-slate-800">Contraste</h4>
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                Si dos elementos son diferentes, hazlos MUY diferentes
+                                            </p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-4 text-center">
+                                            <div className="text-3xl mb-2">🔄</div>
+                                            <h4 className="font-bold text-slate-800">Repetición</h4>
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                Usa los mismos estilos para elementos similares
+                                            </p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-4 text-center">
+                                            <div className="text-3xl mb-2">↔️</div>
+                                            <h4 className="font-bold text-slate-800">Alineación</h4>
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                Nada debe parecer puesto al azar
+                                            </p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-4 text-center">
+                                            <div className="text-3xl mb-2">📦</div>
+                                            <h4 className="font-bold text-slate-800">Proximidad</h4>
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                Agrupa elementos relacionados, separa los distintos
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Errores Comunes */}
+                        {activeTab === 'errores' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Errores Comunes en Data Storytelling</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Reconocer estos patrones anti-efectivos te ayudará a evitarlos en tus presentaciones.
+                                    </p>
+
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        {commonMistakes.map((mistake, idx) => (
+                                            <div key={idx} className="border border-red-200 rounded-lg overflow-hidden">
+                                                <div className="bg-red-50 px-4 py-3 flex items-center gap-3">
+                                                    <span className="text-2xl">{mistake.icono}</span>
+                                                    <div>
+                                                        <h3 className="font-semibold text-red-800">{mistake.error}</h3>
+                                                        <p className="text-sm text-red-600">{mistake.descripcion}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 space-y-3">
+                                                    <div>
+                                                        <span className="text-xs font-semibold text-slate-500 uppercase">Síntoma:</span>
+                                                        <p className="text-sm text-slate-700">{mistake.sintoma}</p>
+                                                    </div>
+                                                    <div className="bg-emerald-50 rounded-lg p-3">
+                                                        <span className="text-xs font-semibold text-emerald-700 uppercase">Solución:</span>
+                                                        <p className="text-sm text-emerald-800">{mistake.solucion}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Quiz */}
+                        {activeTab === 'quiz' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Quiz: Data Storytelling</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Pon a prueba tu comprensión de los conceptos de storytelling con datos.
+                                    </p>
+
+                                    <div className="space-y-6">
+                                        {quizQuestions.map((q, qIdx) => (
+                                            <div key={q.id} className="border rounded-lg p-4">
+                                                <h3 className="font-medium text-slate-800 mb-3">
+                                                    {qIdx + 1}. {q.pregunta}
+                                                </h3>
+                                                <div className="space-y-2">
+                                                    {q.opciones.map(opcion => {
+                                                        const isSelected = quizAnswers[q.id] === opcion.id;
+                                                        const isCorrect = opcion.correcta;
+                                                        let bgColor = 'bg-slate-50 hover:bg-slate-100';
+
+                                                        if (showResults && isSelected) {
+                                                            bgColor = isCorrect ? 'bg-emerald-100 border-emerald-500' : 'bg-red-100 border-red-500';
+                                                        } else if (showResults && isCorrect) {
+                                                            bgColor = 'bg-emerald-50';
+                                                        } else if (isSelected) {
+                                                            bgColor = 'bg-rose-100 border-rose-500';
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={opcion.id}
+                                                                onClick={() => !showResults && handleQuizAnswer(q.id, opcion.id)}
+                                                                className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${bgColor} ${
+                                                                    isSelected ? 'border-rose-500' : 'border-transparent'
+                                                                }`}
+                                                                disabled={showResults}
+                                                            >
+                                                                <span className="font-medium text-slate-600 mr-2">
+                                                                    {opcion.id.toUpperCase()})
+                                                                </span>
+                                                                {opcion.texto}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {showResults && (
+                                                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                                        <p className="text-sm text-blue-800">
+                                                            <strong>Explicación:</strong> {q.explicacion}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 flex justify-between items-center">
+                                        <button
+                                            onClick={() => {
+                                                setShowResults(false);
+                                                setQuizAnswers({});
+                                            }}
+                                            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                                        >
+                                            Reiniciar Quiz
+                                        </button>
+
+                                        {!showResults ? (
+                                            <button
+                                                onClick={() => setShowResults(true)}
+                                                className="px-6 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
+                                                disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                                            >
+                                                Ver Resultados
+                                            </button>
+                                        ) : (
+                                            <div className="text-right">
+                                                <p className="text-2xl font-bold text-slate-800">
+                                                    {calculateScore()}/{quizQuestions.length}
+                                                </p>
+                                                <p className="text-sm text-slate-600">
+                                                    {calculateScore() === quizQuestions.length
+                                                        ? '¡Excelente! Dominas el Data Storytelling'
+                                                        : calculateScore() >= 3
+                                                            ? 'Buen trabajo, sigue practicando'
+                                                            : 'Revisa los conceptos y vuelve a intentar'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-800 text-white py-8 mt-12">
+                        <div className="max-w-6xl mx-auto px-6 text-center">
+                            <p className="text-slate-400">
+                                Sesión 12: Data Storytelling y Presentaciones | ADEN University
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <a href="laboratorio.html" className="text-rose-400 hover:text-rose-300">
+                                    Ir al Laboratorio →
+                                </a>
+                                <a href="ejercicio-individual.html" className="text-rose-400 hover:text-rose-300">
+                                    Ejercicio Individual →
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

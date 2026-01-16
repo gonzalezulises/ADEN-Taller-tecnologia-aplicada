@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 12: Ejercicio Data Storytelling | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // EJERCICIO: CREAR DATA STORY DE TU PROYECTO
+        // ==========================================
+
+        function App() {
+            const [currentPhase, setCurrentPhase] = useState(0);
+            const [completedPhases, setCompletedPhases] = useState([]);
+            const [selectedScenario, setSelectedScenario] = useState(null);
+
+            const markComplete = (phase) => {
+                if (!completedPhases.includes(phase)) {
+                    setCompletedPhases([...completedPhases, phase]);
+                }
+            };
+
+            // Escenarios de presentación
+            const scenarios = [
+                {
+                    id: 'junta',
+                    titulo: 'Junta Directiva',
+                    audiencia: 'CEO, CFO, directores de área',
+                    tiempo: '15 minutos',
+                    objetivo: 'Aprobación de inversión o estrategia',
+                    icono: '👔',
+                    prioridades: ['ROI proyectado', 'Riesgo y mitigación', 'Ventaja competitiva'],
+                    estructura: 'Pirámide Invertida o SCR'
+                },
+                {
+                    id: 'cliente',
+                    titulo: 'Presentación a Cliente',
+                    audiencia: 'Stakeholders del cliente, tomadores de decisión',
+                    tiempo: '30-45 minutos',
+                    objetivo: 'Demostrar valor del análisis realizado',
+                    icono: '🤝',
+                    prioridades: ['Insights accionables', 'Impacto en su negocio', 'Próximos pasos'],
+                    estructura: 'Viaje del Héroe o What-So What-Now What'
+                },
+                {
+                    id: 'equipo',
+                    titulo: 'Equipo Técnico',
+                    audiencia: 'Analistas, científicos de datos, IT',
+                    tiempo: '45-60 minutos',
+                    objetivo: 'Validar metodología y transferir conocimiento',
+                    icono: '💻',
+                    prioridades: ['Metodología rigurosa', 'Calidad de datos', 'Reproducibilidad'],
+                    estructura: 'Detallada con anexos técnicos'
+                },
+                {
+                    id: 'proyecto',
+                    titulo: 'Defensa de Proyecto Final',
+                    audiencia: 'Profesores, evaluadores, compañeros',
+                    tiempo: '20 minutos + Q&A',
+                    objetivo: 'Demostrar aprendizaje y capacidad analítica',
+                    icono: '🎓',
+                    prioridades: ['Problema resuelto', 'Metodología aplicada', 'Resultados y aprendizajes'],
+                    estructura: 'SCR con énfasis en el proceso'
+                }
+            ];
+
+            const phases = [
+                { titulo: 'Seleccionar Escenario', descripcion: 'Elegir el contexto de presentación' },
+                { titulo: 'Analizar Audiencia', descripcion: 'Definir qué necesita tu audiencia' },
+                { titulo: 'Diseñar Estructura', descripcion: 'Crear el outline de la presentación' },
+                { titulo: 'Crear Slides Clave', descripcion: 'Diseñar las visualizaciones principales' },
+                { titulo: 'Escribir Narrativa', descripcion: 'Conectar los datos con la historia' },
+                { titulo: 'Refinamiento Final', descripcion: 'Aplicar principios de diseño y revisar' }
+            ];
+
+            const progress = (completedPhases.length / phases.length) * 100;
+
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-violet-600 to-purple-600 text-white py-8">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <a href="index.html" className="text-violet-200 hover:text-white text-sm mb-4 inline-block">
+                                ← Volver al simulador
+                            </a>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold">Ejercicio Individual: Data Story de tu Proyecto</h1>
+                            </div>
+                            <p className="text-violet-100 mt-2">Sesión 12 | Crea la presentación ejecutiva de tu análisis</p>
+                        </div>
+                    </header>
+
+                    {/* Progress Bar */}
+                    <div className="bg-white border-b sticky top-0 z-10">
+                        <div className="max-w-6xl mx-auto px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-slate-700">Progreso del Ejercicio</span>
+                                <span className="text-sm font-medium text-violet-600">{completedPhases.length}/{phases.length} fases</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                <div
+                                    className="bg-violet-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="max-w-6xl mx-auto px-6 py-8">
+                        <div className="grid lg:grid-cols-4 gap-6">
+                            {/* Sidebar - Fases */}
+                            <div className="lg:col-span-1">
+                                <div className="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                                    <h3 className="font-semibold text-slate-800 mb-4">Fases</h3>
+                                    <nav className="space-y-2">
+                                        {phases.map((phase, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentPhase(idx)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                                    currentPhase === idx
+                                                        ? 'bg-violet-100 text-violet-700'
+                                                        : completedPhases.includes(idx)
+                                                            ? 'bg-slate-50 text-slate-600'
+                                                            : 'text-slate-500 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                                        completedPhases.includes(idx)
+                                                            ? 'bg-violet-500 text-white'
+                                                            : currentPhase === idx
+                                                                ? 'bg-violet-600 text-white'
+                                                                : 'bg-slate-200 text-slate-600'
+                                                    }`}>
+                                                        {completedPhases.includes(idx) ? '✓' : idx + 1}
+                                                    </span>
+                                                    <span className="truncate">{phase.titulo}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </nav>
+                                </div>
+                            </div>
+
+                            {/* Contenido Principal */}
+                            <div className="lg:col-span-3 space-y-6">
+
+                                {/* Fase 0: Seleccionar Escenario */}
+                                {currentPhase === 0 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 1: Seleccionar Escenario de Presentación</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            El contexto de presentación determina todo: estructura, nivel de detalle, y tono.
+                                            Selecciona el escenario que más se asemeje a tu proyecto.
+                                        </p>
+
+                                        <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                            {scenarios.map((scenario) => (
+                                                <button
+                                                    key={scenario.id}
+                                                    onClick={() => setSelectedScenario(scenario)}
+                                                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                                        selectedScenario?.id === scenario.id
+                                                            ? 'border-violet-500 bg-violet-50'
+                                                            : 'border-slate-200 hover:border-violet-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-2xl">{scenario.icono}</span>
+                                                        <span className="font-semibold text-slate-800">{scenario.titulo}</span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-600 mb-2">
+                                                        <strong>Audiencia:</strong> {scenario.audiencia}
+                                                    </p>
+                                                    <p className="text-sm text-slate-600 mb-2">
+                                                        <strong>Tiempo:</strong> {scenario.tiempo}
+                                                    </p>
+                                                    <p className="text-sm text-slate-600">
+                                                        <strong>Objetivo:</strong> {scenario.objetivo}
+                                                    </p>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {selectedScenario && (
+                                            <div className="bg-violet-50 rounded-lg p-4 mb-6">
+                                                <h4 className="font-semibold text-violet-800 mb-2">
+                                                    Escenario seleccionado: {selectedScenario.titulo}
+                                                </h4>
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-violet-700">Prioridades:</p>
+                                                        <ul className="text-sm text-violet-600">
+                                                            {selectedScenario.prioridades.map((p, i) => (
+                                                                <li key={i}>• {p}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-violet-700">Estructura recomendada:</p>
+                                                        <p className="text-sm text-violet-600">{selectedScenario.estructura}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={() => {
+                                                if (selectedScenario) {
+                                                    markComplete(0);
+                                                    setCurrentPhase(1);
+                                                }
+                                            }}
+                                            disabled={!selectedScenario}
+                                            className="w-full py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Continuar con escenario seleccionado →
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Fase 1: Analizar Audiencia */}
+                                {currentPhase === 1 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 2: Analizar tu Audiencia</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Completa el análisis de audiencia para tu escenario específico.
+                                        </p>
+
+                                        {selectedScenario && (
+                                            <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                                <p className="text-sm text-amber-700">
+                                                    <strong>Recordatorio:</strong> Presentas a {selectedScenario.audiencia}
+                                                    en {selectedScenario.tiempo}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Análisis de Audiencia</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">Voy a presentar el análisis de [TU PROYECTO] a [AUDIENCIA ESPECÍFICA].</p>
+                                                <p className="mb-2">Contexto del proyecto: [BREVE DESCRIPCIÓN]</p>
+                                                <p className="mb-2">Tiempo disponible: [XX MINUTOS]</p>
+                                                <p className="mb-4">Ayúdame a definir:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                                                    <li>¿Cuáles son las 3 preguntas principales que tiene esta audiencia?</li>
+                                                    <li>¿Qué métricas serán más convincentes para ellos?</li>
+                                                    <li>¿Qué nivel de detalle técnico debo incluir?</li>
+                                                    <li>¿Qué jerga debo evitar o explicar?</li>
+                                                    <li>¿Cuál es el "so what" que más les importa?</li>
+                                                </ol>
+                                            </div>
+                                            <button className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Tu Análisis de Audiencia</h4>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Pregunta principal de tu audiencia:
+                                                    </label>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="2"
+                                                        placeholder="Ej: ¿Cómo mejoramos la retención de clientes?"
+                                                    ></textarea>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Top 3 métricas que debes incluir:
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder="Ej: ROI, tasa de churn, NPS"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                        Lo que debes evitar:
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder="Ej: Jerga técnica de ML, detalles de código"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(0)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(1); setCurrentPhase(2);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 2: Diseñar Estructura */}
+                                {currentPhase === 2 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 3: Diseñar Estructura</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Crea el outline de tu presentación slide por slide.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Diseñar Estructura</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">Necesito crear una presentación de [XX] slides para [AUDIENCIA].</p>
+                                                <p className="mb-2">Mi proyecto trata sobre: [DESCRIPCIÓN]</p>
+                                                <p className="mb-2">Los principales hallazgos son:</p>
+                                                <p className="mb-2">1. [HALLAZGO 1]</p>
+                                                <p className="mb-2">2. [HALLAZGO 2]</p>
+                                                <p className="mb-2">3. [HALLAZGO 3]</p>
+                                                <p className="mb-4">Mi recomendación principal es: [RECOMENDACIÓN]</p>
+                                                <p className="mb-2">Usando la estructura [PIRÁMIDE INVERTIDA / SCR / VIAJE DEL HÉROE],</p>
+                                                <p>crea un outline con el título de cada slide y su mensaje principal.</p>
+                                            </div>
+                                            <button className="mt-4 text-rose-600 hover:text-rose-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Tu Outline (8-12 slides recomendado)</h4>
+
+                                            <div className="space-y-3">
+                                                {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                                                    <div key={num} className="flex items-start gap-3">
+                                                        <span className="w-8 h-8 bg-violet-100 text-violet-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                            {num}
+                                                        </span>
+                                                        <div className="flex-1 space-y-2">
+                                                            <input
+                                                                type="text"
+                                                                className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                placeholder={`Título slide ${num}...`}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="w-full px-3 py-2 border rounded-lg text-sm text-slate-500"
+                                                                placeholder="Mensaje principal de esta slide..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-amber-800 mb-2">💡 Tip: Prueba del Pasillo</h4>
+                                            <p className="text-sm text-amber-700">
+                                                Si alguien solo leyera los títulos de tus slides en 30 segundos mientras
+                                                camina por el pasillo, ¿entendería tu mensaje principal y recomendación?
+                                            </p>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(1)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(2); setCurrentPhase(3);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 3: Crear Slides Clave */}
+                                {currentPhase === 3 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 4: Crear Slides Clave</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Diseña las 3-4 visualizaciones más importantes de tu presentación.
+                                        </p>
+
+                                        <div className="space-y-6 mb-6">
+                                            {/* Slide de Apertura */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-emerald-50 px-4 py-2">
+                                                    <span className="font-semibold text-emerald-800">1. Slide de Apertura</span>
+                                                </div>
+                                                <div className="p-4">
+                                                    <p className="text-sm text-slate-600 mb-3">
+                                                        El gancho que captura atención con tu insight más importante.
+                                                    </p>
+                                                    <div className="bg-slate-50 rounded-lg p-4 mb-3">
+                                                        <p className="text-sm font-medium text-slate-700 mb-2">Tu apertura:</p>
+                                                        <textarea
+                                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                            rows="2"
+                                                            placeholder="Ej: 'El 34% de nuestros clientes VIP están a punto de irse—y podemos evitarlo'"
+                                                        ></textarea>
+                                                    </div>
+                                                    <div className="text-xs text-slate-500">
+                                                        ✓ Incluye dato impactante &nbsp; ✓ Genera curiosidad &nbsp; ✓ Implica que hay solución
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Slide de Evidencia */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-blue-50 px-4 py-2">
+                                                    <span className="font-semibold text-blue-800">2. Slide de Evidencia Principal</span>
+                                                </div>
+                                                <div className="p-4">
+                                                    <p className="text-sm text-slate-600 mb-3">
+                                                        La visualización que más soporta tu argumento.
+                                                    </p>
+                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-sm font-medium text-slate-700 mb-2">Tipo de gráfico:</p>
+                                                            <select className="w-full px-3 py-2 border rounded-lg text-sm">
+                                                                <option>Seleccionar...</option>
+                                                                <option>Barras (comparación)</option>
+                                                                <option>Líneas (tendencia)</option>
+                                                                <option>Scatter (correlación)</option>
+                                                                <option>Tabla con highlighting</option>
+                                                                <option>Mapa de calor</option>
+                                                                <option>Diagrama de flujo</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-slate-700 mb-2">Anotación clave:</p>
+                                                            <input
+                                                                type="text"
+                                                                className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                placeholder="Ej: '↑ +45% en clientes que usan feature X'"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Slide de Recomendación */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-violet-50 px-4 py-2">
+                                                    <span className="font-semibold text-violet-800">3. Slide de Recomendación</span>
+                                                </div>
+                                                <div className="p-4">
+                                                    <p className="text-sm text-slate-600 mb-3">
+                                                        La acción específica que propones con su justificación.
+                                                    </p>
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <p className="text-sm font-medium text-slate-700 mb-2">Tu recomendación (verbo + acción concreta):</p>
+                                                            <input
+                                                                type="text"
+                                                                className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                placeholder="Ej: 'Implementar programa de retención proactiva para clientes con NPS < 7'"
+                                                            />
+                                                        </div>
+                                                        <div className="grid md:grid-cols-3 gap-3">
+                                                            <div>
+                                                                <p className="text-xs font-medium text-slate-500 mb-1">Impacto esperado:</p>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: +$500K/año"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-medium text-slate-500 mb-1">Timeline:</p>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: 3 meses"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-medium text-slate-500 mb-1">Riesgo:</p>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="Ej: Bajo"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(2)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(3); setCurrentPhase(4);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 4: Escribir Narrativa */}
+                                {currentPhase === 4 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 5: Escribir Narrativa</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Conecta tus slides con una historia coherente. Cada transición debe fluir naturalmente.
+                                        </p>
+
+                                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">🤖 Prompt para Transiciones</h3>
+                                            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-700">
+                                                <p className="mb-2">Tengo estas slides en mi presentación:</p>
+                                                <p className="mb-1">Slide 1: [TÍTULO Y MENSAJE]</p>
+                                                <p className="mb-1">Slide 2: [TÍTULO Y MENSAJE]</p>
+                                                <p className="mb-1">Slide 3: [TÍTULO Y MENSAJE]</p>
+                                                <p className="mb-2">... etc.</p>
+                                                <p className="mb-4">Genera frases de transición naturales entre cada slide que:</p>
+                                                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                                                    <li>Conecten el mensaje anterior con el siguiente</li>
+                                                    <li>Usen lenguaje conversacional, no formal</li>
+                                                    <li>Mantengan la atención de la audiencia</li>
+                                                </ol>
+                                            </div>
+                                            <button className="mt-4 text-amber-600 hover:text-amber-800 text-sm font-medium">
+                                                📋 Copiar prompt
+                                            </button>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-slate-800 mb-4">✍️ Tus Transiciones Clave</h4>
+
+                                            <div className="space-y-4">
+                                                <div className="bg-slate-50 rounded-lg p-4">
+                                                    <p className="text-sm font-medium text-slate-700 mb-2">
+                                                        Después de la apertura → hacia los datos:
+                                                    </p>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="2"
+                                                        placeholder="Ej: 'Para entender cómo llegamos aquí, veamos los datos de los últimos 12 meses...'"
+                                                    ></textarea>
+                                                </div>
+
+                                                <div className="bg-slate-50 rounded-lg p-4">
+                                                    <p className="text-sm font-medium text-slate-700 mb-2">
+                                                        Después de los datos → hacia la recomendación:
+                                                    </p>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="2"
+                                                        placeholder="Ej: 'Esto nos lleva a una oportunidad clara. Mi recomendación es...'"
+                                                    ></textarea>
+                                                </div>
+
+                                                <div className="bg-slate-50 rounded-lg p-4">
+                                                    <p className="text-sm font-medium text-slate-700 mb-2">
+                                                        Cierre y llamada a la acción:
+                                                    </p>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        rows="2"
+                                                        placeholder="Ej: 'Con su aprobación, podríamos tener esto implementado en 6 semanas. ¿Preguntas?'"
+                                                    ></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-blue-800 mb-2">💡 Conectores Útiles</h4>
+                                            <div className="grid md:grid-cols-3 gap-4 text-sm text-blue-700">
+                                                <div>
+                                                    <p className="font-medium">Causa-efecto:</p>
+                                                    <ul className="text-xs mt-1">
+                                                        <li>• "Esto nos lleva a..."</li>
+                                                        <li>• "Como resultado..."</li>
+                                                        <li>• "Por eso vemos..."</li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">Contraste:</p>
+                                                    <ul className="text-xs mt-1">
+                                                        <li>• "Sin embargo..."</li>
+                                                        <li>• "A diferencia de..."</li>
+                                                        <li>• "Por otro lado..."</li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">Conclusión:</p>
+                                                    <ul className="text-xs mt-1">
+                                                        <li>• "En resumen..."</li>
+                                                        <li>• "La conclusión es..."</li>
+                                                        <li>• "Esto significa que..."</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(3)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(4); setCurrentPhase(5);}}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fase 5: Refinamiento Final */}
+                                {currentPhase === 5 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <h2 className="text-xl font-bold text-slate-800 mb-2">Fase 6: Refinamiento Final</h2>
+                                        <p className="text-slate-600 mb-6">
+                                            Revisa tu presentación contra estos checklists antes de presentar.
+                                        </p>
+
+                                        <div className="space-y-6 mb-6">
+                                            {/* Checklist de Contenido */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-emerald-50 px-4 py-3">
+                                                    <h4 className="font-semibold text-emerald-800">✅ Contenido</h4>
+                                                </div>
+                                                <div className="p-4 space-y-2">
+                                                    {[
+                                                        'Cada slide tiene un solo mensaje claro',
+                                                        'Los títulos son takeaways, no descripciones',
+                                                        'Los datos tienen contexto (vs. meta, vs. anterior)',
+                                                        'La recomendación es específica y actionable',
+                                                        'Hay un "so what" claro para la audiencia',
+                                                        'Fuentes de datos están citadas'
+                                                    ].map((item, idx) => (
+                                                        <label key={idx} className="flex items-center gap-2 text-sm text-slate-700">
+                                                            <input type="checkbox" className="rounded text-emerald-500" />
+                                                            {item}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Checklist de Diseño */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-blue-50 px-4 py-3">
+                                                    <h4 className="font-semibold text-blue-800">🎨 Diseño (CRAP)</h4>
+                                                </div>
+                                                <div className="p-4 space-y-2">
+                                                    {[
+                                                        'Contraste: Títulos significativamente más grandes',
+                                                        'Repetición: Estilos consistentes en toda la presentación',
+                                                        'Alineación: Nada parece puesto al azar',
+                                                        'Proximidad: Elementos relacionados están juntos',
+                                                        'Paleta de colores limitada (3-4 colores)',
+                                                        'Sin chart junk (3D, gradientes innecesarios, etc.)'
+                                                    ].map((item, idx) => (
+                                                        <label key={idx} className="flex items-center gap-2 text-sm text-slate-700">
+                                                            <input type="checkbox" className="rounded text-blue-500" />
+                                                            {item}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Checklist de Narrativa */}
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <div className="bg-violet-50 px-4 py-3">
+                                                    <h4 className="font-semibold text-violet-800">📖 Narrativa</h4>
+                                                </div>
+                                                <div className="p-4 space-y-2">
+                                                    {[
+                                                        'Apertura captura atención en 10 segundos',
+                                                        'Transiciones fluyen naturalmente',
+                                                        'La historia sigue estructura lógica',
+                                                        'El cierre llama a la acción',
+                                                        'Puedo presentar solo con títulos si me quedo sin tiempo',
+                                                        'He ensayado en voz alta al menos una vez'
+                                                    ].map((item, idx) => (
+                                                        <label key={idx} className="flex items-center gap-2 text-sm text-slate-700">
+                                                            <input type="checkbox" className="rounded text-violet-500" />
+                                                            {item}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-violet-100 to-purple-100 rounded-lg p-6 mb-6">
+                                            <div className="text-center">
+                                                <span className="text-4xl">🎉</span>
+                                                <h3 className="text-xl font-bold text-slate-800 mt-2">¡Ejercicio Completado!</h3>
+                                                <p className="text-slate-600 mt-2 max-w-lg mx-auto">
+                                                    Has diseñado una Data Story profesional. Ahora crea la presentación
+                                                    real en PowerPoint, Google Slides o tu herramienta preferida.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-amber-800 mb-2">📤 Entregable</h4>
+                                            <p className="text-sm text-amber-700">
+                                                Sube tu presentación (PDF o PPT) a la plataforma del curso.
+                                                Incluye en las notas del presentador las transiciones que escribiste.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentPhase(4)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => markComplete(5)}
+                                                className="flex-1 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                                            >
+                                                Marcar como completado ✓
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-800 text-white py-8 mt-12">
+                        <div className="max-w-6xl mx-auto px-6 text-center">
+                            <p className="text-slate-400">
+                                Ejercicio Individual Sesión 12 | ADEN University
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <a href="index.html" className="text-violet-400 hover:text-violet-300">
+                                    ← Volver al Simulador
+                                </a>
+                                <a href="laboratorio.html" className="text-violet-400 hover:text-violet-300">
+                                    Laboratorio
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Implementa tu Modelo ML - Sesion 08</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Continuacion del proyecto de sesion 07
+        const projectContinuation = [
+            {
+                id: 'churn',
+                name: 'Prediccion de Churn',
+                icon: '📱',
+                color: 'blue',
+                modelType: 'Clasificacion',
+                targetVariable: 'churn (0/1)',
+                suggestedAlgorithms: ['Random Forest', 'Gradient Boosting', 'Logistic Regression'],
+                keyMetrics: ['Recall', 'Precision', 'AUC-ROC'],
+                businessContext: 'Maximizar recall para no perder clientes en riesgo',
+                segmentationUse: 'Segmentar por patron de uso para estrategias de retencion'
+            },
+            {
+                id: 'segmentation',
+                name: 'Segmentacion de Clientes',
+                icon: '🛍️',
+                color: 'purple',
+                modelType: 'Clustering',
+                targetVariable: 'Sin target (clusters)',
+                suggestedAlgorithms: ['K-Means', 'Hierarchical', 'DBSCAN'],
+                keyMetrics: ['Silhouette Score', 'Inercia', 'Interpretabilidad'],
+                businessContext: 'Crear perfiles accionables para marketing',
+                segmentationUse: 'N/A - este proyecto es de segmentacion'
+            },
+            {
+                id: 'fraud',
+                name: 'Deteccion de Fraude',
+                icon: '🏦',
+                color: 'red',
+                modelType: 'Clasificacion (desbalanceada)',
+                targetVariable: 'fraude (0/1)',
+                suggestedAlgorithms: ['Random Forest', 'XGBoost', 'Isolation Forest'],
+                keyMetrics: ['Precision', 'Recall', 'AUC-PR'],
+                businessContext: 'Balance entre detectar fraude y no molestar clientes legitimos',
+                segmentationUse: 'Segmentar por perfil de riesgo'
+            },
+            {
+                id: 'demand',
+                name: 'Prediccion de Demanda',
+                icon: '📦',
+                color: 'green',
+                modelType: 'Regresion',
+                targetVariable: 'unidades_vendidas',
+                suggestedAlgorithms: ['Random Forest Regressor', 'Gradient Boosting', 'Linear Regression'],
+                keyMetrics: ['RMSE', 'MAE', 'R²'],
+                businessContext: 'Minimizar error para optimizar inventario',
+                segmentationUse: 'Segmentar productos por patron de demanda'
+            }
+        ];
+
+        // Fases de modelado
+        const modelingPhases = [
+            {
+                id: 1,
+                title: 'Preparar Features',
+                prompt: (project) => `Continuando con mi proyecto de ${project.name}, ya complete el EDA.
+
+Tipo de modelo: ${project.modelType}
+Variable objetivo: ${project.targetVariable}
+
+Necesito preparar los features para modelar:
+
+1. Recomienda que variables debo excluir y por que (ID, leakage, etc.)
+2. Para variables categoricas, ¿one-hot o label encoding? Justifica
+3. ¿Debo escalar/normalizar? ¿Que metodo y por que?
+4. Propone 5 variables derivadas (feature engineering) que podrian mejorar el modelo
+5. ¿Como manejo el desbalance de clases? (si aplica)
+
+Dame el codigo Python completo para la preparacion de datos.`
+            },
+            {
+                id: 2,
+                title: 'Entrenar Modelos Base',
+                prompt: (project) => `Para mi proyecto de ${project.name}:
+
+Tipo: ${project.modelType}
+Algoritmos sugeridos: ${project.suggestedAlgorithms.join(', ')}
+
+Necesito entrenar modelos base (sin tunear):
+
+1. Genera codigo para entrenar los 3 algoritmos sugeridos
+2. Usa train_test_split con 80/20 y stratify si es clasificacion
+3. Para cada modelo, calcula las metricas: ${project.keyMetrics.join(', ')}
+4. Crea una tabla comparativa de resultados
+5. Identifica cual modelo es el mejor candidato y por que
+
+Incluye todo el codigo Python necesario.`
+            },
+            {
+                id: 3,
+                title: 'Optimizar Hiperparametros',
+                prompt: (project) => `Para mi mejor modelo de ${project.name}:
+
+Metricas objetivo: ${project.keyMetrics.join(', ')}
+Contexto: ${project.businessContext}
+
+Quiero optimizar hiperparametros:
+
+1. Lista los 5 hiperparametros mas importantes del algoritmo elegido
+2. Define rangos razonables para cada uno
+3. Genera codigo para GridSearchCV o RandomizedSearchCV
+4. Usa cross-validation de 5 folds
+5. Muestra los mejores parametros y el score resultante
+6. Compara modelo tuneado vs modelo base
+
+Dame el codigo Python completo.`
+            },
+            {
+                id: 4,
+                title: 'Evaluar y Explicar',
+                prompt: (project) => `Mi modelo optimizado de ${project.name} esta listo.
+
+Metricas: ${project.keyMetrics.join(', ')}
+Contexto de negocio: ${project.businessContext}
+
+Necesito evaluacion completa:
+
+1. Genera la matriz de confusion (si es clasificacion) o residuales (si es regresion)
+2. Calcula todas las metricas relevantes
+3. Genera curva ROC/PR (si aplica)
+4. Crea grafico de feature importance
+5. Identifica donde el modelo falla (analisis de errores)
+6. Traduce las metricas a impacto de negocio
+
+Incluye visualizaciones y codigo Python.`
+            },
+            {
+                id: 5,
+                title: 'Documentar para Entrega',
+                prompt: (project) => `Genera la documentacion final de mi modelo de ${project.name}.
+
+Estructura del documento:
+
+1. RESUMEN EJECUTIVO (1 pagina)
+   - Objetivo del modelo
+   - Resultado principal
+   - Recomendacion
+
+2. METODOLOGIA
+   - Datos utilizados
+   - Preprocesamiento
+   - Algoritmo seleccionado
+   - Hiperparametros finales
+
+3. RESULTADOS
+   - Metricas de evaluacion
+   - Interpretacion de feature importance
+   - Analisis de errores
+
+4. IMPLEMENTACION
+   - Como usar el modelo en produccion
+   - Frecuencia de reentrenamiento sugerida
+   - Limitaciones conocidas
+
+5. CONCLUSIONES Y RECOMENDACIONES
+   - Hallazgos clave
+   - Acciones sugeridas para el negocio
+   - Proximos pasos
+
+Formatea profesionalmente para entregar al cliente.`
+            }
+        ];
+
+        function App() {
+            const [selectedProject, setSelectedProject] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(0);
+            const [copiedPrompt, setCopiedPrompt] = useState(null);
+
+            const copyPrompt = (prompt, phaseId) => {
+                navigator.clipboard.writeText(prompt);
+                setCopiedPrompt(phaseId);
+                setTimeout(() => setCopiedPrompt(null), 2000);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-violet-100 mb-2">
+                            <a href="./" className="hover:text-white">← Volver al simulador</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Ejercicio Individual: Implementa tu Modelo ML</h1>
+                        <p className="text-violet-100">Clasificacion, Regresion o Clustering - Continua tu proyecto</p>
+                        <div className="flex items-center gap-2 mt-3">
+                            <span className="bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-medium">
+                                Fase 2 Proyecto Integrador - 15% Nota Final
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Project Selection */}
+                    {!selectedProject ? (
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Continua tu Proyecto de la Sesion 07</h2>
+                                <p className="text-gray-600 mb-6">
+                                    Selecciona el mismo proyecto que elegiste en la Sesion 07 para implementar el modelo.
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {projectContinuation.map((project) => (
+                                        <div
+                                            key={project.id}
+                                            onClick={() => setSelectedProject(project)}
+                                            className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
+                                                project.color === 'blue' ? 'hover:border-blue-500 hover:bg-blue-50' :
+                                                project.color === 'purple' ? 'hover:border-purple-500 hover:bg-purple-50' :
+                                                project.color === 'red' ? 'hover:border-red-500 hover:bg-red-50' :
+                                                'hover:border-green-500 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <span className="text-4xl">{project.icon}</span>
+                                                <div>
+                                                    <h3 className="font-bold text-lg">{project.name}</h3>
+                                                    <span className={`text-sm px-2 py-0.5 rounded ${
+                                                        project.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                                                        project.color === 'purple' ? 'bg-purple-100 text-purple-700' :
+                                                        project.color === 'red' ? 'bg-red-100 text-red-700' :
+                                                        'bg-green-100 text-green-700'
+                                                    }`}>
+                                                        {project.modelType}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1 text-sm">
+                                                <p><strong>Target:</strong> {project.targetVariable}</p>
+                                                <p><strong>Algoritmos:</strong> {project.suggestedAlgorithms.join(', ')}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Connection to Session 07 */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                                <h3 className="font-bold text-blue-800 mb-3">📎 Conexion con Sesion 07</h3>
+                                <p className="text-gray-700 mb-3">
+                                    Este ejercicio continua el trabajo iniciado en la Sesion 07 (CRISP-DM y EDA).
+                                    Debes usar el mismo dataset y los insights del EDA para guiar tu modelado.
+                                </p>
+                                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div className="bg-white p-3 rounded-lg">
+                                        <div className="font-bold text-gray-700 mb-1">Sesion 07</div>
+                                        <ul className="text-gray-600 space-y-1">
+                                            <li>✓ Business Understanding</li>
+                                            <li>✓ Data Understanding (EDA)</li>
+                                            <li>✓ Data Preparation</li>
+                                        </ul>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg">
+                                        <div className="font-bold text-gray-700 mb-1">Sesion 08 (Este ejercicio)</div>
+                                        <ul className="text-gray-600 space-y-1">
+                                            <li>→ Modeling</li>
+                                            <li>→ Evaluation</li>
+                                            <li>→ Documentacion</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Selected Project View */
+                        <div className="space-y-6">
+                            {/* Project Header */}
+                            <div className={`rounded-xl p-6 ${
+                                selectedProject.color === 'blue' ? 'bg-blue-50 border border-blue-200' :
+                                selectedProject.color === 'purple' ? 'bg-purple-50 border border-purple-200' :
+                                selectedProject.color === 'red' ? 'bg-red-50 border border-red-200' :
+                                'bg-green-50 border border-green-200'
+                            }`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-5xl">{selectedProject.icon}</span>
+                                        <div>
+                                            <h2 className="text-2xl font-bold">{selectedProject.name}</h2>
+                                            <p className="text-gray-600">{selectedProject.modelType}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setSelectedProject(null); setCurrentPhase(0); }}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        Cambiar proyecto
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Project Details */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Especificaciones del Modelo</h3>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Algoritmos Sugeridos</h4>
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedProject.suggestedAlgorithms.map((algo, idx) => (
+                                                <span key={idx} className="bg-rose-100 text-rose-800 px-2 py-1 rounded text-sm">
+                                                    {algo}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Metricas Clave</h4>
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedProject.keyMetrics.map((m, idx) => (
+                                                <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                                                    {m}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="border rounded-lg p-4 md:col-span-2">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Contexto de Negocio</h4>
+                                        <p className="text-gray-800">{selectedProject.businessContext}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modeling Phases */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Fases de Modelado</h3>
+
+                                {/* Phase tabs */}
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {modelingPhases.map((phase, idx) => (
+                                        <button
+                                            key={phase.id}
+                                            onClick={() => setCurrentPhase(idx)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                currentPhase === idx
+                                                    ? 'bg-rose-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-rose-100'
+                                            }`}
+                                        >
+                                            {phase.id}. {phase.title}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Current phase content */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xl font-bold text-gray-800">
+                                        Fase {modelingPhases[currentPhase].id}: {modelingPhases[currentPhase].title}
+                                    </h4>
+
+                                    <div className="bg-gray-50 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h5 className="font-medium text-gray-700">
+                                                Prompt para ChatGPT / Claude / Gemini
+                                            </h5>
+                                            <button
+                                                onClick={() => copyPrompt(modelingPhases[currentPhase].prompt(selectedProject), modelingPhases[currentPhase].id)}
+                                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                                    copiedPrompt === modelingPhases[currentPhase].id
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-rose-600 text-white hover:bg-rose-700'
+                                                }`}
+                                            >
+                                                {copiedPrompt === modelingPhases[currentPhase].id ? '✓ Copiado!' : 'Copiar prompt'}
+                                            </button>
+                                        </div>
+                                        <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
+                                            {modelingPhases[currentPhase].prompt(selectedProject)}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Navigation */}
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.max(0, currentPhase - 1))}
+                                        disabled={currentPhase === 0}
+                                        className="px-4 py-2 text-gray-600 disabled:opacity-50"
+                                    >
+                                        ← Fase anterior
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.min(modelingPhases.length - 1, currentPhase + 1))}
+                                        disabled={currentPhase === modelingPhases.length - 1}
+                                        className="px-4 py-2 bg-rose-600 text-white rounded-lg disabled:opacity-50"
+                                    >
+                                        Siguiente fase →
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Deliverables */}
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                                <h3 className="font-bold text-green-800 mb-3">Entregables - Fase 2 del Proyecto (Continuacion)</h3>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Notebook de Modelado</strong>: Google Colab con entrenamiento y evaluacion
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Comparativa de Modelos</strong>: Tabla con al menos 3 algoritmos
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Modelo Tuneado</strong>: Resultados de GridSearch/RandomSearch
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Informe Final</strong>: Documento con metodologia, resultados y recomendaciones
+                                        </div>
+                                    </li>
+                                </ul>
+
+                                <div className="mt-4 bg-white rounded-lg p-4">
+                                    <h4 className="font-medium text-gray-800 mb-2">Criterios de Evaluacion (Fase 2 completa)</h4>
+                                    <table className="w-full text-sm">
+                                        <tbody>
+                                            <tr className="border-b"><td className="py-1">EDA y comprension de datos (Sesion 07)</td><td className="text-right">25%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Implementacion de modelos</td><td className="text-right">30%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Tuneo y optimizacion</td><td className="text-right">20%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Evaluacion e interpretacion</td><td className="text-right">15%</td></tr>
+                                            <tr><td className="py-1">Documentacion y presentacion</td><td className="text-right">10%</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Ejercicio Individual Sesion 08 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

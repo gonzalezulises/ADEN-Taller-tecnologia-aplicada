@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 14: Laboratorio de Preparación Final | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // LABORATORIO DE PREPARACIÓN FINAL
+        // ==========================================
+
+        function App() {
+            const [currentStep, setCurrentStep] = useState(0);
+            const [completedSteps, setCompletedSteps] = useState([]);
+            const [teamReview, setTeamReview] = useState({});
+            const [practiceNotes, setPracticeNotes] = useState({});
+
+            const steps = [
+                {
+                    titulo: 'Revisión de Entregables',
+                    duracion: '30 min',
+                    icono: '📋',
+                    objetivo: 'Verificar que todos los componentes del proyecto están completos',
+                    instrucciones: [
+                        'Revisa que tu Data Warehouse está documentado (esquema estrella)',
+                        'Verifica que el proceso ETL está funcionando correctamente',
+                        'Confirma que el dashboard está publicado en Tableau Public',
+                        'Asegúrate de tener el roadmap de implementación finalizado',
+                        'Compila todos los enlaces y documentos en un solo lugar'
+                    ],
+                    entregable: 'Lista de verificación de entregables completa',
+                    checklist: [
+                        'Modelo dimensional documentado (fact_ y dim_)',
+                        'Script ETL ejecutable y documentado',
+                        'Dashboard interactivo publicado',
+                        'URL de Tableau Public funcionando',
+                        'Roadmap con fases, presupuesto y timeline',
+                        'Análisis de riesgos incluido'
+                    ]
+                },
+                {
+                    titulo: 'Estructura de Presentación',
+                    duracion: '25 min',
+                    icono: '🎬',
+                    objetivo: 'Definir la estructura y flujo de los 15 minutos',
+                    instrucciones: [
+                        'Define quién presenta cada sección',
+                        'Establece puntos de transición claros',
+                        'Prepara el "gancho" inicial (dato impactante o pregunta)',
+                        'Identifica los 3 momentos "wow" de tu presentación',
+                        'Planifica cómo mostrarás el dashboard EN VIVO'
+                    ],
+                    entregable: 'Guión de presentación con tiempos y responsables',
+                    template: {
+                        secciones: [
+                            { nombre: 'Apertura', tiempo: '2 min', responsable: '' },
+                            { nombre: 'Problema y Contexto', tiempo: '3 min', responsable: '' },
+                            { nombre: 'Demo Dashboard', tiempo: '5 min', responsable: '' },
+                            { nombre: 'Roadmap', tiempo: '3 min', responsable: '' },
+                            { nombre: 'Cierre', tiempo: '2 min', responsable: '' }
+                        ]
+                    }
+                },
+                {
+                    titulo: 'Ensayo #1 - Individual',
+                    duracion: '20 min',
+                    icono: '🎤',
+                    objetivo: 'Cada miembro practica su sección sin interrupciones',
+                    instrucciones: [
+                        'Cada persona presenta su sección completa',
+                        'El resto del equipo NO interrumpe, solo toma notas',
+                        'Cronometra estrictamente el tiempo asignado',
+                        'Practica con el dashboard abierto y funcionando',
+                        'Habla en voz alta, como si fuera la presentación real'
+                    ],
+                    entregable: 'Retroalimentación documentada para cada miembro',
+                    feedbackAreas: [
+                        'Claridad del mensaje principal',
+                        'Manejo del tiempo',
+                        'Fluidez con el dashboard',
+                        'Contacto visual y lenguaje corporal',
+                        'Uso de muletillas ("este", "bueno", "o sea")'
+                    ]
+                },
+                {
+                    titulo: 'Retroalimentación Cruzada',
+                    duracion: '15 min',
+                    icono: '🔄',
+                    objetivo: 'Dar y recibir feedback constructivo',
+                    instrucciones: [
+                        'Comparte observaciones usando el formato: "Noté que... Sugiero..."',
+                        'Enfócate en UNA cosa que puede mejorar cada persona',
+                        'Reconoce UNA fortaleza de cada presentador',
+                        'NO critiques, PROPÓN alternativas',
+                        'Documenta los acuerdos de mejora'
+                    ],
+                    entregable: 'Plan de mejora individual',
+                    feedbackTemplate: {
+                        formato: 'Noté que [observación específica]. Sugiero [alternativa concreta].',
+                        ejemplo: 'Noté que no miras a la audiencia cuando cambias de slide. Sugiero que hagas una pausa de 2 segundos antes de mirar la pantalla.'
+                    }
+                },
+                {
+                    titulo: 'Ensayo #2 - Completo',
+                    duracion: '20 min',
+                    icono: '🎭',
+                    objetivo: 'Presentación completa del equipo sin parar',
+                    instrucciones: [
+                        'Presenta los 15 minutos SIN interrupciones',
+                        'Practica las transiciones entre presentadores',
+                        'Incluye la demo del dashboard en vivo',
+                        'Simula el setup técnico (conexión, proyector)',
+                        'Cronometra estrictamente - PARA a los 15:00'
+                    ],
+                    entregable: 'Tiempo real de presentación y ajustes necesarios',
+                    checkpoints: [
+                        { minuto: 2, seccion: 'Terminar apertura' },
+                        { minuto: 5, seccion: 'Terminar contexto' },
+                        { minuto: 10, seccion: 'Terminar demo' },
+                        { minuto: 13, seccion: 'Terminar roadmap' },
+                        { minuto: 15, seccion: 'Cierre completo' }
+                    ]
+                },
+                {
+                    titulo: 'Preparación para Q&A',
+                    duracion: '20 min',
+                    icono: '❓',
+                    objetivo: 'Anticipar y preparar respuestas a preguntas difíciles',
+                    instrucciones: [
+                        'Lista las 10 preguntas más probables',
+                        'Asigna quién responde cada tipo de pregunta',
+                        'Practica respuestas de máximo 60 segundos',
+                        'Prepara frases para preguntas que no sabes: "Excelente pregunta, lo investigaremos"',
+                        'Practica cómo redirigir a otro miembro del equipo'
+                    ],
+                    entregable: 'Banco de 10 preguntas con respuestas preparadas',
+                    preguntasTipo: [
+                        { categoria: 'Datos', ejemplo: '¿Cómo validaron la calidad de los datos?' },
+                        { categoria: 'Metodología', ejemplo: '¿Por qué eligieron ese enfoque de modelado?' },
+                        { categoria: 'Dashboard', ejemplo: '¿Qué pasa si el usuario necesita ver X?' },
+                        { categoria: 'Roadmap', ejemplo: '¿Qué harían si el presupuesto se reduce?' },
+                        { categoria: 'Equipo', ejemplo: '¿Cómo se dividieron el trabajo?' }
+                    ]
+                },
+                {
+                    titulo: 'Simulación de Q&A',
+                    duracion: '15 min',
+                    icono: '🎯',
+                    objetivo: 'Practicar respondiendo preguntas bajo presión',
+                    instrucciones: [
+                        'Un miembro del equipo hace preguntas difíciles',
+                        'Los demás responden como en la presentación real',
+                        'Practica respuestas cortas y directas (30-60 seg)',
+                        'Practica pasar la pregunta a otro miembro',
+                        'Practica manejar preguntas que no sabes'
+                    ],
+                    entregable: 'Notas de mejora para respuestas',
+                    rolePlay: [
+                        'Panel "hostil": Pregunta detalles técnicos específicos',
+                        'Panel "ejecutivo": Pregunta sobre ROI y valor de negocio',
+                        'Panel "escéptico": Cuestiona supuestos y metodología'
+                    ]
+                },
+                {
+                    titulo: 'Revisión Técnica',
+                    duracion: '15 min',
+                    icono: '💻',
+                    objetivo: 'Verificar que todo funciona tecnicamente',
+                    instrucciones: [
+                        'Prueba el dashboard en diferentes navegadores',
+                        'Verifica que los filtros funcionan correctamente',
+                        'Prueba la conexión al proyector/pantalla externa',
+                        'Prepara backup offline del dashboard (capturas)',
+                        'Verifica que tienes hotspot móvil por si falla el WiFi'
+                    ],
+                    entregable: 'Checklist técnico completado',
+                    technicalChecklist: [
+                        'Dashboard carga en Chrome, Firefox, Safari',
+                        'Todos los filtros funcionan correctamente',
+                        'Tooltips muestran información esperada',
+                        'URL corta o QR code para compartir',
+                        'Slides de backup con capturas del dashboard'
+                    ]
+                },
+                {
+                    titulo: 'Ensayo Final',
+                    duracion: '25 min',
+                    icono: '🏆',
+                    objetivo: 'Presentación completa en condiciones reales',
+                    instrucciones: [
+                        'Simula las condiciones exactas de la presentación',
+                        'Incluye setup técnico y prueba de proyector',
+                        'Presenta los 15 minutos + 5 de Q&A',
+                        'Graba el ensayo si es posible para revisión',
+                        'Evalúa usando la rúbrica oficial del curso'
+                    ],
+                    entregable: 'Presentación lista para el día D',
+                    finalChecklist: [
+                        'Tiempo total dentro de 15 minutos',
+                        'Transiciones fluidas entre presentadores',
+                        'Demo del dashboard funciona perfectamente',
+                        'Equipo confía en las respuestas de Q&A',
+                        'Todos conocen el plan B si algo falla'
+                    ]
+                },
+                {
+                    titulo: 'Reflexión y Cierre del Curso',
+                    duracion: '15 min',
+                    icono: '🎓',
+                    objetivo: 'Reflexionar sobre el aprendizaje del curso',
+                    instrucciones: [
+                        'Cada miembro comparte: "Lo más valioso que aprendí fue..."',
+                        'Identifica cómo aplicarás BI en tu carrera profesional',
+                        'Documenta los conceptos clave que recordarás',
+                        'Agradece a tu equipo por el trabajo colaborativo',
+                        'Completa la encuesta de evaluación del curso'
+                    ],
+                    entregable: 'Reflexión individual documentada',
+                    reflexionPrompts: [
+                        '¿Qué concepto de BI cambió más mi perspectiva?',
+                        '¿Qué habilidad técnica desarrollé más?',
+                        '¿Qué haría diferente si volviera a empezar el proyecto?',
+                        '¿Cómo aplicaré esto en mi próximo trabajo/proyecto?'
+                    ]
+                }
+            ];
+
+            const handleCompleteStep = (stepIndex) => {
+                if (!completedSteps.includes(stepIndex)) {
+                    setCompletedSteps([...completedSteps, stepIndex]);
+                }
+            };
+
+            const getProgress = () => {
+                return Math.round((completedSteps.length / steps.length) * 100);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-8 mb-8">
+                        <div className="flex items-center gap-2 text-emerald-200 text-sm mb-2">
+                            <span>Sesión 14</span>
+                            <span>•</span>
+                            <span>Laboratorio</span>
+                            <span>•</span>
+                            <span>17 de abril, 2026</span>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Laboratorio de Preparación Final</h1>
+                        <p className="text-emerald-100">
+                            Guía paso a paso para preparar tu presentación final. Completa cada paso
+                            con tu equipo para asegurar una presentación exitosa.
+                        </p>
+                        <div className="mt-4 flex items-center gap-4">
+                            <div className="flex-1 bg-white/20 rounded-full h-3">
+                                <div
+                                    className="bg-white h-3 rounded-full transition-all duration-500"
+                                    style={{ width: `${getProgress()}%` }}
+                                />
+                            </div>
+                            <span className="text-lg font-medium">{getProgress()}%</span>
+                        </div>
+                    </div>
+
+                    {/* Progress Steps */}
+                    <div className="flex gap-1 mb-8 overflow-x-auto pb-2">
+                        {steps.map((step, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCurrentStep(idx)}
+                                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
+                                    completedSteps.includes(idx)
+                                        ? 'bg-emerald-500 text-white'
+                                        : currentStep === idx
+                                            ? 'bg-emerald-600 text-white ring-4 ring-emerald-200'
+                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                                }`}
+                            >
+                                {completedSteps.includes(idx) ? '✓' : idx + 1}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Current Step Content */}
+                    <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                        <div className="p-6 border-b bg-slate-50">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-4xl">{steps[currentStep].icono}</span>
+                                    <div>
+                                        <span className="text-sm text-slate-500">
+                                            Paso {currentStep + 1} de {steps.length}
+                                        </span>
+                                        <h2 className="text-2xl font-bold text-slate-800">
+                                            {steps[currentStep].titulo}
+                                        </h2>
+                                    </div>
+                                </div>
+                                <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-medium">
+                                    ⏱️ {steps[currentStep].duracion}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Objetivo */}
+                            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <h3 className="font-semibold text-emerald-800 flex items-center gap-2 mb-1">
+                                    <span>🎯</span> Objetivo
+                                </h3>
+                                <p className="text-emerald-700">{steps[currentStep].objetivo}</p>
+                            </div>
+
+                            {/* Instrucciones */}
+                            <div className="mb-6">
+                                <h3 className="font-semibold text-slate-800 mb-3">Instrucciones</h3>
+                                <ol className="space-y-2">
+                                    {steps[currentStep].instrucciones.map((instruccion, idx) => (
+                                        <li key={idx} className="flex items-start gap-3">
+                                            <span className="bg-slate-200 text-slate-600 w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                                                {idx + 1}
+                                            </span>
+                                            <span className="text-slate-700">{instruccion}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+
+                            {/* Contenido específico por paso */}
+                            {steps[currentStep].checklist && (
+                                <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                                    <h3 className="font-semibold text-slate-800 mb-3">
+                                        Checklist de Verificación
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].checklist.map((item, idx) => (
+                                            <label key={idx} className="flex items-center gap-3 cursor-pointer">
+                                                <input type="checkbox" className="w-5 h-5 rounded" />
+                                                <span className="text-slate-700">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].template && (
+                                <div className="mb-6 p-4 bg-indigo-50 rounded-xl">
+                                    <h3 className="font-semibold text-indigo-800 mb-3">
+                                        Template de Guión
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].template.secciones.map((sec, idx) => (
+                                            <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-lg">
+                                                <span className="font-medium text-slate-700 w-40">
+                                                    {sec.nombre}
+                                                </span>
+                                                <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-sm">
+                                                    {sec.tiempo}
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nombre del responsable"
+                                                    className="flex-1 px-3 py-1 border rounded"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].feedbackAreas && (
+                                <div className="mb-6 p-4 bg-amber-50 rounded-xl">
+                                    <h3 className="font-semibold text-amber-800 mb-3">
+                                        Áreas de Retroalimentación
+                                    </h3>
+                                    <div className="grid md:grid-cols-2 gap-3">
+                                        {steps[currentStep].feedbackAreas.map((area, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-lg">
+                                                <span className="text-slate-700">{area}</span>
+                                                <div className="flex gap-1 mt-2">
+                                                    {[1, 2, 3, 4, 5].map(n => (
+                                                        <button
+                                                            key={n}
+                                                            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-amber-200 text-slate-600 text-sm"
+                                                        >
+                                                            {n}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].feedbackTemplate && (
+                                <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+                                    <h3 className="font-semibold text-blue-800 mb-2">
+                                        Formato de Feedback
+                                    </h3>
+                                    <p className="text-blue-700 font-mono text-sm mb-3">
+                                        {steps[currentStep].feedbackTemplate.formato}
+                                    </p>
+                                    <p className="text-sm text-blue-600 italic">
+                                        Ejemplo: {steps[currentStep].feedbackTemplate.ejemplo}
+                                    </p>
+                                </div>
+                            )}
+
+                            {steps[currentStep].checkpoints && (
+                                <div className="mb-6 p-4 bg-purple-50 rounded-xl">
+                                    <h3 className="font-semibold text-purple-800 mb-3">
+                                        Checkpoints de Tiempo
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].checkpoints.map((cp, idx) => (
+                                            <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-lg">
+                                                <span className="font-mono font-bold text-purple-600 w-16">
+                                                    {cp.minuto}:00
+                                                </span>
+                                                <span className="text-slate-700">{cp.seccion}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].preguntasTipo && (
+                                <div className="mb-6 p-4 bg-red-50 rounded-xl">
+                                    <h3 className="font-semibold text-red-800 mb-3">
+                                        Tipos de Preguntas a Preparar
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {steps[currentStep].preguntasTipo.map((p, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-lg">
+                                                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                                                    {p.categoria}
+                                                </span>
+                                                <p className="text-slate-700 mt-1 italic">"{p.ejemplo}"</p>
+                                                <textarea
+                                                    placeholder="Tu respuesta preparada..."
+                                                    className="w-full mt-2 p-2 border rounded text-sm"
+                                                    rows="2"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].rolePlay && (
+                                <div className="mb-6 p-4 bg-orange-50 rounded-xl">
+                                    <h3 className="font-semibold text-orange-800 mb-3">
+                                        Escenarios de Role Play
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].rolePlay.map((role, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-lg flex items-center gap-3">
+                                                <span className="text-2xl">🎭</span>
+                                                <span className="text-slate-700">{role}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].technicalChecklist && (
+                                <div className="mb-6 p-4 bg-slate-100 rounded-xl">
+                                    <h3 className="font-semibold text-slate-800 mb-3">
+                                        Verificación Técnica
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].technicalChecklist.map((item, idx) => (
+                                            <label key={idx} className="flex items-center gap-3 bg-white p-3 rounded-lg cursor-pointer">
+                                                <input type="checkbox" className="w-5 h-5 rounded" />
+                                                <span className="text-slate-700">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].finalChecklist && (
+                                <div className="mb-6 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl">
+                                    <h3 className="font-semibold text-emerald-800 mb-3">
+                                        ✓ Checklist Final
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {steps[currentStep].finalChecklist.map((item, idx) => (
+                                            <label key={idx} className="flex items-center gap-3 bg-white p-3 rounded-lg cursor-pointer">
+                                                <input type="checkbox" className="w-5 h-5 rounded accent-emerald-600" />
+                                                <span className="text-slate-700">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {steps[currentStep].reflexionPrompts && (
+                                <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                                    <h3 className="font-semibold text-indigo-800 mb-3">
+                                        🎓 Preguntas de Reflexión
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {steps[currentStep].reflexionPrompts.map((prompt, idx) => (
+                                            <div key={idx}>
+                                                <p className="text-slate-700 font-medium mb-2">{prompt}</p>
+                                                <textarea
+                                                    placeholder="Tu reflexión..."
+                                                    className="w-full p-3 border rounded-lg text-sm"
+                                                    rows="2"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Entregable */}
+                            <div className="p-4 bg-slate-100 rounded-xl mb-6">
+                                <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-1">
+                                    <span>📦</span> Entregable de este paso
+                                </h3>
+                                <p className="text-slate-700">{steps[currentStep].entregable}</p>
+                            </div>
+
+                            {/* Navigation */}
+                            <div className="flex justify-between items-center pt-4 border-t">
+                                <button
+                                    onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                                    disabled={currentStep === 0}
+                                    className={`px-4 py-2 rounded-lg font-medium ${
+                                        currentStep === 0
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                    }`}
+                                >
+                                    ← Anterior
+                                </button>
+
+                                <button
+                                    onClick={() => handleCompleteStep(currentStep)}
+                                    className={`px-6 py-2 rounded-lg font-medium ${
+                                        completedSteps.includes(currentStep)
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                    }`}
+                                >
+                                    {completedSteps.includes(currentStep) ? '✓ Completado' : 'Marcar como completado'}
+                                </button>
+
+                                <button
+                                    onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                                    disabled={currentStep === steps.length - 1}
+                                    className={`px-4 py-2 rounded-lg font-medium ${
+                                        currentStep === steps.length - 1
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                    }`}
+                                >
+                                    Siguiente →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Summary */}
+                    {completedSteps.length === steps.length && (
+                        <div className="mt-8 p-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white text-center">
+                            <span className="text-5xl mb-4 block">🎉</span>
+                            <h2 className="text-2xl font-bold mb-2">
+                                ¡Preparación Completa!
+                            </h2>
+                            <p className="text-emerald-100">
+                                Has completado todos los pasos de preparación. Tu equipo está listo
+                                para la presentación final. ¡Éxito!
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <footer className="mt-8 text-center text-slate-500 text-sm">
+                        <p>Sesión 14: Laboratorio de Preparación Final</p>
+                        <p className="mt-1">Taller de Tecnología Aplicada - ADEN University Panamá</p>
+                        <div className="mt-3 flex justify-center gap-4">
+                            <a href="index.html" className="text-emerald-600 hover:underline">
+                                ← Guía de Presentación
+                            </a>
+                            <a href="ejercicio-individual.html" className="text-emerald-600 hover:underline">
+                                → Evaluación Final
+                            </a>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

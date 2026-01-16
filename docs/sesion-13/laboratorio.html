@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 13: Laboratorio Plan de Implementación BI | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // LABORATORIO: PLAN DE IMPLEMENTACIÓN BI
+        // ==========================================
+
+        function App() {
+            const [currentStep, setCurrentStep] = useState(0);
+            const [completedSteps, setCompletedSteps] = useState([]);
+
+            const markComplete = (step) => {
+                if (!completedSteps.includes(step)) {
+                    setCompletedSteps([...completedSteps, step]);
+                }
+            };
+
+            const labSteps = [
+                {
+                    titulo: 'Contexto del Caso',
+                    duracion: '5 min',
+                    descripcion: 'Entender la empresa y situación'
+                },
+                {
+                    titulo: 'Evaluación de Madurez',
+                    duracion: '10 min',
+                    descripcion: 'Diagnosticar nivel actual de BI'
+                },
+                {
+                    titulo: 'Identificar Stakeholders',
+                    duracion: '10 min',
+                    descripcion: 'Mapear actores clave del proyecto'
+                },
+                {
+                    titulo: 'Definir Alcance',
+                    duracion: '10 min',
+                    descripcion: 'Qué incluye y qué no incluye'
+                },
+                {
+                    titulo: 'Seleccionar Metodología',
+                    duracion: '10 min',
+                    descripcion: 'Elegir enfoque de implementación'
+                },
+                {
+                    titulo: 'Diseñar Fases',
+                    duracion: '15 min',
+                    descripcion: 'Estructurar el proyecto en etapas'
+                },
+                {
+                    titulo: 'Identificar Riesgos',
+                    duracion: '10 min',
+                    descripcion: 'Análisis y mitigación de riesgos'
+                },
+                {
+                    titulo: 'Plan de Gestión del Cambio',
+                    duracion: '10 min',
+                    descripcion: 'Estrategia de adopción'
+                },
+                {
+                    titulo: 'Presupuesto y Timeline',
+                    duracion: '10 min',
+                    descripcion: 'Estimaciones de recursos'
+                },
+                {
+                    titulo: 'Presentar Plan',
+                    duracion: '10 min',
+                    descripcion: 'Consolidar y revisar'
+                }
+            ];
+
+            const progress = (completedSteps.length / labSteps.length) * 100;
+
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-8">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <a href="index.html" className="text-emerald-200 hover:text-white text-sm mb-4 inline-block">
+                                ← Volver al simulador
+                            </a>
+                            <h1 className="text-3xl font-bold mb-2">Laboratorio: Plan de Implementación BI</h1>
+                            <p className="text-emerald-100">Sesión 13 | Caso: Constructora Panamá</p>
+                        </div>
+                    </header>
+
+                    {/* Progress Bar */}
+                    <div className="bg-white border-b sticky top-0 z-10">
+                        <div className="max-w-6xl mx-auto px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-slate-700">Progreso del Laboratorio</span>
+                                <span className="text-sm font-medium text-emerald-600">{completedSteps.length}/{labSteps.length} pasos</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                <div
+                                    className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="max-w-6xl mx-auto px-6 py-8">
+                        <div className="grid lg:grid-cols-4 gap-6">
+                            {/* Sidebar - Pasos */}
+                            <div className="lg:col-span-1">
+                                <div className="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                                    <h3 className="font-semibold text-slate-800 mb-4">Pasos del Lab</h3>
+                                    <nav className="space-y-2">
+                                        {labSteps.map((step, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentStep(idx)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                                                    currentStep === idx
+                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                        : completedSteps.includes(idx)
+                                                            ? 'bg-slate-50 text-slate-600'
+                                                            : 'text-slate-500 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                                    completedSteps.includes(idx)
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : currentStep === idx
+                                                            ? 'bg-emerald-600 text-white'
+                                                            : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                    {completedSteps.includes(idx) ? '✓' : idx + 1}
+                                                </span>
+                                                <span className="truncate">{step.titulo}</span>
+                                            </button>
+                                        ))}
+                                    </nav>
+                                </div>
+                            </div>
+
+                            {/* Contenido Principal */}
+                            <div className="lg:col-span-3 space-y-6">
+
+                                {/* Paso 0: Contexto */}
+                                {currentStep === 0 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 1: Contexto del Caso</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[0].duracion}</span>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-3">🏗️ Caso: Constructora Panamá S.A.</h3>
+                                            <p className="text-slate-700 mb-4">
+                                                Constructora Panamá es una empresa mediana con 15 años de experiencia en proyectos
+                                                residenciales y comerciales. Tienen 8 proyectos activos y 200 empleados.
+                                            </p>
+
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-slate-800 mb-2">Situación Actual</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        <li>• Reportes en Excel por cada proyecto</li>
+                                                        <li>• Reuniones semanales para consolidar números</li>
+                                                        <li>• Cada gerente de proyecto tiene su formato</li>
+                                                        <li>• No hay visibilidad de rentabilidad hasta cierre</li>
+                                                        <li>• Sistema ERP básico (SAP Business One)</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-slate-800 mb-2">Dolor del CEO</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        <li>• "No sé si los proyectos van bien hasta que terminan"</li>
+                                                        <li>• "Los números del lunes nunca cuadran con viernes"</li>
+                                                        <li>• "Cada gerente me cuenta su versión"</li>
+                                                        <li>• "Quiero ver la empresa en un dashboard"</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-blue-800 mb-2">🎯 Tu Tarea</h4>
+                                            <p className="text-blue-700">
+                                                Crear un plan de implementación BI para Constructora Panamá.
+                                                El CEO tiene presupuesto aprobado de $150,000 y quiere ver resultados
+                                                en los próximos 12 meses.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {markComplete(0); setCurrentStep(1);}}
+                                            className="w-full py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                        >
+                                            Entendido, continuar →
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Paso 1: Evaluación de Madurez */}
+                                {currentStep === 1 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 2: Evaluación de Madurez</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[1].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Evalúa cada dimensión para determinar el nivel de madurez actual de Constructora Panamá.
+                                        </p>
+
+                                        <div className="space-y-4 mb-6">
+                                            {[
+                                                {
+                                                    dimension: 'Datos',
+                                                    actual: 'Silos en Excel por proyecto, ERP con transacciones básicas',
+                                                    nivel: 1,
+                                                    descripcion: 'Nivel 1 - Datos fragmentados, sin integración'
+                                                },
+                                                {
+                                                    dimension: 'Procesos',
+                                                    actual: 'Consolidación manual semanal, cada gerente con su formato',
+                                                    nivel: 1,
+                                                    descripcion: 'Nivel 1 - Procesos ad-hoc, no estandarizados'
+                                                },
+                                                {
+                                                    dimension: 'Tecnología',
+                                                    actual: 'ERP básico, Excel, sin DW ni herramientas de visualización',
+                                                    nivel: 1,
+                                                    descripcion: 'Nivel 1 - Herramientas básicas, sin BI'
+                                                },
+                                                {
+                                                    dimension: 'Personas',
+                                                    actual: 'Gerentes con Excel, sin data literacy formal',
+                                                    nivel: 1,
+                                                    descripcion: 'Nivel 1-2 - Uso básico de herramientas'
+                                                },
+                                                {
+                                                    dimension: 'Cultura',
+                                                    actual: 'Decisiones basadas en experiencia, CEO quiere cambiar',
+                                                    nivel: 2,
+                                                    descripcion: 'Nivel 2 - Interés en datos pero sin práctica'
+                                                }
+                                            ].map((dim, idx) => (
+                                                <div key={idx} className="border rounded-lg p-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="font-semibold text-slate-800">{dim.dimension}</h4>
+                                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                            dim.nivel === 1 ? 'bg-red-100 text-red-700' :
+                                                            dim.nivel === 2 ? 'bg-amber-100 text-amber-700' :
+                                                            'bg-emerald-100 text-emerald-700'
+                                                        }`}>
+                                                            Nivel {dim.nivel}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-600 mb-1">{dim.actual}</p>
+                                                    <p className="text-xs text-slate-500 italic">{dim.descripcion}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="bg-cyan-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-cyan-800 mb-2">📊 Diagnóstico</h4>
+                                            <p className="text-cyan-700">
+                                                <strong>Nivel general: 1 (Inicial)</strong> - La empresa opera sin BI estructurado.
+                                                Buena noticia: hay patrocinio ejecutivo (CEO quiere cambiar) y presupuesto.
+                                                Meta realista: llegar a Nivel 2-3 en 12 meses.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(0)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(1); setCurrentStep(2);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 2: Identificar Stakeholders */}
+                                {currentStep === 2 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 3: Identificar Stakeholders</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[2].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Mapeamos los actores clave y su rol en el proyecto.
+                                        </p>
+
+                                        <div className="overflow-x-auto mb-6">
+                                            <table className="w-full text-sm border-collapse">
+                                                <thead>
+                                                    <tr className="bg-slate-100">
+                                                        <th className="text-left p-3 font-semibold">Stakeholder</th>
+                                                        <th className="text-left p-3 font-semibold">Rol en Proyecto</th>
+                                                        <th className="text-left p-3 font-semibold">Interés</th>
+                                                        <th className="text-left p-3 font-semibold">Poder</th>
+                                                        <th className="text-left p-3 font-semibold">Estrategia</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr className="border-b">
+                                                        <td className="p-3 font-medium">CEO (Sponsor)</td>
+                                                        <td className="p-3">Patrocinador ejecutivo</td>
+                                                        <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Alto</span></td>
+                                                        <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Alto</span></td>
+                                                        <td className="p-3">Gestionar de cerca</td>
+                                                    </tr>
+                                                    <tr className="border-b">
+                                                        <td className="p-3 font-medium">CFO</td>
+                                                        <td className="p-3">Usuario clave + control presupuesto</td>
+                                                        <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Alto</span></td>
+                                                        <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Alto</span></td>
+                                                        <td className="p-3">Gestionar de cerca</td>
+                                                    </tr>
+                                                    <tr className="border-b">
+                                                        <td className="p-3 font-medium">Gerentes de Proyecto (8)</td>
+                                                        <td className="p-3">Usuarios finales principales</td>
+                                                        <td className="p-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs">Variable</span></td>
+                                                        <td className="p-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs">Medio</span></td>
+                                                        <td className="p-3">Involucrar temprano</td>
+                                                    </tr>
+                                                    <tr className="border-b">
+                                                        <td className="p-3 font-medium">Jefe de TI</td>
+                                                        <td className="p-3">Implementación técnica</td>
+                                                        <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Alto</span></td>
+                                                        <td className="p-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs">Medio</span></td>
+                                                        <td className="p-3">Aliado técnico</td>
+                                                    </tr>
+                                                    <tr className="border-b">
+                                                        <td className="p-3 font-medium">Contabilidad</td>
+                                                        <td className="p-3">Fuente de datos financieros</td>
+                                                        <td className="p-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs">Medio</span></td>
+                                                        <td className="p-3"><span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">Bajo</span></td>
+                                                        <td className="p-3">Informar regularmente</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div className="bg-violet-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-violet-800 mb-2">👥 Equipo de Proyecto Propuesto</h4>
+                                            <div className="grid md:grid-cols-2 gap-3 text-sm">
+                                                <div>
+                                                    <p><strong>Sponsor:</strong> CEO</p>
+                                                    <p><strong>Líder Técnico:</strong> Jefe de TI</p>
+                                                    <p><strong>PM:</strong> Consultor externo o interno</p>
+                                                </div>
+                                                <div>
+                                                    <p><strong>Champions:</strong> 2 Gerentes de Proyecto piloto</p>
+                                                    <p><strong>SME Finanzas:</strong> CFO o delegado</p>
+                                                    <p><strong>Desarrollador ETL:</strong> Consultor</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(1)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(2); setCurrentStep(3);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 3: Definir Alcance */}
+                                {currentStep === 3 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 4: Definir Alcance</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[3].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Definir claramente qué está dentro y fuera del proyecto es crítico para evitar scope creep.
+                                        </p>
+
+                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                            <div className="bg-emerald-50 rounded-lg p-4">
+                                                <h4 className="font-semibold text-emerald-800 mb-3">✅ Dentro del Alcance</h4>
+                                                <ul className="text-sm text-emerald-700 space-y-2">
+                                                    <li>• Dashboard de control de proyectos (avance, costos, rentabilidad)</li>
+                                                    <li>• KPIs corporativos: utilidad por proyecto, % avance, días de retraso</li>
+                                                    <li>• Integración con ERP SAP B1 (datos financieros)</li>
+                                                    <li>• Data Warehouse con modelo dimensional</li>
+                                                    <li>• Reportes para CEO/CFO y Gerentes de Proyecto</li>
+                                                    <li>• Capacitación a usuarios clave</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-red-50 rounded-lg p-4">
+                                                <h4 className="font-semibold text-red-800 mb-3">❌ Fuera del Alcance</h4>
+                                                <ul className="text-sm text-red-700 space-y-2">
+                                                    <li>• Cambios al ERP existente</li>
+                                                    <li>• Análisis de recursos humanos</li>
+                                                    <li>• Integración con herramientas de campo</li>
+                                                    <li>• Predicción de fechas de entrega (Fase 2)</li>
+                                                    <li>• Automatización de alertas (Fase 2)</li>
+                                                    <li>• BI móvil (Fase 2)</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-blue-800 mb-2">📊 KPIs Prioritarios (MVP)</h4>
+                                            <div className="grid md:grid-cols-3 gap-3 text-sm">
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">% Avance Real vs Plan</p>
+                                                    <p className="text-xs text-slate-500">Por proyecto y consolidado</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">Margen de Proyecto</p>
+                                                    <p className="text-xs text-slate-500">Costo acumulado vs presupuesto</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">Días de Retraso</p>
+                                                    <p className="text-xs text-slate-500">Hitos cumplidos vs planeados</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(2)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(3); setCurrentStep(4);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 4: Seleccionar Metodología */}
+                                {currentStep === 4 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 5: Seleccionar Metodología</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[4].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Dadas las características de Constructora Panamá, evaluamos opciones.
+                                        </p>
+
+                                        <div className="bg-amber-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-amber-800 mb-2">📋 Contexto de Decisión</h4>
+                                            <ul className="text-sm text-amber-700 space-y-1">
+                                                <li>• Primera vez implementando BI</li>
+                                                <li>• Equipo de TI pequeño (3 personas)</li>
+                                                <li>• CEO quiere ver resultados pronto</li>
+                                                <li>• Presupuesto definido: $150K</li>
+                                                <li>• Timeline: 12 meses</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                            <div className="border-2 border-slate-200 rounded-lg p-4 opacity-60">
+                                                <h4 className="font-semibold text-slate-800 mb-2">❌ Waterfall</h4>
+                                                <p className="text-sm text-slate-600">
+                                                    Demasiado largo sin resultados visibles. CEO perdería paciencia.
+                                                </p>
+                                            </div>
+                                            <div className="border-2 border-slate-200 rounded-lg p-4 opacity-60">
+                                                <h4 className="font-semibold text-slate-800 mb-2">❌ Big Bang</h4>
+                                                <p className="text-sm text-slate-600">
+                                                    Muy riesgoso para primera implementación. Equipo sin experiencia.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-2 border-emerald-500 bg-emerald-50 rounded-lg p-6 mb-6">
+                                            <h4 className="font-bold text-emerald-800 mb-2">✅ Recomendación: Incremental con enfoque Ágil</h4>
+                                            <p className="text-emerald-700 mb-4">
+                                                Combina lo mejor de ambos mundos: victorias rápidas con data marts incrementales
+                                                y sprints ágiles para desarrollo.
+                                            </p>
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-white rounded-lg p-3">
+                                                    <h5 className="font-semibold text-slate-700 text-sm">Ventajas para este caso:</h5>
+                                                    <ul className="text-xs text-slate-600 mt-1 space-y-1">
+                                                        <li>• Dashboard piloto en 3 meses</li>
+                                                        <li>• Aprendizaje para el equipo</li>
+                                                        <li>• CEO ve resultados temprano</li>
+                                                        <li>• Flexibilidad ante cambios</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3">
+                                                    <h5 className="font-semibold text-slate-700 text-sm">Sprints de 2 semanas:</h5>
+                                                    <ul className="text-xs text-slate-600 mt-1 space-y-1">
+                                                        <li>• Reviews con usuarios cada sprint</li>
+                                                        <li>• Ajustes continuos</li>
+                                                        <li>• Retroalimentación rápida</li>
+                                                        <li>• Demos al sponsor mensual</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(3)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(4); setCurrentStep(5);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 5: Diseñar Fases */}
+                                {currentStep === 5 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 6: Diseñar Fases</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[5].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Estructuramos el proyecto en 4 fases incrementales.
+                                        </p>
+
+                                        <div className="space-y-4 mb-6">
+                                            {[
+                                                {
+                                                    fase: 'Fase 1: Fundamentos',
+                                                    duracion: 'Meses 1-3',
+                                                    entregables: [
+                                                        'Arquitectura de DW definida',
+                                                        'ETL desde SAP B1 funcionando',
+                                                        'Dashboard piloto (2 proyectos)',
+                                                        'KPIs básicos: avance, costo, margen'
+                                                    ],
+                                                    hito: 'Demo a CEO con datos reales',
+                                                    color: 'cyan'
+                                                },
+                                                {
+                                                    fase: 'Fase 2: Expansión',
+                                                    duracion: 'Meses 4-6',
+                                                    entregables: [
+                                                        '8 proyectos integrados',
+                                                        'Dashboard consolidado',
+                                                        'Vista por gerente de proyecto',
+                                                        'Capacitación a usuarios'
+                                                    ],
+                                                    hito: 'Go-Live con todos los proyectos',
+                                                    color: 'emerald'
+                                                },
+                                                {
+                                                    fase: 'Fase 3: Maduración',
+                                                    duracion: 'Meses 7-9',
+                                                    entregables: [
+                                                        'Self-service para gerentes',
+                                                        'Históricos y tendencias',
+                                                        'Reportes automáticos',
+                                                        'Alertas básicas'
+                                                    ],
+                                                    hito: 'Gerentes autónomos en BI',
+                                                    color: 'violet'
+                                                },
+                                                {
+                                                    fase: 'Fase 4: Optimización',
+                                                    duracion: 'Meses 10-12',
+                                                    entregables: [
+                                                        'Predicción de cierre',
+                                                        'Comparativo entre proyectos',
+                                                        'Documentación completa',
+                                                        'Roadmap Fase 2'
+                                                    ],
+                                                    hito: 'BI establecido como práctica',
+                                                    color: 'amber'
+                                                }
+                                            ].map((fase, idx) => (
+                                                <div key={idx} className={`border-l-4 border-${fase.color}-500 bg-${fase.color}-50 rounded-lg p-4`}>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="font-bold text-slate-800">{fase.fase}</h4>
+                                                        <span className="text-sm text-slate-600">{fase.duracion}</span>
+                                                    </div>
+                                                    <ul className="text-sm text-slate-600 mb-3 grid md:grid-cols-2 gap-1">
+                                                        {fase.entregables.map((e, i) => (
+                                                            <li key={i}>• {e}</li>
+                                                        ))}
+                                                    </ul>
+                                                    <div className="bg-white rounded px-3 py-2 text-sm">
+                                                        <strong className="text-slate-700">Hito:</strong> {fase.hito}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(4)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(5); setCurrentStep(6);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 6: Identificar Riesgos */}
+                                {currentStep === 6 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 7: Identificar Riesgos</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[6].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            Los riesgos identificados temprano tienen plan de mitigación.
+                                        </p>
+
+                                        <div className="space-y-4 mb-6">
+                                            {[
+                                                {
+                                                    riesgo: 'Datos de ERP incompletos o incorrectos',
+                                                    prob: 'Alta', impacto: 'Alto',
+                                                    mitigacion: 'Data profiling en Fase 1, reglas de validación, proceso de limpieza',
+                                                    contingencia: 'Si datos muy malos, reducir alcance a datos manuales inicialmente'
+                                                },
+                                                {
+                                                    riesgo: 'Resistencia de gerentes de proyecto',
+                                                    prob: 'Media', impacto: 'Alto',
+                                                    mitigacion: 'Champions tempranos, involucrar en diseño, mostrar beneficio personal',
+                                                    contingencia: 'Escalamiento a CEO si boicotean'
+                                                },
+                                                {
+                                                    riesgo: 'Equipo de TI sin capacidad',
+                                                    prob: 'Media', impacto: 'Medio',
+                                                    mitigacion: 'Consultor externo para desarrollo, transferencia de conocimiento',
+                                                    contingencia: 'Extender Fase 1 si curva de aprendizaje mayor'
+                                                },
+                                                {
+                                                    riesgo: 'Scope creep (CEO quiere más)',
+                                                    prob: 'Alta', impacto: 'Medio',
+                                                    mitigacion: 'Alcance documentado, proceso de cambios formal, priorización',
+                                                    contingencia: 'Fase 2 del proyecto para nuevos requerimientos'
+                                                }
+                                            ].map((risk, idx) => (
+                                                <div key={idx} className="border rounded-lg overflow-hidden">
+                                                    <div className="bg-slate-50 px-4 py-3 flex items-center justify-between">
+                                                        <span className="font-semibold text-slate-800">{risk.riesgo}</span>
+                                                        <div className="flex gap-2">
+                                                            <span className={`text-xs px-2 py-0.5 rounded ${
+                                                                risk.prob === 'Alta' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                                            }`}>P: {risk.prob}</span>
+                                                            <span className={`text-xs px-2 py-0.5 rounded ${
+                                                                risk.impacto === 'Alto' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                                            }`}>I: {risk.impacto}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-4 grid md:grid-cols-2 gap-4">
+                                                        <div className="bg-emerald-50 rounded p-3">
+                                                            <p className="text-xs font-semibold text-emerald-700 uppercase mb-1">Mitigación</p>
+                                                            <p className="text-sm text-emerald-600">{risk.mitigacion}</p>
+                                                        </div>
+                                                        <div className="bg-blue-50 rounded p-3">
+                                                            <p className="text-xs font-semibold text-blue-700 uppercase mb-1">Contingencia</p>
+                                                            <p className="text-sm text-blue-600">{risk.contingencia}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(5)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(6); setCurrentStep(7);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 7: Plan de Gestión del Cambio */}
+                                {currentStep === 7 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 8: Plan de Gestión del Cambio</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[7].duracion}</span>
+                                        </div>
+
+                                        <p className="text-slate-600 mb-6">
+                                            La tecnología es solo el 30% del éxito. El 70% es que la gente la use.
+                                        </p>
+
+                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                            <div className="border rounded-lg p-4">
+                                                <h4 className="font-semibold text-slate-800 mb-3">📢 Comunicación</h4>
+                                                <ul className="text-sm text-slate-600 space-y-2">
+                                                    <li>• <strong>Kick-off:</strong> CEO anuncia el proyecto</li>
+                                                    <li>• <strong>Updates mensuales:</strong> Avances al equipo</li>
+                                                    <li>• <strong>Demos:</strong> Cada fase mostrar al grupo</li>
+                                                    <li>• <strong>Victorias:</strong> Celebrar adopción</li>
+                                                </ul>
+                                            </div>
+                                            <div className="border rounded-lg p-4">
+                                                <h4 className="font-semibold text-slate-800 mb-3">🎓 Capacitación</h4>
+                                                <ul className="text-sm text-slate-600 space-y-2">
+                                                    <li>• <strong>Champions (2):</strong> Training intensivo</li>
+                                                    <li>• <strong>Gerentes:</strong> 4 horas uso básico</li>
+                                                    <li>• <strong>Ejecutivos:</strong> 2 horas interpretación</li>
+                                                    <li>• <strong>Materiales:</strong> Videos + guías rápidas</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-violet-50 rounded-lg p-4 mb-6">
+                                            <h4 className="font-semibold text-violet-800 mb-3">🏆 Programa de Champions</h4>
+                                            <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">Selección</p>
+                                                    <p className="text-slate-600 text-xs">2 gerentes con actitud positiva hacia datos</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">Rol</p>
+                                                    <p className="text-slate-600 text-xs">Primeros usuarios, feedback, promotores</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3">
+                                                    <p className="font-medium text-slate-700">Reconocimiento</p>
+                                                    <p className="text-slate-600 text-xs">Visibilidad con CEO, certificación</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(6)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(7); setCurrentStep(8);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 8: Presupuesto y Timeline */}
+                                {currentStep === 8 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 9: Presupuesto y Timeline</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[8].duracion}</span>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                            <div>
+                                                <h4 className="font-semibold text-slate-800 mb-3">💰 Presupuesto ($150,000)</h4>
+                                                <div className="space-y-2">
+                                                    {[
+                                                        { item: 'Licencias Tableau (10 usuarios)', monto: 25000, pct: 17 },
+                                                        { item: 'Consultoría DW/ETL', monto: 50000, pct: 33 },
+                                                        { item: 'Desarrollo dashboards', monto: 30000, pct: 20 },
+                                                        { item: 'Infraestructura cloud', monto: 15000, pct: 10 },
+                                                        { item: 'Capacitación', monto: 10000, pct: 7 },
+                                                        { item: 'Gestión proyecto', monto: 12000, pct: 8 },
+                                                        { item: 'Contingencia (5%)', monto: 8000, pct: 5 }
+                                                    ].map((item, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2">
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span className="text-slate-600">{item.item}</span>
+                                                                    <span className="font-medium">${item.monto.toLocaleString()}</span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-100 rounded-full h-2 mt-1">
+                                                                    <div
+                                                                        className="bg-emerald-500 h-2 rounded-full"
+                                                                        style={{ width: `${item.pct}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="font-semibold text-slate-800 mb-3">📅 Timeline (12 meses)</h4>
+                                                <div className="space-y-3">
+                                                    <div className="relative pl-6 border-l-2 border-cyan-500">
+                                                        <div className="absolute -left-2 top-0 w-4 h-4 bg-cyan-500 rounded-full"></div>
+                                                        <p className="font-medium text-slate-700">Mes 1-3: Fase 1</p>
+                                                        <p className="text-xs text-slate-500">Piloto con 2 proyectos</p>
+                                                    </div>
+                                                    <div className="relative pl-6 border-l-2 border-emerald-500">
+                                                        <div className="absolute -left-2 top-0 w-4 h-4 bg-emerald-500 rounded-full"></div>
+                                                        <p className="font-medium text-slate-700">Mes 4-6: Fase 2</p>
+                                                        <p className="text-xs text-slate-500">Expansión a 8 proyectos</p>
+                                                    </div>
+                                                    <div className="relative pl-6 border-l-2 border-violet-500">
+                                                        <div className="absolute -left-2 top-0 w-4 h-4 bg-violet-500 rounded-full"></div>
+                                                        <p className="font-medium text-slate-700">Mes 7-9: Fase 3</p>
+                                                        <p className="text-xs text-slate-500">Self-service y automatización</p>
+                                                    </div>
+                                                    <div className="relative pl-6 border-l-2 border-amber-500">
+                                                        <div className="absolute -left-2 top-0 w-4 h-4 bg-amber-500 rounded-full"></div>
+                                                        <p className="font-medium text-slate-700">Mes 10-12: Fase 4</p>
+                                                        <p className="text-xs text-slate-500">Optimización y cierre</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(7)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => {markComplete(8); setCurrentStep(9);}}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Continuar →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Paso 9: Presentar Plan */}
+                                {currentStep === 9 && (
+                                    <div className="bg-white rounded-xl shadow-sm p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-bold text-slate-800">Paso 10: Presentar Plan</h2>
+                                            <span className="text-sm text-slate-500">{labSteps[9].duracion}</span>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 text-lg mb-4">
+                                                📊 Resumen Ejecutivo: Plan BI Constructora Panamá
+                                            </h3>
+
+                                            <div className="grid md:grid-cols-4 gap-4 mb-4">
+                                                <div className="bg-white rounded-lg p-3 text-center">
+                                                    <div className="text-2xl font-bold text-cyan-600">$150K</div>
+                                                    <div className="text-xs text-slate-500">Presupuesto</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 text-center">
+                                                    <div className="text-2xl font-bold text-emerald-600">12</div>
+                                                    <div className="text-xs text-slate-500">Meses</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 text-center">
+                                                    <div className="text-2xl font-bold text-violet-600">4</div>
+                                                    <div className="text-xs text-slate-500">Fases</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 text-center">
+                                                    <div className="text-2xl font-bold text-amber-600">3</div>
+                                                    <div className="text-xs text-slate-500">Nivel Target</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white rounded-lg p-4">
+                                                <h4 className="font-semibold text-slate-800 mb-2">Beneficios Esperados</h4>
+                                                <ul className="text-sm text-slate-600 grid md:grid-cols-2 gap-2">
+                                                    <li>✓ Visibilidad de proyectos en tiempo real</li>
+                                                    <li>✓ Reducción de 4hrs/semana en reportes</li>
+                                                    <li>✓ Detección temprana de desviaciones</li>
+                                                    <li>✓ Una sola versión de la verdad</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-emerald-100 to-teal-100 rounded-lg p-6 mb-6">
+                                            <div className="text-center">
+                                                <span className="text-4xl">🎉</span>
+                                                <h3 className="text-xl font-bold text-slate-800 mt-2">¡Laboratorio Completado!</h3>
+                                                <p className="text-slate-600 mt-2">
+                                                    Has creado un plan de implementación BI completo.
+                                                    Ahora aplica este proceso a tu proyecto.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setCurrentStep(8)}
+                                                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200"
+                                            >
+                                                ← Anterior
+                                            </button>
+                                            <button
+                                                onClick={() => markComplete(9)}
+                                                className="flex-1 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+                                            >
+                                                Marcar como completado ✓
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-800 text-white py-8 mt-12">
+                        <div className="max-w-6xl mx-auto px-6 text-center">
+                            <p className="text-slate-400">
+                                Laboratorio Sesión 13 | ADEN University
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <a href="index.html" className="text-emerald-400 hover:text-emerald-300">
+                                    ← Volver al Simulador
+                                </a>
+                                <a href="ejercicio-individual.html" className="text-emerald-400 hover:text-emerald-300">
+                                    Ejercicio Individual →
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: Disenando un Pipeline ETL - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL LABORATORIO
+        // ============================================
+
+        const casoETL = {
+            empresa: 'RetailMax Panama',
+            descripcion: 'Cadena de tiendas departamentales que necesita consolidar datos de 5 sucursales para su Data Warehouse.',
+            fuentes: [
+                { nombre: 'POS_ventas.csv', descripcion: 'Transacciones de venta de los POS', registros: '50,000/dia', formato: 'CSV' },
+                { nombre: 'ERP_productos', descripcion: 'Catalogo de productos del ERP', registros: '15,000 productos', formato: 'PostgreSQL' },
+                { nombre: 'CRM_clientes', descripcion: 'Base de clientes del CRM', registros: '200,000 clientes', formato: 'API REST' },
+                { nombre: 'Excel_tiendas', descripcion: 'Maestro de tiendas', registros: '5 tiendas', formato: 'Excel' }
+            ],
+            problemas_calidad: [
+                { problema: 'Fechas en diferentes formatos', ejemplo: '01/15/2026 vs 2026-01-15 vs 15-Ene-26' },
+                { problema: 'Codigos de producto inconsistentes', ejemplo: 'PROD-001 vs 001 vs P001' },
+                { problema: 'Nombres de cliente duplicados', ejemplo: 'Juan Perez vs JUAN PEREZ vs Juan A. Perez' },
+                { problema: 'Valores nulos en campos obligatorios', ejemplo: 'monto = NULL en 2% de ventas' }
+            ]
+        };
+
+        const pasos = [
+            { id: 1, titulo: 'Analizar Fuentes de Datos', duracion: '15 min' },
+            { id: 2, titulo: 'Identificar Problemas de Calidad', duracion: '15 min' },
+            { id: 3, titulo: 'Disenar Transformaciones', duracion: '25 min' },
+            { id: 4, titulo: 'Definir Estrategia de Carga', duracion: '15 min' },
+            { id: 5, titulo: 'Documentar el Pipeline', duracion: '20 min' },
+            { id: 6, titulo: 'Validar con SQL', duracion: '30 min' }
+        ];
+
+        const transformacionesEjemplo = [
+            {
+                nombre: 'Estandarizar Fechas',
+                entrada: `'01/15/2026', '2026-01-15', '15-Ene-26'`,
+                salida: `'2026-01-15' (formato ISO)`,
+                sql: `TO_DATE(fecha_original, 'YYYY-MM-DD')`
+            },
+            {
+                nombre: 'Limpiar Codigos Producto',
+                entrada: `'PROD-001', '001', 'P001'`,
+                salida: `'PROD-001' (formato estandar)`,
+                sql: `'PROD-' || LPAD(REGEXP_REPLACE(codigo, '[^0-9]', ''), 3, '0')`
+            },
+            {
+                nombre: 'Normalizar Nombres',
+                entrada: `'juan perez', 'JUAN PEREZ'`,
+                salida: `'Juan Perez' (Title Case)`,
+                sql: `INITCAP(LOWER(TRIM(nombre)))`
+            },
+            {
+                nombre: 'Manejar Nulos',
+                entrada: `monto = NULL`,
+                salida: `Rechazar o asignar 0`,
+                sql: `COALESCE(monto, 0) -- o filtrar WHERE monto IS NOT NULL`
+            }
+        ];
+
+        const sqlLimpieza = `-- Script de limpieza y transformacion ETL
+-- Paso 1: Crear tabla staging (zona de aterrizaje)
+CREATE TABLE staging_ventas (
+    id SERIAL PRIMARY KEY,
+    fecha_original VARCHAR(50),
+    producto_codigo_raw VARCHAR(50),
+    cliente_nombre_raw VARCHAR(200),
+    tienda_id VARCHAR(10),
+    cantidad INT,
+    monto_raw VARCHAR(50),
+    -- Campos de control
+    fecha_carga TIMESTAMP DEFAULT NOW(),
+    es_valido BOOLEAN DEFAULT TRUE,
+    error_mensaje TEXT
+);
+
+-- Paso 2: Cargar datos crudos desde CSV
+COPY staging_ventas(fecha_original, producto_codigo_raw, cliente_nombre_raw,
+                    tienda_id, cantidad, monto_raw)
+FROM '/data/POS_ventas.csv'
+WITH (FORMAT CSV, HEADER TRUE);
+
+-- Paso 3: Validar datos
+UPDATE staging_ventas
+SET es_valido = FALSE,
+    error_mensaje = 'Monto nulo o invalido'
+WHERE monto_raw IS NULL OR monto_raw = '' OR monto_raw !~ '^[0-9.]+$';
+
+UPDATE staging_ventas
+SET es_valido = FALSE,
+    error_mensaje = COALESCE(error_mensaje || '; ', '') || 'Fecha invalida'
+WHERE fecha_original IS NULL OR fecha_original = '';
+
+-- Paso 4: Insertar en tabla limpia (solo registros validos)
+INSERT INTO ventas_limpias (fecha, producto_key, cliente_key, tienda_key, cantidad, monto)
+SELECT
+    -- Transformar fecha a formato estandar
+    CASE
+        WHEN fecha_original ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN fecha_original::DATE
+        WHEN fecha_original ~ '^\\d{2}/\\d{2}/\\d{4}$' THEN TO_DATE(fecha_original, 'MM/DD/YYYY')
+        ELSE NULL
+    END as fecha,
+
+    -- Buscar clave de producto en dimension
+    COALESCE(dp.producto_key, -1) as producto_key,
+
+    -- Buscar clave de cliente en dimension
+    COALESCE(dc.cliente_key, -1) as cliente_key,
+
+    -- Buscar clave de tienda
+    COALESCE(dt.tienda_key, -1) as tienda_key,
+
+    cantidad,
+    monto_raw::DECIMAL(10,2) as monto
+
+FROM staging_ventas sv
+LEFT JOIN dim_producto dp ON dp.producto_id = 'PROD-' || LPAD(REGEXP_REPLACE(sv.producto_codigo_raw, '[^0-9]', ''), 3, '0')
+LEFT JOIN dim_cliente dc ON UPPER(dc.nombre) = UPPER(TRIM(sv.cliente_nombre_raw))
+LEFT JOIN dim_tienda dt ON dt.tienda_id = sv.tienda_id
+WHERE sv.es_valido = TRUE;
+
+-- Paso 5: Reportar errores
+SELECT error_mensaje, COUNT(*) as cantidad
+FROM staging_ventas
+WHERE es_valido = FALSE
+GROUP BY error_mensaje;`;
+
+        const sqlValidacion = `-- Queries de validacion post-carga
+
+-- 1. Verificar completitud
+SELECT
+    COUNT(*) as total_registros,
+    COUNT(*) FILTER (WHERE fecha IS NOT NULL) as con_fecha,
+    COUNT(*) FILTER (WHERE producto_key > 0) as con_producto,
+    COUNT(*) FILTER (WHERE cliente_key > 0) as con_cliente,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE producto_key > 0) / COUNT(*), 2) as pct_match_producto
+FROM ventas_limpias;
+
+-- 2. Verificar unicidad
+SELECT
+    COUNT(*) as total,
+    COUNT(DISTINCT CONCAT(fecha, producto_key, cliente_key, tienda_key)) as unicos
+FROM ventas_limpias;
+
+-- 3. Verificar rangos validos
+SELECT
+    MIN(fecha) as fecha_min,
+    MAX(fecha) as fecha_max,
+    MIN(monto) as monto_min,
+    MAX(monto) as monto_max,
+    AVG(monto) as monto_promedio
+FROM ventas_limpias;
+
+-- 4. Comparar con fuente original
+SELECT
+    (SELECT COUNT(*) FROM staging_ventas) as staging_total,
+    (SELECT COUNT(*) FROM staging_ventas WHERE es_valido = TRUE) as staging_validos,
+    (SELECT COUNT(*) FROM ventas_limpias) as cargados,
+    ROUND(100.0 * (SELECT COUNT(*) FROM ventas_limpias) /
+          (SELECT COUNT(*) FROM staging_ventas), 2) as pct_exito;`;
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const StepIndicator = ({ currentStep, onStepClick }) => (
+            <div className="flex items-center justify-between mb-6 bg-white rounded-xl p-3 shadow-sm overflow-x-auto">
+                {pasos.map((paso, idx) => (
+                    <React.Fragment key={paso.id}>
+                        <button
+                            onClick={() => onStepClick(paso.id)}
+                            className={`flex flex-col items-center min-w-12 transition-all ${
+                                currentStep >= paso.id ? 'opacity-100' : 'opacity-40'
+                            }`}
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                                currentStep === paso.id
+                                    ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
+                                    : currentStep > paso.id ? 'bg-green-500 text-white' : 'bg-gray-200'
+                            }`}>
+                                {currentStep > paso.id ? '✓' : paso.id}
+                            </div>
+                        </button>
+                        {idx < pasos.length - 1 && (
+                            <div className={`flex-1 h-0.5 mx-1 ${currentStep > paso.id ? 'bg-green-400' : 'bg-gray-200'}`} />
+                        )}
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+
+        const Paso1Fuentes = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 1</span>
+                    <span className="text-gray-400">15 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Analizar Fuentes de Datos</h2>
+
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6">
+                    <h3 className="text-xl font-bold text-indigo-800 mb-2">{casoETL.empresa}</h3>
+                    <p className="text-gray-700">{casoETL.descripcion}</p>
+                </div>
+
+                <h3 className="font-bold text-gray-800 mb-3">Fuentes Identificadas</h3>
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                    {casoETL.fuentes.map((fuente, idx) => (
+                        <div key={idx} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500">
+                            <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-gray-800">{fuente.nombre}</h4>
+                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{fuente.formato}</span>
+                            </div>
+                            <p className="text-sm text-gray-600">{fuente.descripcion}</p>
+                            <p className="text-xs text-gray-400 mt-1">{fuente.registros}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+                    <p className="text-amber-800">
+                        <strong>Reflexion:</strong> Cada fuente tiene un formato diferente.
+                        El proceso ETL debe manejar CSV, conexion a PostgreSQL, llamadas API y lectura de Excel.
+                    </p>
+                </div>
+
+                <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso2Calidad = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 2</span>
+                    <span className="text-gray-400">15 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Identificar Problemas de Calidad</h2>
+
+                <div className="space-y-4 mb-6">
+                    {casoETL.problemas_calidad.map((prob, idx) => (
+                        <div key={idx} className="bg-red-50 rounded-xl p-4 border-l-4 border-red-400">
+                            <h4 className="font-bold text-red-800">{prob.problema}</h4>
+                            <code className="text-sm bg-white px-2 py-1 rounded mt-2 block">{prob.ejemplo}</code>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <p className="text-green-800">
+                        <strong>Estrategia:</strong> Estos problemas se resuelven en la fase de Transformacion
+                        con reglas de limpieza, validacion y estandarizacion.
+                    </p>
+                </div>
+
+                <button onClick={onComplete} className="mt-4 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso3Transformaciones = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 3</span>
+                    <span className="text-gray-400">25 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Disenar Transformaciones</h2>
+
+                <div className="space-y-4 mb-6">
+                    {transformacionesEjemplo.map((t, idx) => (
+                        <div key={idx} className="bg-amber-50 rounded-xl p-4">
+                            <h4 className="font-bold text-amber-800 mb-2">{t.nombre}</h4>
+                            <div className="grid md:grid-cols-2 gap-4 mb-2">
+                                <div className="bg-white rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">ENTRADA</p>
+                                    <code className="text-sm">{t.entrada}</code>
+                                </div>
+                                <div className="bg-white rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">SALIDA</p>
+                                    <code className="text-sm">{t.salida}</code>
+                                </div>
+                            </div>
+                            <div className="bg-slate-800 rounded-lg p-2">
+                                <code className="text-green-400 text-sm">{t.sql}</code>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso4Estrategia = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 4</span>
+                    <span className="text-gray-400">15 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Definir Estrategia de Carga</h2>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-blue-50 rounded-xl p-4">
+                        <h4 className="font-bold text-blue-800 mb-3">Dimensiones (Full Load)</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                dim_producto: Truncate + Insert diario
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                dim_cliente: Merge (upsert) diario
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                dim_tienda: Manual, cambios raros
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                dim_fecha: Pre-cargada 3 anios
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="bg-green-50 rounded-xl p-4">
+                        <h4 className="font-bold text-green-800 mb-3">Hechos (Incremental)</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                fact_ventas: Incremental por fecha
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                Marca de agua: MAX(fecha) cargada
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                Frecuencia: Diaria 2:00 AM
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="bg-slate-800 rounded-xl p-4 mb-4">
+                    <p className="text-slate-400 text-sm mb-2">-- Orden de ejecucion del job ETL</p>
+                    <div className="text-green-400 space-y-1">
+                        <p>1. Extraer datos de fuentes → staging_ventas</p>
+                        <p>2. Cargar/actualizar dim_producto, dim_cliente</p>
+                        <p>3. Validar y transformar staging</p>
+                        <p>4. Cargar fact_ventas (incremental)</p>
+                        <p>5. Actualizar indices y estadisticas</p>
+                        <p>6. Enviar reporte de ejecucion</p>
+                    </div>
+                </div>
+
+                <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso5Documentar = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 5</span>
+                    <span className="text-gray-400">20 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Documentar el Pipeline</h2>
+
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+                    <h3 className="font-bold text-indigo-800 mb-4">Diagrama del Pipeline ETL</h3>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                        {['POS CSV', 'ERP DB', 'CRM API', 'Excel'].map((fuente, i) => (
+                            <div key={i} className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg text-sm font-medium">{fuente}</div>
+                        ))}
+                        <span className="text-2xl">→</span>
+                        <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-bold">STAGING</div>
+                        <span className="text-2xl">→</span>
+                        <div className="bg-amber-200 text-amber-900 px-4 py-2 rounded-lg font-bold">TRANSFORM</div>
+                        <span className="text-2xl">→</span>
+                        <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold">DW</div>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gray-50 rounded-xl p-4">
+                        <h4 className="font-bold text-gray-800 mb-2">Metricas del Pipeline</h4>
+                        <ul className="text-sm space-y-1">
+                            <li>• Registros procesados por ejecucion</li>
+                            <li>• % de registros validos vs rechazados</li>
+                            <li>• Tiempo de ejecucion total</li>
+                            <li>• Errores por tipo</li>
+                        </ul>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                        <h4 className="font-bold text-gray-800 mb-2">Alertas Configuradas</h4>
+                        <ul className="text-sm space-y-1">
+                            <li>• Error: Tasa de rechazo > 5%</li>
+                            <li>• Warning: Ejecucion > 30 min</li>
+                            <li>• Error: Fuente no disponible</li>
+                            <li>• Info: Ejecucion completada</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso6SQL = ({ onComplete }) => {
+            const [tabActiva, setTabActiva] = useState('limpieza');
+            const [completado, setCompletado] = useState(false);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 6</span>
+                        <span className="text-gray-400">30 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Validar con SQL</h2>
+
+                    <div className="flex gap-2 mb-4">
+                        <button
+                            onClick={() => setTabActiva('limpieza')}
+                            className={`px-4 py-2 rounded-lg font-medium ${tabActiva === 'limpieza' ? 'bg-indigo-500 text-white' : 'bg-gray-100'}`}
+                        >
+                            Script Limpieza
+                        </button>
+                        <button
+                            onClick={() => setTabActiva('validacion')}
+                            className={`px-4 py-2 rounded-lg font-medium ${tabActiva === 'validacion' ? 'bg-indigo-500 text-white' : 'bg-gray-100'}`}
+                        >
+                            Queries Validacion
+                        </button>
+                    </div>
+
+                    <div className="bg-slate-800 rounded-xl p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-slate-400 text-sm">{tabActiva === 'limpieza' ? 'etl_limpieza.sql' : 'validacion_carga.sql'}</span>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(tabActiva === 'limpieza' ? sqlLimpieza : sqlValidacion)}
+                                className="px-3 py-1 bg-slate-600 text-white rounded text-sm hover:bg-slate-500"
+                            >
+                                Copiar
+                            </button>
+                        </div>
+                        <pre className="text-green-400 text-sm overflow-x-auto max-h-80">
+                            {tabActiva === 'limpieza' ? sqlLimpieza : sqlValidacion}
+                        </pre>
+                    </div>
+
+                    {!completado ? (
+                        <button
+                            onClick={() => setCompletado(true)}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600"
+                        >
+                            Completar Laboratorio
+                        </button>
+                    ) : (
+                        <div className="text-center p-8 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl">
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h3 className="text-2xl font-bold text-green-800 mb-2">Laboratorio Completado!</h3>
+                            <p className="text-green-700 mb-4">Has disenado un pipeline ETL completo.</p>
+                            <a href="ejercicio-individual.html" className="inline-block px-6 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600">
+                                Continuar con Ejercicio →
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const ETLLab = () => {
+            const [currentStep, setCurrentStep] = useState(1);
+
+            const renderStep = () => {
+                switch(currentStep) {
+                    case 1: return <Paso1Fuentes onComplete={() => setCurrentStep(2)} />;
+                    case 2: return <Paso2Calidad onComplete={() => setCurrentStep(3)} />;
+                    case 3: return <Paso3Transformaciones onComplete={() => setCurrentStep(4)} />;
+                    case 4: return <Paso4Estrategia onComplete={() => setCurrentStep(5)} />;
+                    case 5: return <Paso5Documentar onComplete={() => setCurrentStep(6)} />;
+                    case 6: return <Paso6SQL />;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold mb-1">Laboratorio: Disenando un Pipeline ETL</h1>
+                                    <p className="text-emerald-100">Sesion 05 - OLAP y ETL</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">← Simulador</a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">Inicio</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+                        {renderStep()}
+
+                        <div className="mt-6 text-center text-gray-500 text-sm">
+                            <p>ADEN University - Taller de Tecnologia Aplicada</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ETLLab />);
+    </script>
+</body>
+</html>

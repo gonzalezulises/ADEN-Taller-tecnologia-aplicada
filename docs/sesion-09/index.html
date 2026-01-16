@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 09: Big Data y Arquitecturas Distribuidas - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Las 5 Vs de Big Data
+        const bigDataVs = [
+            { v: 'Volumen', icon: '📦', desc: 'Cantidad masiva de datos', example: 'Facebook: 4 PB/dia', color: 'blue' },
+            { v: 'Velocidad', icon: '⚡', desc: 'Rapidez de generacion y procesamiento', example: 'Twitter: 500M tweets/dia', color: 'amber' },
+            { v: 'Variedad', icon: '🎨', desc: 'Diferentes formatos y fuentes', example: 'Texto, imagenes, video, sensores', color: 'green' },
+            { v: 'Veracidad', icon: '✅', desc: 'Calidad y confiabilidad', example: 'Datos incompletos, sesgados', color: 'red' },
+            { v: 'Valor', icon: '💎', desc: 'Beneficio extraido de los datos', example: 'Insights accionables', color: 'purple' }
+        ];
+
+        // Componentes Hadoop
+        const hadoopComponents = [
+            { name: 'HDFS', fullName: 'Hadoop Distributed File System', desc: 'Sistema de archivos distribuido', icon: '💾' },
+            { name: 'MapReduce', fullName: 'Modelo de programacion', desc: 'Procesamiento paralelo batch', icon: '🔄' },
+            { name: 'YARN', fullName: 'Yet Another Resource Negotiator', desc: 'Gestion de recursos del cluster', icon: '⚙️' },
+            { name: 'Hive', fullName: 'Data Warehouse sobre Hadoop', desc: 'SQL sobre datos distribuidos', icon: '🐝' },
+            { name: 'Pig', fullName: 'Plataforma de flujo de datos', desc: 'Scripts para ETL', icon: '🐷' },
+            { name: 'HBase', fullName: 'Base de datos NoSQL', desc: 'Almacenamiento columnar', icon: '📊' }
+        ];
+
+        // Comparativa DW vs Data Lake
+        const dwVsLake = [
+            { aspect: 'Estructura', dw: 'Esquema on write (estructurado)', lake: 'Esquema on read (cualquier formato)' },
+            { aspect: 'Procesamiento', dw: 'ETL antes de cargar', lake: 'ELT al momento de analizar' },
+            { aspect: 'Usuarios', dw: 'Analistas de negocio', lake: 'Data Scientists, ML Engineers' },
+            { aspect: 'Costo', dw: 'Storage costoso', lake: 'Storage economico (object storage)' },
+            { aspect: 'Agilidad', dw: 'Cambios requieren rediseno', lake: 'Flexible, nuevas fuentes rapido' },
+            { aspect: 'Gobernanza', dw: 'Alta, bien definida', lake: 'Riesgo de "Data Swamp"' }
+        ];
+
+        // Arquitecturas
+        const architectures = {
+            lambda: {
+                name: 'Arquitectura Lambda',
+                layers: [
+                    { name: 'Batch Layer', desc: 'Procesa todos los datos historicos', tech: 'Hadoop, Spark' },
+                    { name: 'Speed Layer', desc: 'Procesa datos en tiempo real', tech: 'Kafka, Storm' },
+                    { name: 'Serving Layer', desc: 'Responde consultas combinando ambas', tech: 'Druid, Cassandra' }
+                ],
+                pros: ['Tolerante a fallos', 'Precisión batch + velocidad real-time'],
+                cons: ['Complejidad doble', 'Mantener dos pipelines']
+            },
+            kappa: {
+                name: 'Arquitectura Kappa',
+                layers: [
+                    { name: 'Streaming Layer', desc: 'Todo como stream, incluso batch', tech: 'Kafka, Spark Streaming' },
+                    { name: 'Serving Layer', desc: 'Vistas materializadas', tech: 'ksqlDB, Pinot' }
+                ],
+                pros: ['Simplicidad', 'Un solo pipeline'],
+                cons: ['Reprocesamiento costoso', 'Menos maduro']
+            }
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedV, setSelectedV] = useState(null);
+            const [selectedArch, setSelectedArch] = useState('lambda');
+
+            const tabs = [
+                { id: 0, label: 'Big Data Conceptos', icon: '📊' },
+                { id: 1, label: 'Hadoop Ecosystem', icon: '🐘' },
+                { id: 2, label: 'Data Lake vs DW', icon: '🏞️' },
+                { id: 3, label: 'Arquitecturas', icon: '🏗️' }
+            ];
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-sky-600 to-blue-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-sky-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 09: Big Data y Arquitecturas Distribuidas</h1>
+                        <p className="text-sky-100">Hadoop, Spark, Data Lakes y procesamiento a escala</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-sky-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-sky-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: Big Data Conceptos */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">¿Que es Big Data?</h2>
+                                    <p className="text-gray-600">
+                                        Conjuntos de datos tan grandes o complejos que las herramientas tradicionales
+                                        no pueden procesarlos eficientemente.
+                                    </p>
+                                </div>
+
+                                {/* 5 Vs */}
+                                <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4 text-center">Las 5 Vs de Big Data</h3>
+                                    <div className="grid grid-cols-5 gap-3">
+                                        {bigDataVs.map((item, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => setSelectedV(selectedV === idx ? null : idx)}
+                                                className={`p-4 rounded-xl cursor-pointer transition-all text-center ${
+                                                    selectedV === idx
+                                                        ? `bg-${item.color}-100 border-2 border-${item.color}-500 shadow-lg`
+                                                        : 'bg-white border border-gray-200 hover:shadow-md'
+                                                }`}
+                                            >
+                                                <div className="text-3xl mb-2">{item.icon}</div>
+                                                <div className="font-bold text-sm">{item.v}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {selectedV !== null && (
+                                        <div className={`mt-4 p-4 rounded-lg bg-${bigDataVs[selectedV].color}-50 border border-${bigDataVs[selectedV].color}-200`}>
+                                            <h4 className="font-bold text-lg">{bigDataVs[selectedV].v}</h4>
+                                            <p className="text-gray-700">{bigDataVs[selectedV].desc}</p>
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                <strong>Ejemplo:</strong> {bigDataVs[selectedV].example}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Scale comparison */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Escala de Datos</h3>
+                                    <div className="flex items-end justify-around h-40 gap-4">
+                                        {[
+                                            { label: 'KB', size: 10, example: 'Email' },
+                                            { label: 'MB', size: 20, example: 'Foto HD' },
+                                            { label: 'GB', size: 35, example: 'Pelicula HD' },
+                                            { label: 'TB', size: 55, example: 'Biblioteca' },
+                                            { label: 'PB', size: 80, example: 'Facebook/dia' },
+                                            { label: 'EB', size: 100, example: 'Internet global' }
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="flex flex-col items-center">
+                                                <div className="text-xs text-gray-500 mb-1">{item.example}</div>
+                                                <div
+                                                    className="w-12 bg-gradient-to-t from-sky-600 to-sky-400 rounded-t"
+                                                    style={{ height: `${item.size}%` }}
+                                                />
+                                                <div className="font-bold mt-1">{item.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="text-center text-sm text-gray-500 mt-4">
+                                        1 KB → 1 MB → 1 GB → 1 TB → 1 PB → 1 EB (cada paso = x1000)
+                                    </div>
+                                </div>
+
+                                {/* When Big Data */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="border rounded-xl p-4 border-green-300 bg-green-50">
+                                        <h4 className="font-bold text-green-800 mb-2">✓ Necesitas Big Data si...</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>• Datos no caben en memoria de una maquina</li>
+                                            <li>• Procesamiento toma horas/dias</li>
+                                            <li>• Multiples fuentes heterogeneas</li>
+                                            <li>• Necesitas procesamiento en tiempo real</li>
+                                            <li>• Escalabilidad horizontal requerida</li>
+                                        </ul>
+                                    </div>
+                                    <div className="border rounded-xl p-4 border-red-300 bg-red-50">
+                                        <h4 className="font-bold text-red-800 mb-2">✗ No necesitas Big Data si...</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>• Tus datos caben en Excel</li>
+                                            <li>• Base de datos relacional funciona bien</li>
+                                            <li>• Queries terminan en segundos</li>
+                                            <li>• No hay requisito de real-time</li>
+                                            <li>• Equipo pequeno sin expertise</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: Hadoop Ecosystem */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Ecosistema Hadoop</h2>
+                                    <p className="text-gray-600">
+                                        Framework open source para procesamiento distribuido de grandes datasets.
+                                    </p>
+                                </div>
+
+                                {/* Components grid */}
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {hadoopComponents.map((comp, idx) => (
+                                        <div key={idx} className="border rounded-xl p-4 hover:shadow-lg transition-all">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-2xl">{comp.icon}</span>
+                                                <h4 className="font-bold text-lg">{comp.name}</h4>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mb-1">{comp.fullName}</p>
+                                            <p className="text-sm text-gray-700">{comp.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* HDFS Architecture */}
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Arquitectura HDFS</h3>
+                                    <div className="flex flex-col md:flex-row items-center justify-around gap-4">
+                                        <div className="text-center">
+                                            <div className="bg-amber-200 p-4 rounded-xl mb-2">
+                                                <div className="text-2xl">👑</div>
+                                                <div className="font-bold">NameNode</div>
+                                            </div>
+                                            <div className="text-xs text-gray-600">Metadata, directorio</div>
+                                        </div>
+                                        <div className="text-2xl text-gray-400">↔️</div>
+                                        <div className="flex gap-2">
+                                            {[1, 2, 3].map(i => (
+                                                <div key={i} className="text-center">
+                                                    <div className="bg-blue-200 p-3 rounded-xl mb-1">
+                                                        <div className="text-xl">💾</div>
+                                                        <div className="text-xs font-medium">DataNode {i}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 text-center mt-4">
+                                        Archivos se dividen en bloques (128MB) y se replican en multiples DataNodes
+                                    </p>
+                                </div>
+
+                                {/* Spark vs MapReduce */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Apache Spark vs MapReduce</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-orange-50 p-4 rounded-lg">
+                                            <h4 className="font-bold text-orange-800 mb-2">🐘 MapReduce</h4>
+                                            <ul className="text-sm text-gray-700 space-y-1">
+                                                <li>• Escribe a disco entre operaciones</li>
+                                                <li>• Solo batch processing</li>
+                                                <li>• Lenguaje: Java principalmente</li>
+                                                <li>• Curva de aprendizaje alta</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-amber-50 p-4 rounded-lg">
+                                            <h4 className="font-bold text-amber-800 mb-2">⚡ Apache Spark</h4>
+                                            <ul className="text-sm text-gray-700 space-y-1">
+                                                <li>• Procesamiento en memoria (100x mas rapido)</li>
+                                                <li>• Batch + Streaming + ML + Graph</li>
+                                                <li>• APIs: Python, Scala, Java, R, SQL</li>
+                                                <li>• Mas facil de usar</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* PySpark example */}
+                                <div className="bg-gray-800 text-gray-100 p-4 rounded-xl">
+                                    <div className="text-gray-400 text-sm mb-2"># PySpark - Ejemplo basico</div>
+                                    <pre className="text-sm overflow-x-auto">
+{`from pyspark.sql import SparkSession
+
+# Crear sesion
+spark = SparkSession.builder.appName("MiApp").getOrCreate()
+
+# Leer datos
+df = spark.read.csv("s3://bucket/ventas.csv", header=True)
+
+# Transformaciones (lazy)
+resultado = df.filter(df.monto > 1000) \\
+              .groupBy("categoria") \\
+              .agg({"monto": "sum"})
+
+# Accion (ejecuta)
+resultado.show()`}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Data Lake vs DW */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Data Lake vs Data Warehouse</h2>
+                                    <p className="text-gray-600">
+                                        Dos enfoques diferentes para almacenar y procesar datos a escala.
+                                    </p>
+                                </div>
+
+                                {/* Visual comparison */}
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="border-2 border-blue-300 rounded-xl p-6 bg-blue-50">
+                                        <div className="text-center mb-4">
+                                            <span className="text-5xl">🏢</span>
+                                            <h3 className="font-bold text-xl text-blue-800 mt-2">Data Warehouse</h3>
+                                        </div>
+                                        <ul className="space-y-2 text-sm">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-500">▸</span>
+                                                <span>Datos estructurados y limpios</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-500">▸</span>
+                                                <span>Esquema definido antes de cargar (ETL)</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-500">▸</span>
+                                                <span>Optimizado para consultas SQL</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-blue-500">▸</span>
+                                                <span>Usuarios: Analistas de negocio</span>
+                                            </li>
+                                        </ul>
+                                        <div className="mt-4 bg-white p-3 rounded-lg text-xs">
+                                            <strong>Ejemplos:</strong> Snowflake, Redshift, BigQuery
+                                        </div>
+                                    </div>
+
+                                    <div className="border-2 border-green-300 rounded-xl p-6 bg-green-50">
+                                        <div className="text-center mb-4">
+                                            <span className="text-5xl">🏞️</span>
+                                            <h3 className="font-bold text-xl text-green-800 mt-2">Data Lake</h3>
+                                        </div>
+                                        <ul className="space-y-2 text-sm">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-green-500">▸</span>
+                                                <span>Cualquier formato: raw, semi, no estructurado</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-green-500">▸</span>
+                                                <span>Esquema al leer (ELT)</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-green-500">▸</span>
+                                                <span>Flexible para ML y exploracion</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-green-500">▸</span>
+                                                <span>Usuarios: Data Scientists, Engineers</span>
+                                            </li>
+                                        </ul>
+                                        <div className="mt-4 bg-white p-3 rounded-lg text-xs">
+                                            <strong>Ejemplos:</strong> S3 + Athena, Azure Data Lake, Databricks
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Comparison table */}
+                                <div className="border rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="p-3 text-left">Aspecto</th>
+                                                <th className="p-3 text-left bg-blue-50">Data Warehouse</th>
+                                                <th className="p-3 text-left bg-green-50">Data Lake</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dwVsLake.map((row, idx) => (
+                                                <tr key={idx} className="border-t">
+                                                    <td className="p-3 font-medium">{row.aspect}</td>
+                                                    <td className="p-3 bg-blue-50">{row.dw}</td>
+                                                    <td className="p-3 bg-green-50">{row.lake}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Data Lakehouse */}
+                                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-3">🏠 Data Lakehouse: Lo mejor de ambos mundos</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Combina la flexibilidad del Data Lake con las capacidades ACID y gobernanza del Data Warehouse.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Delta Lake</span>
+                                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Apache Iceberg</span>
+                                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Apache Hudi</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Arquitecturas */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Arquitecturas de Big Data</h2>
+                                    <p className="text-gray-600">
+                                        Patrones para procesar datos en batch y tiempo real.
+                                    </p>
+                                </div>
+
+                                {/* Architecture selector */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSelectedArch('lambda')}
+                                        className={`px-4 py-2 rounded-lg font-medium ${
+                                            selectedArch === 'lambda'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-gray-100 text-gray-600'
+                                        }`}
+                                    >
+                                        λ Lambda
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedArch('kappa')}
+                                        className={`px-4 py-2 rounded-lg font-medium ${
+                                            selectedArch === 'kappa'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-gray-100 text-gray-600'
+                                        }`}
+                                    >
+                                        κ Kappa
+                                    </button>
+                                </div>
+
+                                {/* Architecture details */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-xl mb-4">{architectures[selectedArch].name}</h3>
+
+                                    {/* Visual diagram */}
+                                    <div className="bg-gray-50 p-6 rounded-lg mb-4">
+                                        {selectedArch === 'lambda' ? (
+                                            <div className="space-y-4">
+                                                <div className="text-center">
+                                                    <div className="inline-block bg-gray-200 p-3 rounded-lg">
+                                                        📥 Data Source
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center">
+                                                    <div className="text-2xl">↙️ ↘️</div>
+                                                </div>
+                                                <div className="flex justify-around">
+                                                    <div className="bg-blue-100 p-4 rounded-lg text-center">
+                                                        <div className="font-bold">Batch Layer</div>
+                                                        <div className="text-sm text-gray-600">Hadoop/Spark</div>
+                                                    </div>
+                                                    <div className="bg-amber-100 p-4 rounded-lg text-center">
+                                                        <div className="font-bold">Speed Layer</div>
+                                                        <div className="text-sm text-gray-600">Kafka/Storm</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center">
+                                                    <div className="text-2xl">↘️ ↙️</div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="inline-block bg-green-100 p-3 rounded-lg">
+                                                        <div className="font-bold">Serving Layer</div>
+                                                        <div className="text-sm">Query Results</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="text-center">
+                                                    <div className="inline-block bg-gray-200 p-3 rounded-lg">
+                                                        📥 Data Source
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center text-2xl">↓</div>
+                                                <div className="text-center">
+                                                    <div className="inline-block bg-amber-100 p-4 rounded-lg">
+                                                        <div className="font-bold">Streaming Layer</div>
+                                                        <div className="text-sm text-gray-600">Kafka + Spark Streaming</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center text-2xl">↓</div>
+                                                <div className="text-center">
+                                                    <div className="inline-block bg-green-100 p-3 rounded-lg">
+                                                        <div className="font-bold">Serving Layer</div>
+                                                        <div className="text-sm">Query Results</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Layers description */}
+                                    <div className="space-y-2 mb-4">
+                                        {architectures[selectedArch].layers.map((layer, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                <span className="font-bold text-sky-600">{layer.name}</span>
+                                                <span className="text-gray-600">{layer.desc}</span>
+                                                <span className="ml-auto text-xs bg-gray-200 px-2 py-1 rounded">{layer.tech}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Pros and cons */}
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-green-50 p-4 rounded-lg">
+                                            <h5 className="font-bold text-green-800 mb-2">✓ Ventajas</h5>
+                                            <ul className="text-sm space-y-1">
+                                                {architectures[selectedArch].pros.map((p, i) => (
+                                                    <li key={i}>• {p}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div className="bg-red-50 p-4 rounded-lg">
+                                            <h5 className="font-bold text-red-800 mb-2">✗ Desventajas</h5>
+                                            <ul className="text-sm space-y-1">
+                                                {architectures[selectedArch].cons.map((c, i) => (
+                                                    <li key={i}>• {c}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a href="laboratorio.html" className="bg-sky-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-sky-700">
+                            Ir al Laboratorio →
+                        </a>
+                        <a href="ejercicio-individual.html" className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700">
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 09 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Dashboard Fase 3 Proyecto - Sesion 11</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-violet-50 to-purple-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Fases del proyecto Dashboard
+        const projectPhases = [
+            {
+                id: 1,
+                title: 'Revision de Proyecto',
+                description: 'Revisar el DW y datos de fases anteriores.',
+                prompt: (project) => `Actua como consultor de Tableau. Voy a crear un dashboard para mi proyecto BI:
+
+PROYECTO: ${project.name}
+INDUSTRIA: ${project.industry}
+FASE ANTERIOR: Tengo un Data Warehouse con esquema estrella y datos transformados.
+
+REVISA:
+1. ¿Cuales son las tablas de hechos disponibles?
+2. ¿Cuales dimensiones tengo para analizar?
+3. ¿Cuales son los KPIs mas importantes para este negocio?
+4. ¿Que preguntas de negocio debe responder el dashboard?
+
+Ayudame a definir el alcance del dashboard basado en los datos que tengo.`,
+                deliverable: 'Lista de KPIs y preguntas de negocio'
+            },
+            {
+                id: 2,
+                title: 'Diseño de Dashboard',
+                description: 'Planificar layout y visualizaciones.',
+                prompt: (project) => `Actua como diseñador de dashboards. Diseña el layout para ${project.name}:
+
+AUDIENCIA: ${project.audience}
+KPIs PRINCIPALES: (de la fase anterior)
+
+DISEÑA:
+1. ¿Cuantos dashboards necesito? (Ejecutivo, Operativo, Detalle)
+2. Para cada dashboard:
+   - Layout (Z-pattern, F-pattern, Grid)
+   - KPIs en la parte superior
+   - Graficos principales
+   - Filtros necesarios
+   - Acciones interactivas
+
+3. Wireframe descriptivo para el dashboard principal
+
+4. Paleta de colores apropiada para ${project.industry}
+
+Se especifico con ubicacion de cada elemento.`,
+                deliverable: 'Wireframe y diseño de dashboards'
+            },
+            {
+                id: 3,
+                title: 'Campos Calculados',
+                description: 'Definir calculos necesarios para el dashboard.',
+                prompt: (project) => `Actua como experto en Tableau. Define los campos calculados para ${project.name}:
+
+METRICAS REQUERIDAS: (KPIs de fases anteriores)
+
+CREA LOS CALCULOS:
+1. KPIs basicos (SUM, AVG, COUNT)
+2. Calculos de crecimiento (YoY, MoM)
+3. Calculos de porcentaje (vs total, vs meta)
+4. LOD expressions necesarios
+5. Calculos condicionales (IF, CASE)
+
+Para cada calculo incluye:
+- Nombre descriptivo
+- Formula exacta de Tableau
+- Cuando usarlo
+- Formato de numero
+
+Ordena por complejidad de menor a mayor.`,
+                deliverable: 'Lista de campos calculados con formulas'
+            },
+            {
+                id: 4,
+                title: 'Visualizaciones',
+                description: 'Seleccionar graficos apropiados para cada metrica.',
+                prompt: (project) => `Actua como visualizador de datos. Define las visualizaciones para ${project.name}:
+
+PREGUNTAS A RESPONDER:
+(lista de preguntas de negocio de fase 1)
+
+Para cada pregunta:
+1. ¿Que tipo de grafico es el mejor?
+2. ¿Por que ese grafico?
+3. Configuracion en Tableau:
+   - Columns
+   - Rows
+   - Color
+   - Size
+   - Detail
+   - Filters
+4. Mejores practicas para ese grafico
+
+Incluye al menos:
+- 1 grafico de tendencia temporal
+- 1 grafico de comparacion de categorias
+- 1 grafico de distribucion/composicion
+- 1 KPI card con contexto
+- 1 tabla con drill-down`,
+                deliverable: 'Especificacion de cada visualizacion'
+            },
+            {
+                id: 5,
+                title: 'Interactividad',
+                description: 'Diseñar filtros y acciones del dashboard.',
+                prompt: (project) => `Actua como diseñador UX de dashboards. Diseña la interactividad para ${project.name}:
+
+REQUISITOS:
+- El usuario debe poder filtrar por periodo
+- El usuario debe poder comparar diferentes segmentos
+- Al hacer click en un elemento, debe filtrar otros graficos
+- Hover debe mostrar detalles adicionales
+
+DEFINE:
+1. FILTROS:
+   - Cuales dimensiones exponer como filtro
+   - Tipo de control (dropdown, slider, list)
+   - Scope (todos los sheets o especificos)
+
+2. ACCIONES:
+   - Filter actions (cuales sheets afecta)
+   - Highlight actions
+   - Parameter actions (si aplica)
+   - Navigation (si hay multiples dashboards)
+
+3. TOOLTIPS:
+   - Que informacion mostrar en hover
+   - ¿Viz in tooltip?
+
+4. NAVEGACION:
+   - ¿Como moverse entre dashboards?
+   - Botones de navegacion`,
+                deliverable: 'Diseño de interactividad completo'
+            },
+            {
+                id: 6,
+                title: 'Implementacion',
+                description: 'Construir el dashboard en Tableau.',
+                prompt: (project) => `Actua como coach de Tableau. Voy a construir el dashboard para ${project.name}.
+
+TENGO DISEÑADO:
+- Layout (de fase 2)
+- Campos calculados (de fase 3)
+- Visualizaciones (de fase 4)
+- Interactividad (de fase 5)
+
+GUIAME PASO A PASO:
+1. ¿En que orden debo crear las hojas?
+2. ¿Como organizo los campos calculados?
+3. ¿Tips para mantener performance?
+4. ¿Como aplicar formato consistente?
+5. ¿Que revisar antes de publicar?
+
+Incluye checklist de calidad para cada hoja.`,
+                deliverable: 'Dashboard construido en Tableau'
+            },
+            {
+                id: 7,
+                title: 'Publicacion y Documentacion',
+                description: 'Publicar y documentar el dashboard.',
+                prompt: (project) => `Actua como consultor de BI. Voy a entregar el dashboard de ${project.name}:
+
+DASHBOARD COMPLETADO EN TABLEAU
+
+AYUDAME A:
+1. PUBLICACION:
+   - ¿Donde publicar? (Tableau Public, Server, PDF)
+   - Permisos recomendados
+   - Programacion de refresh
+
+2. DOCUMENTACION:
+   - Guia de usuario (como navegar el dashboard)
+   - Diccionario de metricas (que significa cada KPI)
+   - Supuestos y limitaciones
+   - Fuentes de datos
+
+3. PRESENTACION:
+   - Puntos clave a destacar
+   - Insights principales encontrados
+   - Recomendaciones de negocio basadas en los datos
+
+4. SIGUIENTES PASOS:
+   - Mejoras futuras
+   - Datos adicionales utiles
+
+Formato: documento ejecutivo de 2-3 paginas.`,
+                deliverable: 'Dashboard publicado + documentacion'
+            }
+        ];
+
+        // Proyectos ejemplo (continuacion de fases anteriores)
+        const projectExamples = [
+            {
+                id: 'hotel',
+                name: 'Hotel Boutique Panama',
+                industry: 'Hoteleria',
+                icon: '🏨',
+                color: 'blue',
+                audience: 'Gerente General y Revenue Manager',
+                facts: ['Reservaciones', 'Ocupacion', 'Ingresos'],
+                dimensions: ['Fecha', 'Habitacion', 'Canal', 'Cliente', 'Temporada']
+            },
+            {
+                id: 'fabrica',
+                name: 'Fabrica Alimentos SA',
+                industry: 'Manufactura',
+                icon: '🏭',
+                color: 'green',
+                audience: 'Director de Operaciones',
+                facts: ['Produccion', 'Inventario', 'Costos'],
+                dimensions: ['Fecha', 'Producto', 'Linea', 'Turno', 'Planta']
+            },
+            {
+                id: 'instituto',
+                name: 'Instituto Tecnico Superior',
+                industry: 'Educacion',
+                icon: '🎓',
+                color: 'purple',
+                audience: 'Director Academico',
+                facts: ['Matriculas', 'Calificaciones', 'Asistencia'],
+                dimensions: ['Periodo', 'Programa', 'Curso', 'Docente', 'Estudiante']
+            },
+            {
+                id: 'logistica',
+                name: 'TransCarga Express',
+                industry: 'Logistica',
+                icon: '🚛',
+                color: 'orange',
+                audience: 'Gerente de Operaciones',
+                facts: ['Envios', 'Entregas', 'Costos'],
+                dimensions: ['Fecha', 'Ruta', 'Vehiculo', 'Cliente', 'Destino']
+            }
+        ];
+
+        function App() {
+            const [selectedProject, setSelectedProject] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(1);
+            const [completedPhases, setCompletedPhases] = useState([]);
+            const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+            const copyPrompt = (prompt) => {
+                navigator.clipboard.writeText(prompt);
+                setCopiedPrompt(true);
+                setTimeout(() => setCopiedPrompt(false), 2000);
+            };
+
+            const currentPhaseData = projectPhases.find(p => p.id === currentPhase);
+
+            if (!selectedProject) {
+                return (
+                    <div className="max-w-5xl mx-auto p-6">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex items-center gap-2 text-violet-200 mb-2">
+                                <a href="../" className="hover:text-white">← Inicio</a>
+                                <span>/</span>
+                                <a href="index.html" className="hover:text-white">Sesion 11</a>
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2">Fase 3 del Proyecto: Dashboard Interactivo</h1>
+                            <p className="text-violet-200">Construye el dashboard para tu proyecto integrador</p>
+                            <div className="mt-4">
+                                <span className="bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-bold">
+                                    20% de la Nota Final
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Fase 3: Dashboard Interactivo en Tableau</h2>
+
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                                <h4 className="font-bold text-blue-800">Prerequisitos</h4>
+                                <p className="text-gray-700 text-sm">
+                                    Esta fase continua el proyecto de las Fases 1 (DW) y 2 (ETL + Data Mining).
+                                    Debes tener tu Data Warehouse con datos cargados.
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">1️⃣</div>
+                                    <div className="font-medium">Diseño</div>
+                                    <div className="text-sm text-gray-600">KPIs, layout, visualizaciones</div>
+                                </div>
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">2️⃣</div>
+                                    <div className="font-medium">Construccion</div>
+                                    <div className="text-sm text-gray-600">Dashboard en Tableau</div>
+                                </div>
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">3️⃣</div>
+                                    <div className="font-medium">Publicacion</div>
+                                    <div className="text-sm text-gray-600">Entrega + documentacion</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <h4 className="font-bold text-green-800 mb-2">Criterios de Evaluacion (20%)</h4>
+                                <ul className="text-sm text-gray-700 space-y-1">
+                                    <li>• <strong>Diseño visual (5%):</strong> Layout, colores, tipografia</li>
+                                    <li>• <strong>KPIs relevantes (5%):</strong> Metricas que responden preguntas de negocio</li>
+                                    <li>• <strong>Interactividad (5%):</strong> Filtros, acciones, navegacion</li>
+                                    <li>• <strong>Documentacion (5%):</strong> Guia de usuario, diccionario de metricas</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Project selection */}
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Selecciona tu Proyecto</h2>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {projectExamples.map(project => (
+                                <div
+                                    key={project.id}
+                                    onClick={() => setSelectedProject(project)}
+                                    className={`bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-${project.color}-500`}
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="text-4xl">{project.icon}</span>
+                                        <div>
+                                            <h3 className="font-bold text-lg">{project.name}</h3>
+                                            <span className={`text-sm bg-${project.color}-100 text-${project.color}-800 px-2 py-0.5 rounded`}>
+                                                {project.industry}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        <strong>Audiencia:</strong> {project.audience}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {project.facts.map((f, i) => (
+                                            <span key={i} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                                                {f}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-8 text-center text-gray-500 text-sm">
+                            <p>Sesion 11 - Fase 3 Proyecto Integrador</p>
+                            <p>ADEN University - Cuatrimestre I 2026</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header with project */}
+                    <div className={`bg-gradient-to-r from-${selectedProject.color}-600 to-${selectedProject.color}-500 text-white p-6 rounded-xl shadow-lg mb-6`}>
+                        <div className="flex items-center gap-2 text-white/80 mb-2">
+                            <button onClick={() => setSelectedProject(null)} className="hover:text-white">← Cambiar proyecto</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-4xl">{selectedProject.icon}</span>
+                            <div>
+                                <h1 className="text-2xl font-bold">{selectedProject.name}</h1>
+                                <p className="text-white/80">Fase 3: Dashboard Interactivo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="bg-white rounded-xl p-4 shadow mb-6">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium">Progreso de la Fase 3</span>
+                            <span className="text-sm text-gray-500">{completedPhases.length}/{projectPhases.length} etapas</span>
+                        </div>
+                        <div className="flex gap-2">
+                            {projectPhases.map(phase => (
+                                <div
+                                    key={phase.id}
+                                    onClick={() => setCurrentPhase(phase.id)}
+                                    className={`flex-1 h-2 rounded cursor-pointer ${
+                                        completedPhases.includes(phase.id)
+                                            ? 'bg-green-500'
+                                            : currentPhase === phase.id
+                                            ? 'bg-violet-500'
+                                            : 'bg-gray-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        {/* Phase selector */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <h3 className="font-bold text-gray-800 mb-3">Etapas</h3>
+                                <div className="space-y-2">
+                                    {projectPhases.map(phase => (
+                                        <button
+                                            key={phase.id}
+                                            onClick={() => setCurrentPhase(phase.id)}
+                                            className={`w-full text-left p-3 rounded-lg transition-all ${
+                                                currentPhase === phase.id
+                                                    ? 'bg-violet-100 border-2 border-violet-500'
+                                                    : completedPhases.includes(phase.id)
+                                                    ? 'bg-green-50 border border-green-300'
+                                                    : 'bg-gray-50 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                    completedPhases.includes(phase.id)
+                                                        ? 'bg-green-500 text-white'
+                                                        : currentPhase === phase.id
+                                                        ? 'bg-violet-500 text-white'
+                                                        : 'bg-gray-300 text-white'
+                                                }`}>
+                                                    {completedPhases.includes(phase.id) ? '✓' : phase.id}
+                                                </span>
+                                                <span className="text-sm font-medium">{phase.title}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Project context */}
+                            <div className="bg-white rounded-xl shadow p-4 mt-4">
+                                <h4 className="font-bold text-gray-800 mb-2">Datos Disponibles</h4>
+                                <div className="text-sm space-y-2">
+                                    <div>
+                                        <span className="text-gray-500">Hechos:</span>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {selectedProject.facts.map((f, i) => (
+                                                <span key={i} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{f}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Dimensiones:</span>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {selectedProject.dimensions.map((d, i) => (
+                                                <span key={i} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{d}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Main content */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-2">
+                                    Etapa {currentPhase}: {currentPhaseData.title}
+                                </h2>
+                                <p className="text-gray-600 mb-4">{currentPhaseData.description}</p>
+
+                                {/* Prompt */}
+                                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="font-medium text-gray-700">Prompt para IA</span>
+                                        <button
+                                            onClick={() => copyPrompt(currentPhaseData.prompt(selectedProject))}
+                                            className={`px-3 py-1 rounded text-sm transition-all ${
+                                                copiedPrompt
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-violet-600 text-white hover:bg-violet-700'
+                                            }`}
+                                        >
+                                            {copiedPrompt ? '✓ Copiado!' : 'Copiar prompt'}
+                                        </button>
+                                    </div>
+                                    <div className="bg-white border rounded-lg p-4 max-h-80 overflow-y-auto">
+                                        <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                                            {currentPhaseData.prompt(selectedProject)}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Deliverable */}
+                                <div className="bg-violet-50 border-l-4 border-violet-500 p-4 mb-4">
+                                    <h4 className="font-bold text-violet-800">Entregable</h4>
+                                    <p className="text-gray-700">{currentPhaseData.deliverable}</p>
+                                </div>
+
+                                {/* Phase-specific tips */}
+                                {currentPhase === 1 && (
+                                    <div className="bg-blue-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-blue-800 mb-2">Conexion con Fases Anteriores</h4>
+                                        <p className="text-sm text-gray-700">
+                                            Revisa el DW que diseñaste en Fase 1 y los datos transformados en Fase 2.
+                                            El dashboard debe visualizar las metricas que definiste.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {currentPhase === 4 && (
+                                    <div className="bg-orange-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-orange-800 mb-2">Checklist de Visualizaciones</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>☐ Grafico de tendencia temporal</li>
+                                            <li>☐ Comparacion de categorias (barras)</li>
+                                            <li>☐ Distribucion o composicion</li>
+                                            <li>☐ KPI cards con contexto</li>
+                                            <li>☐ Tabla con drill-down</li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {currentPhase === 6 && (
+                                    <div className="bg-green-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-green-800 mb-2">Antes de Entregar</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>☐ Titulos descriptivos en cada hoja</li>
+                                            <li>☐ Colores consistentes</li>
+                                            <li>☐ Filtros funcionando</li>
+                                            <li>☐ Acciones probadas</li>
+                                            <li>☐ Performance aceptable</li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {currentPhase === 7 && (
+                                    <div className="bg-amber-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-amber-800 mb-2">Entrega Fase 3</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>1. Dashboard publicado (URL de Tableau Public o .twbx)</li>
+                                            <li>2. Documento con guia de usuario</li>
+                                            <li>3. Diccionario de metricas</li>
+                                            <li>4. Presentacion de 5 minutos preparada</li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Navigation */}
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.max(1, currentPhase - 1))}
+                                        disabled={currentPhase === 1}
+                                        className={`px-4 py-2 rounded-lg ${
+                                            currentPhase === 1
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        ← Anterior
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            if (!completedPhases.includes(currentPhase)) {
+                                                setCompletedPhases([...completedPhases, currentPhase]);
+                                            }
+                                            if (currentPhase < projectPhases.length) {
+                                                setCurrentPhase(currentPhase + 1);
+                                            }
+                                        }}
+                                        className="bg-violet-600 text-white px-6 py-2 rounded-lg hover:bg-violet-700"
+                                    >
+                                        {currentPhase === projectPhases.length ? 'Finalizar' : 'Siguiente etapa →'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Completion */}
+                            {completedPhases.length === projectPhases.length && (
+                                <div className="mt-6 bg-green-100 border-2 border-green-500 p-6 rounded-xl text-center">
+                                    <div className="text-4xl mb-2">🎉</div>
+                                    <h3 className="text-xl font-bold text-green-800 mb-2">Fase 3 Completada!</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Has completado el dashboard interactivo de tu proyecto.
+                                    </p>
+                                    <div className="bg-white p-4 rounded-lg text-left mb-4">
+                                        <h4 className="font-bold text-gray-800 mb-2">Checklist de Entrega</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>✓ Dashboard publicado en Tableau Public o .twbx</li>
+                                            <li>✓ Guia de usuario</li>
+                                            <li>✓ Diccionario de metricas</li>
+                                            <li>✓ Preparado para presentar (5 min)</li>
+                                        </ul>
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                        Sube los entregables a la plataforma del curso.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 11 - Fase 3 Proyecto (20%)</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

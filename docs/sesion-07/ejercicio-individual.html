@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Proyecto Data Mining - Sesion 07</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Casos de proyectos de Data Mining
+        const projectCases = [
+            {
+                id: 'churn',
+                name: 'Prediccion de Churn',
+                industry: 'Telecomunicaciones',
+                icon: '📱',
+                color: 'blue',
+                description: 'MovilPlus quiere predecir que clientes cancelaran su servicio en los proximos 3 meses.',
+                businessQuestion: '¿Cuales clientes tienen alta probabilidad de cancelar?',
+                targetVariable: 'churn (Si/No)',
+                problemType: 'Clasificacion binaria',
+                suggestedData: [
+                    'antiguedad_meses', 'tipo_plan', 'minutos_mes', 'datos_gb_mes',
+                    'llamadas_soporte', 'pagos_atrasados', 'monto_factura', 'satisfaccion'
+                ],
+                metrics: ['Precision', 'Recall', 'F1-Score', 'AUC-ROC'],
+                kaggleDataset: 'Telco Customer Churn'
+            },
+            {
+                id: 'segmentation',
+                name: 'Segmentacion de Clientes',
+                industry: 'Retail',
+                icon: '🛍️',
+                color: 'purple',
+                description: 'SuperMart necesita agrupar clientes por comportamiento de compra para campanas personalizadas.',
+                businessQuestion: '¿Que segmentos de clientes tenemos y como son diferentes?',
+                targetVariable: 'Sin target (Clustering)',
+                problemType: 'Clustering (No supervisado)',
+                suggestedData: [
+                    'recencia_dias', 'frecuencia_compras', 'monto_total', 'ticket_promedio',
+                    'categorias_compradas', 'canal_preferido', 'uso_descuentos'
+                ],
+                metrics: ['Silhouette Score', 'Inercia', 'Perfil de segmentos'],
+                kaggleDataset: 'Mall Customer Segmentation'
+            },
+            {
+                id: 'fraud',
+                name: 'Deteccion de Fraude',
+                industry: 'Banca',
+                icon: '🏦',
+                color: 'red',
+                description: 'BancoSeguro necesita detectar transacciones fraudulentas en tiempo casi real.',
+                businessQuestion: '¿Esta transaccion es fraudulenta?',
+                targetVariable: 'fraude (Si/No)',
+                problemType: 'Clasificacion binaria (desbalanceada)',
+                suggestedData: [
+                    'monto', 'hora_transaccion', 'tipo_comercio', 'ubicacion',
+                    'dispositivo', 'frecuencia_24h', 'distancia_ultima_transaccion'
+                ],
+                metrics: ['Precision', 'Recall', 'F1-Score', 'AUC-PR'],
+                kaggleDataset: 'Credit Card Fraud Detection'
+            },
+            {
+                id: 'demand',
+                name: 'Prediccion de Demanda',
+                industry: 'Logistica',
+                icon: '📦',
+                color: 'green',
+                description: 'DistribuPanama quiere predecir la demanda de productos para optimizar inventario.',
+                businessQuestion: '¿Cuantas unidades se venderan la proxima semana?',
+                targetVariable: 'unidades_vendidas (numerico)',
+                problemType: 'Regresion',
+                suggestedData: [
+                    'producto_id', 'precio', 'promocion', 'dia_semana', 'mes',
+                    'ventas_semana_anterior', 'stock_actual', 'clima'
+                ],
+                metrics: ['RMSE', 'MAE', 'MAPE', 'R2'],
+                kaggleDataset: 'Store Sales - Time Series'
+            }
+        ];
+
+        // Fases CRISP-DM aplicadas
+        const crispPhases = [
+            {
+                id: 1,
+                name: 'Business Understanding',
+                title: 'Comprension del Negocio',
+                prompt: (project) => `Actua como un Data Scientist senior. Estoy iniciando un proyecto de ${project.name} para ${project.industry}.
+
+Contexto: ${project.description}
+
+Pregunta de negocio: ${project.businessQuestion}
+
+Necesito que me ayudes con la fase de Business Understanding de CRISP-DM:
+
+1. Define el objetivo del proyecto en terminos de negocio
+2. Lista 3-5 preguntas especificas que el modelo debe responder
+3. Define los criterios de exito (¿como sabemos que el proyecto fue exitoso?)
+4. Identifica los stakeholders y sus expectativas
+5. Enumera posibles riesgos y restricciones del proyecto
+
+Estructura tu respuesta de manera clara y profesional.`
+            },
+            {
+                id: 2,
+                name: 'Data Understanding',
+                title: 'Comprension de los Datos',
+                prompt: (project) => `Continuando con el proyecto de ${project.name}:
+
+Tipo de problema: ${project.problemType}
+Variable objetivo: ${project.targetVariable}
+Variables sugeridas: ${project.suggestedData.join(', ')}
+
+Para la fase de Data Understanding, necesito que:
+
+1. Describas cada variable sugerida (tipo, rango esperado, importancia)
+2. Identifiques posibles problemas de calidad (nulos, outliers, inconsistencias)
+3. Propongas un plan de EDA con las visualizaciones clave a generar
+4. Listes las preguntas que el EDA debe responder
+5. Sugieras fuentes adicionales de datos que podrian enriquecer el analisis
+
+Incluye ejemplos de codigo Python cuando sea relevante.`
+            },
+            {
+                id: 3,
+                name: 'Data Preparation',
+                title: 'Preparacion de Datos',
+                prompt: (project) => `Para el proyecto de ${project.name}, necesito preparar los datos para modelar.
+
+Variables: ${project.suggestedData.join(', ')}
+Tipo de problema: ${project.problemType}
+
+Diseña el plan de Data Preparation:
+
+1. Tratamiento de valores nulos (estrategia por variable)
+2. Tratamiento de outliers (identificacion y manejo)
+3. Encoding de variables categoricas (cual metodo y por que)
+4. Normalizacion/Estandarizacion (cuando aplicar)
+5. Feature Engineering: propone 5 nuevas variables derivadas
+6. Seleccion de features: criterios para elegir las mas importantes
+7. Split de datos: estrategia de train/test/validation
+
+Incluye codigo Python para cada paso.`
+            },
+            {
+                id: 4,
+                name: 'Modeling',
+                title: 'Modelado',
+                prompt: (project) => `Para el proyecto de ${project.name}:
+
+Tipo: ${project.problemType}
+Metricas: ${project.metrics.join(', ')}
+
+Diseña la estrategia de Modelado:
+
+1. Recomienda 3 algoritmos candidatos y justifica cada uno
+2. Para cada algoritmo, lista los hiperparametros clave a tunear
+3. Propone una estrategia de validacion cruzada
+4. Describe como comparar los modelos (baseline, benchmark)
+5. Genera codigo Python para entrenar el mejor modelo candidato
+
+Incluye:
+- Import de librerias
+- Preparacion de datos
+- Entrenamiento
+- Evaluacion con las metricas sugeridas`
+            },
+            {
+                id: 5,
+                name: 'Evaluation',
+                title: 'Evaluacion',
+                prompt: (project) => `El modelo de ${project.name} ha sido entrenado.
+
+Metricas objetivo: ${project.metrics.join(', ')}
+
+Para la fase de Evaluacion:
+
+1. Explica cada metrica y su interpretacion de negocio
+2. Define umbrales de aceptacion (ej: "minimo 80% precision")
+3. Diseña analisis de errores (donde falla el modelo)
+4. Propone pruebas de robustez (datos nuevos, edge cases)
+5. Crea un dashboard de monitoreo con KPIs del modelo
+6. Genera la matriz de confusion y su interpretacion
+
+¿Como decidimos si el modelo esta listo para produccion?`
+            }
+        ];
+
+        function App() {
+            const [selectedProject, setSelectedProject] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(0);
+            const [copiedPrompt, setCopiedPrompt] = useState(null);
+
+            const copyPrompt = (prompt, phaseId) => {
+                navigator.clipboard.writeText(prompt);
+                setCopiedPrompt(phaseId);
+                setTimeout(() => setCopiedPrompt(null), 2000);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-violet-100 mb-2">
+                            <a href="./" className="hover:text-white">← Volver al simulador</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Ejercicio Individual: Proyecto Data Mining</h1>
+                        <p className="text-violet-100">Aplica CRISP-DM a un proyecto real con ayuda de IA</p>
+                        <div className="flex items-center gap-2 mt-3">
+                            <span className="bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-medium">
+                                Fase 2 Proyecto Integrador - 15% Nota Final
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Project Selection */}
+                    {!selectedProject ? (
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Selecciona tu Proyecto de Data Mining</h2>
+                                <p className="text-gray-600 mb-6">
+                                    Elige un proyecto y desarrolla las 5 primeras fases de CRISP-DM con ayuda de IA.
+                                    Cada proyecto representa un caso real de la industria.
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {projectCases.map((project) => (
+                                        <div
+                                            key={project.id}
+                                            onClick={() => setSelectedProject(project)}
+                                            className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
+                                                project.color === 'blue' ? 'hover:border-blue-500 hover:bg-blue-50' :
+                                                project.color === 'purple' ? 'hover:border-purple-500 hover:bg-purple-50' :
+                                                project.color === 'red' ? 'hover:border-red-500 hover:bg-red-50' :
+                                                'hover:border-green-500 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <span className="text-4xl">{project.icon}</span>
+                                                <div>
+                                                    <h3 className="font-bold text-lg">{project.name}</h3>
+                                                    <span className={`text-sm px-2 py-0.5 rounded ${
+                                                        project.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                                                        project.color === 'purple' ? 'bg-purple-100 text-purple-700' :
+                                                        project.color === 'red' ? 'bg-red-100 text-red-700' :
+                                                        'bg-green-100 text-green-700'
+                                                    }`}>
+                                                        {project.industry}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-600 text-sm mb-3">{project.description}</p>
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                                                    {project.problemType}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Dataset sugerido: {project.kaggleDataset}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                                <h3 className="font-bold text-amber-800 mb-3">Instrucciones del Ejercicio</h3>
+                                <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li>Selecciona un proyecto de tu interes</li>
+                                    <li>Completa las 5 fases de CRISP-DM usando los prompts de IA</li>
+                                    <li>Descarga un dataset de Kaggle relacionado</li>
+                                    <li>Implementa el EDA en un notebook de Google Colab</li>
+                                    <li>Documenta todo en un informe siguiendo la estructura CRISP-DM</li>
+                                </ol>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Selected Project View */
+                        <div className="space-y-6">
+                            {/* Project Header */}
+                            <div className={`rounded-xl p-6 ${
+                                selectedProject.color === 'blue' ? 'bg-blue-50 border border-blue-200' :
+                                selectedProject.color === 'purple' ? 'bg-purple-50 border border-purple-200' :
+                                selectedProject.color === 'red' ? 'bg-red-50 border border-red-200' :
+                                'bg-green-50 border border-green-200'
+                            }`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-5xl">{selectedProject.icon}</span>
+                                        <div>
+                                            <h2 className="text-2xl font-bold">{selectedProject.name}</h2>
+                                            <p className="text-gray-600">{selectedProject.industry}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setSelectedProject(null); setCurrentPhase(0); }}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        Cambiar proyecto
+                                    </button>
+                                </div>
+                                <p className="mt-4 text-gray-700">{selectedProject.description}</p>
+                            </div>
+
+                            {/* Project Details */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Detalles del Proyecto</h3>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Pregunta de Negocio</h4>
+                                        <p className="text-gray-800">{selectedProject.businessQuestion}</p>
+                                    </div>
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Tipo de Problema</h4>
+                                        <p className="text-gray-800">{selectedProject.problemType}</p>
+                                    </div>
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Variable Objetivo</h4>
+                                        <p className="text-gray-800">{selectedProject.targetVariable}</p>
+                                    </div>
+                                    <div className="border rounded-lg p-4">
+                                        <h4 className="font-bold text-sm text-gray-500 mb-2">Metricas de Evaluacion</h4>
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedProject.metrics.map((m, idx) => (
+                                                <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-sm">
+                                                    {m}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 className="font-bold mt-4 mb-2">Variables Sugeridas</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedProject.suggestedData.map((v, idx) => (
+                                        <span key={idx} className="bg-amber-100 text-amber-800 px-2 py-1 rounded text-sm">
+                                            {v}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* CRISP-DM Phases */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Fases CRISP-DM</h3>
+
+                                {/* Phase tabs */}
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {crispPhases.map((phase, idx) => (
+                                        <button
+                                            key={phase.id}
+                                            onClick={() => setCurrentPhase(idx)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                currentPhase === idx
+                                                    ? 'bg-violet-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-violet-100'
+                                            }`}
+                                        >
+                                            {phase.id}. {phase.name}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Current phase content */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-xl font-bold text-gray-800">
+                                            Fase {crispPhases[currentPhase].id}: {crispPhases[currentPhase].title}
+                                        </h4>
+                                        <p className="text-gray-600">{crispPhases[currentPhase].name}</p>
+                                    </div>
+
+                                    <div className="bg-gray-50 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h5 className="font-medium text-gray-700">
+                                                Prompt para ChatGPT / Claude / Gemini
+                                            </h5>
+                                            <button
+                                                onClick={() => copyPrompt(crispPhases[currentPhase].prompt(selectedProject), crispPhases[currentPhase].id)}
+                                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                                    copiedPrompt === crispPhases[currentPhase].id
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-violet-600 text-white hover:bg-violet-700'
+                                                }`}
+                                            >
+                                                {copiedPrompt === crispPhases[currentPhase].id ? '✓ Copiado!' : 'Copiar prompt'}
+                                            </button>
+                                        </div>
+                                        <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
+                                            {crispPhases[currentPhase].prompt(selectedProject)}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Navigation */}
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.max(0, currentPhase - 1))}
+                                        disabled={currentPhase === 0}
+                                        className="px-4 py-2 text-gray-600 disabled:opacity-50"
+                                    >
+                                        ← Fase anterior
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.min(crispPhases.length - 1, currentPhase + 1))}
+                                        disabled={currentPhase === crispPhases.length - 1}
+                                        className="px-4 py-2 bg-violet-600 text-white rounded-lg disabled:opacity-50"
+                                    >
+                                        Siguiente fase →
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Kaggle Dataset */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                                <h3 className="font-bold text-blue-800 mb-3">📊 Dataset de Kaggle</h3>
+                                <p className="text-gray-700 mb-3">
+                                    Busca en Kaggle: <strong>{selectedProject.kaggleDataset}</strong>
+                                </p>
+                                <a
+                                    href={`https://www.kaggle.com/search?q=${encodeURIComponent(selectedProject.kaggleDataset)}`}
+                                    target="_blank"
+                                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                >
+                                    Buscar en Kaggle →
+                                </a>
+                            </div>
+
+                            {/* Deliverables */}
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                                <h3 className="font-bold text-green-800 mb-3">Entregables - Fase 2 del Proyecto</h3>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Informe CRISP-DM</strong>: Documento con las 5 fases completadas (15-20 paginas)
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Notebook EDA</strong>: Google Colab con analisis exploratorio completo
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Dataset preparado</strong>: CSV limpio listo para modelar
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Presentacion</strong>: 5-7 slides con hallazgos principales
+                                        </div>
+                                    </li>
+                                </ul>
+
+                                <div className="mt-4 bg-white rounded-lg p-4">
+                                    <h4 className="font-medium text-gray-800 mb-2">Criterios de Evaluacion</h4>
+                                    <table className="w-full text-sm">
+                                        <tbody>
+                                            <tr className="border-b"><td className="py-1">Comprension del negocio y datos</td><td className="text-right">25%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Calidad del EDA y visualizaciones</td><td className="text-right">30%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Preparacion de datos y feature engineering</td><td className="text-right">25%</td></tr>
+                                            <tr><td className="py-1">Documentacion y presentacion</td><td className="text-right">20%</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Ejercicio Individual Sesion 07 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

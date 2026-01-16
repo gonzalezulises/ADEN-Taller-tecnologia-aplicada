@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLAP vs OLTP - Procesos ETL - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .cube-face { transition: all 0.3s ease; }
+        .cube-face:hover { transform: translateZ(10px); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS OLAP Y ETL
+        // ============================================
+
+        const comparacionOLTP_OLAP = [
+            { aspecto: 'Proposito', oltp: 'Operaciones del dia a dia', olap: 'Analisis y reportes' },
+            { aspecto: 'Usuarios', oltp: 'Operadores, cajeros, empleados', olap: 'Analistas, gerentes, ejecutivos' },
+            { aspecto: 'Queries', oltp: 'Simples, una transaccion', olap: 'Complejas, muchas agregaciones' },
+            { aspecto: 'Volumen por query', oltp: 'Pocos registros', olap: 'Miles o millones de registros' },
+            { aspecto: 'Normalizacion', oltp: 'Alta (3NF)', olap: 'Baja (desnormalizado)' },
+            { aspecto: 'Actualizaciones', oltp: 'Frecuentes (INSERT/UPDATE)', olap: 'Poco frecuentes (batch)' },
+            { aspecto: 'Historial', oltp: 'Datos actuales', olap: 'Datos historicos' },
+            { aspecto: 'Optimizado para', oltp: 'Escritura rapida', olap: 'Lectura rapida' }
+        ];
+
+        const operacionesOLAP = [
+            {
+                nombre: 'Slice',
+                descripcion: 'Cortar el cubo por una dimension especifica',
+                ejemplo: 'Ver ventas solo del Q1 2026',
+                icono: '🔪',
+                antes: { dims: ['Tiempo', 'Producto', 'Region'], filtro: null },
+                despues: { dims: ['Producto', 'Region'], filtro: 'Tiempo = Q1 2026' }
+            },
+            {
+                nombre: 'Dice',
+                descripcion: 'Seleccionar un subcubo con multiples criterios',
+                ejemplo: 'Ventas de Electronica en Panama durante Q1',
+                icono: '🎲',
+                antes: { dims: ['Tiempo', 'Producto', 'Region'], filtro: null },
+                despues: { dims: ['Tiempo', 'Producto', 'Region'], filtro: 'Q1 + Electronica + Panama' }
+            },
+            {
+                nombre: 'Drill-Down',
+                descripcion: 'Bajar a mayor detalle en una jerarquia',
+                ejemplo: 'De anio a trimestre a mes a dia',
+                icono: '🔽',
+                antes: { nivel: 'Anio: 2026', valor: '$1.2M' },
+                despues: { nivel: 'Mes: Enero 2026', valor: '$320K' }
+            },
+            {
+                nombre: 'Drill-Up (Roll-Up)',
+                descripcion: 'Subir a menor detalle en una jerarquia',
+                ejemplo: 'De tienda a ciudad a region a pais',
+                icono: '🔼',
+                antes: { nivel: 'Tienda: Mall Albrook', valor: '$45K' },
+                despues: { nivel: 'Region: Centro', valor: '$180K' }
+            },
+            {
+                nombre: 'Pivot (Rotate)',
+                descripcion: 'Rotar las dimensiones del cubo',
+                ejemplo: 'Cambiar filas por columnas en el reporte',
+                icono: '🔄',
+                antes: { filas: 'Productos', columnas: 'Tiempo' },
+                despues: { filas: 'Tiempo', columnas: 'Productos' }
+            }
+        ];
+
+        const etlFases = {
+            extract: {
+                nombre: 'Extract (Extraer)',
+                descripcion: 'Obtener datos de las fuentes originales',
+                color: 'blue',
+                fuentes: ['Bases de datos transaccionales', 'Archivos CSV/Excel', 'APIs externas', 'ERPs y CRMs', 'Logs de sistemas'],
+                consideraciones: [
+                    'Minimizar impacto en sistemas fuente',
+                    'Definir frecuencia de extraccion',
+                    'Manejar conectores y protocolos',
+                    'Capturar solo datos necesarios'
+                ]
+            },
+            transform: {
+                nombre: 'Transform (Transformar)',
+                descripcion: 'Limpiar, validar y formatear los datos',
+                color: 'amber',
+                transformaciones: [
+                    { tipo: 'Limpieza', ejemplos: ['Eliminar duplicados', 'Corregir nulos', 'Estandarizar formatos'] },
+                    { tipo: 'Validacion', ejemplos: ['Verificar rangos', 'Validar integridad', 'Detectar anomalias'] },
+                    { tipo: 'Conversion', ejemplos: ['Cambiar tipos de dato', 'Unificar monedas', 'Calcular derivados'] },
+                    { tipo: 'Integracion', ejemplos: ['Unir fuentes', 'Resolver conflictos', 'Crear claves sustitutas'] }
+                ]
+            },
+            load: {
+                nombre: 'Load (Cargar)',
+                descripcion: 'Insertar los datos en el Data Warehouse',
+                color: 'green',
+                estrategias: [
+                    { nombre: 'Full Load', descripcion: 'Cargar todos los datos cada vez', cuando: 'Tablas pequenas o primera carga' },
+                    { nombre: 'Incremental', descripcion: 'Solo cargar datos nuevos o modificados', cuando: 'Tablas grandes, cargas frecuentes' },
+                    { nombre: 'Merge/Upsert', descripcion: 'Insertar nuevos y actualizar existentes', cuando: 'Dimensiones con cambios' }
+                ],
+                orden: ['1. Cargar dimensiones primero', '2. Cargar tabla de hechos despues', '3. Actualizar indices y estadisticas']
+            }
+        };
+
+        const dataQualityDimensiones = [
+            { dimension: 'Completitud', pregunta: 'Estan todos los datos requeridos?', metrica: '% registros sin nulos en campos obligatorios', umbral: '>98%' },
+            { dimension: 'Exactitud', pregunta: 'Los datos reflejan la realidad?', metrica: '% registros que coinciden con fuente', umbral: '>99%' },
+            { dimension: 'Consistencia', pregunta: 'Los datos son coherentes entre fuentes?', metrica: '% registros sin conflictos', umbral: '>95%' },
+            { dimension: 'Unicidad', pregunta: 'Hay duplicados?', metrica: '% registros unicos', umbral: '>99.5%' },
+            { dimension: 'Oportunidad', pregunta: 'Los datos estan actualizados?', metrica: 'Tiempo desde ultima actualizacion', umbral: '<24h' },
+            { dimension: 'Validez', pregunta: 'Los datos cumplen reglas de negocio?', metrica: '% registros que pasan validaciones', umbral: '>97%' }
+        ];
+
+        // ============================================
+        // COMPONENTE: COMPARACION OLTP VS OLAP
+        // ============================================
+
+        const ComparacionOLTP_OLAP = () => {
+            const [modoActivo, setModoActivo] = useState(null);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">OLTP vs OLAP: Comparacion Detallada</h2>
+                    <p className="text-gray-600 mb-6">
+                        Los sistemas transaccionales (OLTP) y analiticos (OLAP) tienen propositos y caracteristicas muy diferentes.
+                    </p>
+
+                    <div className="flex gap-4 mb-6">
+                        <button
+                            onClick={() => setModoActivo(modoActivo === 'oltp' ? null : 'oltp')}
+                            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+                                modoActivo === 'oltp'
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                            <h3 className="text-xl font-bold text-blue-700">OLTP</h3>
+                            <p className="text-sm text-gray-600">Online Transaction Processing</p>
+                        </button>
+                        <button
+                            onClick={() => setModoActivo(modoActivo === 'olap' ? null : 'olap')}
+                            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+                                modoActivo === 'olap'
+                                    ? 'border-purple-500 bg-purple-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                            <h3 className="text-xl font-bold text-purple-700">OLAP</h3>
+                            <p className="text-sm text-gray-600">Online Analytical Processing</p>
+                        </button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="px-4 py-3 text-left font-bold text-gray-700">Aspecto</th>
+                                    <th className={`px-4 py-3 text-left font-bold ${modoActivo === 'oltp' ? 'bg-blue-100 text-blue-800' : 'text-gray-700'}`}>OLTP</th>
+                                    <th className={`px-4 py-3 text-left font-bold ${modoActivo === 'olap' ? 'bg-purple-100 text-purple-800' : 'text-gray-700'}`}>OLAP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {comparacionOLTP_OLAP.map((row, idx) => (
+                                    <tr key={idx} className="border-b hover:bg-gray-50">
+                                        <td className="px-4 py-3 font-medium text-gray-800">{row.aspecto}</td>
+                                        <td className={`px-4 py-3 ${modoActivo === 'oltp' ? 'bg-blue-50' : ''}`}>{row.oltp}</td>
+                                        <td className={`px-4 py-3 ${modoActivo === 'olap' ? 'bg-purple-50' : ''}`}>{row.olap}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-6 grid md:grid-cols-2 gap-4">
+                        <div className="bg-blue-50 rounded-xl p-4">
+                            <h4 className="font-bold text-blue-800 mb-2">Ejemplo OLTP</h4>
+                            <code className="text-sm bg-white p-2 rounded block">
+                                SELECT * FROM clientes WHERE id = 12345;
+                            </code>
+                            <p className="text-sm text-blue-700 mt-2">Un registro, respuesta en milisegundos</p>
+                        </div>
+                        <div className="bg-purple-50 rounded-xl p-4">
+                            <h4 className="font-bold text-purple-800 mb-2">Ejemplo OLAP</h4>
+                            <code className="text-sm bg-white p-2 rounded block">
+                                SELECT region, SUM(ventas) FROM fact_ventas GROUP BY region;
+                            </code>
+                            <p className="text-sm text-purple-700 mt-2">Millones de registros agregados</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: OPERACIONES OLAP
+        // ============================================
+
+        const OperacionesOLAP = () => {
+            const [operacionActiva, setOperacionActiva] = useState(0);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Operaciones OLAP sobre el Cubo</h2>
+                    <p className="text-gray-600 mb-6">
+                        El cubo OLAP permite navegar los datos de manera flexible mediante estas operaciones:
+                    </p>
+
+                    <div className="flex gap-2 mb-6 overflow-x-auto">
+                        {operacionesOLAP.map((op, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setOperacionActiva(idx)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
+                                    operacionActiva === idx
+                                        ? 'bg-indigo-500 text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200'
+                                }`}
+                            >
+                                <span>{op.icono}</span>
+                                {op.nombre}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6">
+                        <div className="flex items-center gap-4 mb-4">
+                            <span className="text-4xl">{operacionesOLAP[operacionActiva].icono}</span>
+                            <div>
+                                <h3 className="text-2xl font-bold text-indigo-800">{operacionesOLAP[operacionActiva].nombre}</h3>
+                                <p className="text-gray-600">{operacionesOLAP[operacionActiva].descripcion}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                            <p className="font-bold text-gray-800 mb-2">Ejemplo:</p>
+                            <p className="text-indigo-700">{operacionesOLAP[operacionActiva].ejemplo}</p>
+                        </div>
+
+                        {/* Visualizacion del antes/despues */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
+                                <p className="text-xs text-gray-500 mb-2">ANTES</p>
+                                {operacionesOLAP[operacionActiva].antes.dims ? (
+                                    <div className="space-y-1">
+                                        <p className="font-medium">Dimensiones: {operacionesOLAP[operacionActiva].antes.dims.join(', ')}</p>
+                                        {operacionesOLAP[operacionActiva].antes.filtro && (
+                                            <p className="text-sm text-gray-500">Filtro: {operacionesOLAP[operacionActiva].antes.filtro}</p>
+                                        )}
+                                    </div>
+                                ) : operacionesOLAP[operacionActiva].antes.nivel ? (
+                                    <div>
+                                        <p className="font-medium">{operacionesOLAP[operacionActiva].antes.nivel}</p>
+                                        <p className="text-2xl font-bold text-indigo-600">{operacionesOLAP[operacionActiva].antes.valor}</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p>Filas: {operacionesOLAP[operacionActiva].antes.filas}</p>
+                                        <p>Columnas: {operacionesOLAP[operacionActiva].antes.columnas}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="bg-white rounded-lg p-4 border-2 border-indigo-400">
+                                <p className="text-xs text-indigo-500 mb-2">DESPUES</p>
+                                {operacionesOLAP[operacionActiva].despues.dims ? (
+                                    <div className="space-y-1">
+                                        <p className="font-medium">Dimensiones: {operacionesOLAP[operacionActiva].despues.dims.join(', ')}</p>
+                                        {operacionesOLAP[operacionActiva].despues.filtro && (
+                                            <p className="text-sm text-indigo-600">Filtro: {operacionesOLAP[operacionActiva].despues.filtro}</p>
+                                        )}
+                                    </div>
+                                ) : operacionesOLAP[operacionActiva].despues.nivel ? (
+                                    <div>
+                                        <p className="font-medium">{operacionesOLAP[operacionActiva].despues.nivel}</p>
+                                        <p className="text-2xl font-bold text-indigo-600">{operacionesOLAP[operacionActiva].despues.valor}</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p>Filas: {operacionesOLAP[operacionActiva].despues.filas}</p>
+                                        <p>Columnas: {operacionesOLAP[operacionActiva].despues.columnas}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: ETL PIPELINE
+        // ============================================
+
+        const ETLPipeline = () => {
+            const [faseActiva, setFaseActiva] = useState('extract');
+
+            const colores = {
+                extract: 'blue',
+                transform: 'amber',
+                load: 'green'
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Proceso ETL (Extract - Transform - Load)</h2>
+                    <p className="text-gray-600 mb-6">
+                        ETL es el proceso de mover datos desde las fuentes hasta el Data Warehouse.
+                    </p>
+
+                    {/* Pipeline visual */}
+                    <div className="flex items-center justify-center gap-4 mb-8">
+                        {['extract', 'transform', 'load'].map((fase, idx) => (
+                            <React.Fragment key={fase}>
+                                <button
+                                    onClick={() => setFaseActiva(fase)}
+                                    className={`p-6 rounded-xl transition-all ${
+                                        faseActiva === fase
+                                            ? `bg-${colores[fase]}-500 text-white scale-110 shadow-lg`
+                                            : `bg-${colores[fase]}-100 hover:bg-${colores[fase]}-200`
+                                    }`}
+                                    style={{
+                                        backgroundColor: faseActiva === fase
+                                            ? (fase === 'extract' ? '#3b82f6' : fase === 'transform' ? '#f59e0b' : '#22c55e')
+                                            : (fase === 'extract' ? '#dbeafe' : fase === 'transform' ? '#fef3c7' : '#dcfce7')
+                                    }}
+                                >
+                                    <p className="font-bold text-lg">{fase.charAt(0).toUpperCase()}</p>
+                                    <p className="text-sm">{etlFases[fase].nombre.split(' ')[0]}</p>
+                                </button>
+                                {idx < 2 && (
+                                    <div className="text-3xl text-gray-400">→</div>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
+
+                    {/* Contenido de la fase activa */}
+                    <div className={`rounded-xl p-6`} style={{
+                        backgroundColor: faseActiva === 'extract' ? '#dbeafe' : faseActiva === 'transform' ? '#fef3c7' : '#dcfce7'
+                    }}>
+                        <h3 className="text-xl font-bold mb-2" style={{
+                            color: faseActiva === 'extract' ? '#1e40af' : faseActiva === 'transform' ? '#92400e' : '#166534'
+                        }}>
+                            {etlFases[faseActiva].nombre}
+                        </h3>
+                        <p className="mb-4">{etlFases[faseActiva].descripcion}</p>
+
+                        {faseActiva === 'extract' && (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-lg p-4">
+                                    <h4 className="font-bold text-blue-800 mb-2">Fuentes Comunes</h4>
+                                    <ul className="space-y-1">
+                                        {etlFases.extract.fuentes.map((f, i) => (
+                                            <li key={i} className="flex items-center gap-2 text-sm">
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="bg-white rounded-lg p-4">
+                                    <h4 className="font-bold text-blue-800 mb-2">Consideraciones</h4>
+                                    <ul className="space-y-1">
+                                        {etlFases.extract.consideraciones.map((c, i) => (
+                                            <li key={i} className="text-sm text-gray-600">• {c}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {faseActiva === 'transform' && (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {etlFases.transform.transformaciones.map((t, idx) => (
+                                    <div key={idx} className="bg-white rounded-lg p-4">
+                                        <h4 className="font-bold text-amber-800 mb-2">{t.tipo}</h4>
+                                        <ul className="space-y-1">
+                                            {t.ejemplos.map((e, i) => (
+                                                <li key={i} className="text-sm text-gray-600">• {e}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {faseActiva === 'load' && (
+                            <div className="space-y-4">
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {etlFases.load.estrategias.map((e, idx) => (
+                                        <div key={idx} className="bg-white rounded-lg p-4">
+                                            <h4 className="font-bold text-green-800">{e.nombre}</h4>
+                                            <p className="text-sm text-gray-600 mb-2">{e.descripcion}</p>
+                                            <p className="text-xs bg-green-100 px-2 py-1 rounded">{e.cuando}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="bg-white rounded-lg p-4">
+                                    <h4 className="font-bold text-green-800 mb-2">Orden de Carga</h4>
+                                    <div className="flex gap-4">
+                                        {etlFases.load.orden.map((o, i) => (
+                                            <div key={i} className="flex-1 text-center p-2 bg-green-100 rounded">{o}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: DATA QUALITY
+        // ============================================
+
+        const DataQuality = () => {
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Calidad de Datos (Data Quality)</h2>
+                    <p className="text-gray-600 mb-6">
+                        La calidad de los datos es critica en BI. "Garbage In, Garbage Out" - si entran datos malos,
+                        salen decisiones malas.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        {dataQualityDimensiones.map((dim, idx) => (
+                            <div key={idx} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-l-4 border-indigo-500">
+                                <h4 className="font-bold text-indigo-800">{dim.dimension}</h4>
+                                <p className="text-sm text-gray-600 mb-2">{dim.pregunta}</p>
+                                <div className="bg-white rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">Metrica:</p>
+                                    <p className="text-sm font-medium">{dim.metrica}</p>
+                                    <p className="text-xs text-green-600 mt-1">Umbral: {dim.umbral}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <h4 className="font-bold text-amber-800 mb-2">Problemas Comunes de Calidad</h4>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-gray-800">Valores Nulos</p>
+                                <p className="text-sm text-gray-600">Campos obligatorios vacios</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-gray-800">Duplicados</p>
+                                <p className="text-sm text-gray-600">Misma entidad multiples veces</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-gray-800">Inconsistencias</p>
+                                <p className="text-sm text-gray-600">"Panama" vs "Panama" vs "PAN"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const OLAPETLSimulator = () => {
+            const [activeTab, setActiveTab] = useState('comparacion');
+
+            const tabs = [
+                { id: 'comparacion', label: 'OLTP vs OLAP' },
+                { id: 'operaciones', label: 'Operaciones OLAP' },
+                { id: 'etl', label: 'Proceso ETL' },
+                { id: 'quality', label: 'Data Quality' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-2">OLAP vs OLTP - Procesos ETL</h1>
+                                    <p className="text-indigo-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 05</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Lab Guiado
+                                    </a>
+                                    <a href="ejercicio-individual.html" className="bg-violet-500 hover:bg-violet-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Ejercicio
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Inicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-500 text-white shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto">
+                        {activeTab === 'comparacion' && <ComparacionOLTP_OLAP />}
+                        {activeTab === 'operaciones' && <OperacionesOLAP />}
+                        {activeTab === 'etl' && <ETLPipeline />}
+                        {activeTab === 'quality' && <DataQuality />}
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 05</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<OLAPETLSimulator />);
+    </script>
+</body>
+</html>

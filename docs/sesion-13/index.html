@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 13: Estrategias de Implementación BI - Simulador | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // SIMULADOR DE ESTRATEGIAS DE IMPLEMENTACIÓN BI
+        // ==========================================
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('metodologia');
+            const [selectedApproach, setSelectedApproach] = useState(null);
+            const [maturityLevel, setMaturityLevel] = useState(1);
+            const [selectedRisk, setSelectedRisk] = useState(null);
+            const [quizAnswers, setQuizAnswers] = useState({});
+            const [showResults, setShowResults] = useState(false);
+
+            // Enfoques de implementación
+            const implementationApproaches = [
+                {
+                    id: 'waterfall',
+                    nombre: 'Waterfall (Cascada)',
+                    icono: '🏔️',
+                    descripcion: 'Fases secuenciales con entregables definidos',
+                    fases: ['Requisitos', 'Diseño', 'Implementación', 'Pruebas', 'Despliegue'],
+                    duracion: '12-18 meses típico',
+                    ventajas: ['Alcance bien definido', 'Documentación completa', 'Control de costos predecible'],
+                    desventajas: ['Poco flexible a cambios', 'Usuario ve resultados al final', 'Alto riesgo si requisitos cambian'],
+                    mejorPara: 'Proyectos con requisitos estables y bien documentados',
+                    riesgo: 'Alto si el negocio cambia durante implementación'
+                },
+                {
+                    id: 'agile',
+                    nombre: 'Ágil / Scrum',
+                    icono: '🔄',
+                    descripcion: 'Iteraciones cortas con entrega continua de valor',
+                    fases: ['Sprint Planning', 'Desarrollo', 'Review', 'Retrospectiva'],
+                    duracion: 'Sprints de 2-4 semanas, proyecto 6-12 meses',
+                    ventajas: ['Adaptable a cambios', 'Valor entregado temprano', 'Feedback continuo'],
+                    desventajas: ['Alcance puede crecer', 'Requiere madurez del equipo', 'Difícil estimar costo total'],
+                    mejorPara: 'Requisitos cambiantes, usuario disponible, equipo experimentado',
+                    riesgo: 'Medio, pero controlable con buenas prácticas'
+                },
+                {
+                    id: 'incremental',
+                    nombre: 'Incremental',
+                    icono: '📊',
+                    descripcion: 'Data marts independientes que se integran',
+                    fases: ['Data Mart 1', 'Data Mart 2', '...', 'Integración DW'],
+                    duracion: '3-6 meses por data mart',
+                    ventajas: ['Victorias rápidas', 'Aprendizaje progresivo', 'Menor riesgo por fase'],
+                    desventajas: ['Puede crear silos', 'Integración posterior compleja', 'Visión parcial inicial'],
+                    mejorPara: 'Organizaciones sin experiencia BI, presupuesto limitado',
+                    riesgo: 'Bajo por fase, medio-alto en integración'
+                },
+                {
+                    id: 'bigbang',
+                    nombre: 'Big Bang',
+                    icono: '💥',
+                    descripcion: 'Todo el DW de una vez, reemplazo completo',
+                    fases: ['Análisis total', 'Diseño completo', 'Construcción', 'Migración', 'Go-Live'],
+                    duracion: '18-36 meses',
+                    ventajas: ['Visión integrada desde inicio', 'Sin sistemas paralelos', 'Coherencia total'],
+                    desventajas: ['Alto riesgo', 'Muy largo sin resultados', 'Cambio organizacional masivo'],
+                    mejorPara: 'Reemplazo de sistemas legacy, fusiones empresariales',
+                    riesgo: 'Muy alto - requiere compromiso ejecutivo total'
+                }
+            ];
+
+            // Modelo de madurez
+            const maturityLevels = [
+                {
+                    nivel: 1,
+                    nombre: 'Inicial',
+                    descripcion: 'Reportes ad-hoc, Excel, sin gobierno de datos',
+                    caracteristicas: ['Datos en silos', 'Reportes manuales', 'Sin métricas estándar', 'Cada área tiene su verdad'],
+                    accion: 'Establecer gobierno básico y primer data mart piloto'
+                },
+                {
+                    nivel: 2,
+                    nombre: 'Gestionado',
+                    descripcion: 'Procesos básicos de BI, algunos dashboards',
+                    caracteristicas: ['Data Warehouse inicial', 'ETL básico', 'Dashboards departamentales', 'Definiciones incipientes'],
+                    accion: 'Expandir a más áreas, mejorar calidad de datos'
+                },
+                {
+                    nivel: 3,
+                    nombre: 'Definido',
+                    descripcion: 'Estándares establecidos, métricas corporativas',
+                    caracteristicas: ['DW empresarial', 'Catálogo de datos', 'KPIs corporativos', 'Self-service básico'],
+                    accion: 'Implementar analytics avanzado, predicción'
+                },
+                {
+                    nivel: 4,
+                    nombre: 'Cuantitativamente Gestionado',
+                    descripcion: 'Analytics predictivo, decisiones basadas en datos',
+                    caracteristicas: ['Data Science integrado', 'Modelos predictivos', 'Cultura data-driven', 'Automatización'],
+                    accion: 'Optimizar con IA/ML, tiempo real'
+                },
+                {
+                    nivel: 5,
+                    nombre: 'Optimizado',
+                    descripcion: 'IA integrada, mejora continua automatizada',
+                    caracteristicas: ['IA prescriptiva', 'Datos en tiempo real', 'Innovación continua', 'Ventaja competitiva'],
+                    accion: 'Mantener liderazgo, explorar nuevas tecnologías'
+                }
+            ];
+
+            // Factores críticos de éxito
+            const successFactors = [
+                {
+                    factor: 'Patrocinio Ejecutivo',
+                    icono: '👔',
+                    importancia: 'Crítico',
+                    descripcion: 'Sin apoyo de C-level, el proyecto muere',
+                    señalesPositivas: ['Budget aprobado', 'Sponsor visible', 'Decisiones rápidas'],
+                    señalesNegativas: ['Delegado a TI sin poder', 'Budget recortado', 'Sin prioridad']
+                },
+                {
+                    factor: 'Calidad de Datos',
+                    icono: '🔍',
+                    importancia: 'Crítico',
+                    descripcion: 'Garbage in, garbage out',
+                    señalesPositivas: ['Data profiling hecho', 'Reglas de limpieza', 'Fuentes documentadas'],
+                    señalesNegativas: ['Nadie sabe origen', 'Duplicados masivos', 'Sin validación']
+                },
+                {
+                    factor: 'Gestión del Cambio',
+                    icono: '🧠',
+                    importancia: 'Alto',
+                    descripcion: 'La gente debe adoptar la herramienta',
+                    señalesPositivas: ['Capacitación planificada', 'Champions identificados', 'Comunicación activa'],
+                    señalesNegativas: ['Solo TI involucrado', 'Sin entrenamiento', 'Resistencia ignorada']
+                },
+                {
+                    factor: 'Requisitos Claros',
+                    icono: '📋',
+                    importancia: 'Alto',
+                    descripcion: 'Saber qué se quiere lograr',
+                    señalesPositivas: ['KPIs definidos', 'Usuarios entrevistados', 'Casos de uso priorizados'],
+                    señalesNegativas: ['Quiero todo', 'Sin priorización', 'Scope creep']
+                },
+                {
+                    factor: 'Equipo Competente',
+                    icono: '👥',
+                    importancia: 'Alto',
+                    descripcion: 'Skills técnicos y de negocio',
+                    señalesPositivas: ['Roles claros', 'Experiencia previa', 'Dedicación full-time'],
+                    señalesNegativas: ['Part-time de todos', 'Sin experiencia BI', 'Rotación alta']
+                },
+                {
+                    factor: 'Tecnología Adecuada',
+                    icono: '⚙️',
+                    importancia: 'Medio',
+                    descripcion: 'Herramientas correctas para el contexto',
+                    señalesPositivas: ['POC exitoso', 'Escalabilidad probada', 'Soporte disponible'],
+                    señalesNegativas: ['Elegido por moda', 'Sin evaluación', 'Vendor lock-in']
+                }
+            ];
+
+            // Riesgos comunes
+            const commonRisks = [
+                {
+                    id: 'scope',
+                    riesgo: 'Scope Creep',
+                    descripcion: 'El alcance crece sin control',
+                    probabilidad: 'Alta',
+                    impacto: 'Alto',
+                    mitigacion: 'Proceso formal de cambios, priorización estricta, MVP definido',
+                    señales: ['Cada reunión agrega requisitos', 'Sin proceso de cambios', 'Todos quieren ser primeros']
+                },
+                {
+                    id: 'adoption',
+                    riesgo: 'Baja Adopción',
+                    descripcion: 'Usuarios no usan el sistema',
+                    probabilidad: 'Media',
+                    impacto: 'Alto',
+                    mitigacion: 'Involucrar usuarios desde inicio, capacitación, quick wins',
+                    señales: ['Excel sigue siendo rey', 'Quejas de usabilidad', 'Sin champions de negocio']
+                },
+                {
+                    id: 'data',
+                    riesgo: 'Problemas de Datos',
+                    descripcion: 'Datos incorrectos, incompletos o tardíos',
+                    probabilidad: 'Alta',
+                    impacto: 'Alto',
+                    mitigacion: 'Data profiling temprano, reglas de calidad, validación continua',
+                    señales: ['Números no cuadran', 'Fuentes no documentadas', 'ETL falla frecuentemente']
+                },
+                {
+                    id: 'sponsor',
+                    riesgo: 'Pérdida de Sponsor',
+                    descripcion: 'El ejecutivo patrocinador cambia o pierde interés',
+                    probabilidad: 'Media',
+                    impacto: 'Crítico',
+                    mitigacion: 'Múltiples sponsors, victorias tempranas visibles, comunicación constante',
+                    señales: ['Sponsor delegó todo', 'Sin reuniones de steering', 'Budget cuestionado']
+                },
+                {
+                    id: 'tech',
+                    riesgo: 'Deuda Técnica',
+                    descripcion: 'Soluciones rápidas que complican el futuro',
+                    probabilidad: 'Media',
+                    impacto: 'Medio',
+                    mitigacion: 'Code reviews, estándares, refactoring planificado',
+                    señales: ['ETL spaghetti', 'Sin documentación', 'Solo una persona entiende']
+                },
+                {
+                    id: 'timeline',
+                    riesgo: 'Atrasos en Timeline',
+                    descripcion: 'El proyecto se extiende más de lo planeado',
+                    probabilidad: 'Alta',
+                    impacto: 'Medio',
+                    mitigacion: 'Buffer en estimaciones, entregables incrementales, gestión de dependencias',
+                    señales: ['Sin plan detallado', 'Dependencias no mapeadas', 'Recursos insuficientes']
+                }
+            ];
+
+            // Preguntas del quiz
+            const quizQuestions = [
+                {
+                    id: 'q1',
+                    pregunta: 'Una startup fintech quiere implementar BI por primera vez. ¿Qué enfoque recomiendas?',
+                    opciones: [
+                        { id: 'a', texto: 'Big Bang - para tener todo desde el inicio', correcta: false },
+                        { id: 'b', texto: 'Ágil/Incremental - victorias rápidas y adaptación', correcta: true },
+                        { id: 'c', texto: 'Waterfall - para documentar todo perfectamente', correcta: false }
+                    ],
+                    explicacion: 'Las startups necesitan agilidad y resultados rápidos. Ágil/Incremental permite aprender y adaptarse mientras se entrega valor.'
+                },
+                {
+                    id: 'q2',
+                    pregunta: 'El CFO pregunta por qué el dashboard muestra ventas diferentes a su Excel. ¿Cuál es el problema más probable?',
+                    opciones: [
+                        { id: 'a', texto: 'Bug en Tableau', correcta: false },
+                        { id: 'b', texto: 'Falta de gobierno de datos - definiciones diferentes', correcta: true },
+                        { id: 'c', texto: 'El CFO no sabe usar Excel', correcta: false }
+                    ],
+                    explicacion: 'La causa más común de discrepancias es la falta de definiciones estándar. "Ventas" puede significar cosas diferentes para cada área.'
+                },
+                {
+                    id: 'q3',
+                    pregunta: 'El proyecto BI lleva 6 meses sin que usuarios vean resultados. ¿Cuál es el riesgo principal?',
+                    opciones: [
+                        { id: 'a', texto: 'Pérdida de sponsor y budget', correcta: true },
+                        { id: 'b', texto: 'El equipo se aburre', correcta: false },
+                        { id: 'c', texto: 'La tecnología queda obsoleta', correcta: false }
+                    ],
+                    explicacion: 'Sin victorias tempranas visibles, el sponsor pierde fe y el proyecto pierde prioridad. Quick wins son críticos.'
+                },
+                {
+                    id: 'q4',
+                    pregunta: 'El equipo de ventas dice que el nuevo dashboard "no sirve para nada". ¿Qué falló probablemente?',
+                    opciones: [
+                        { id: 'a', texto: 'La tecnología elegida es mala', correcta: false },
+                        { id: 'b', texto: 'Falta de involucramiento de usuarios y gestión del cambio', correcta: true },
+                        { id: 'c', texto: 'El diseño visual no es atractivo', correcta: false }
+                    ],
+                    explicacion: 'La resistencia al cambio y baja adopción casi siempre indican que usuarios no fueron involucrados desde el inicio.'
+                },
+                {
+                    id: 'q5',
+                    pregunta: 'Una empresa está en nivel 2 de madurez BI. ¿Cuál debería ser su siguiente paso?',
+                    opciones: [
+                        { id: 'a', texto: 'Implementar IA y machine learning', correcta: false },
+                        { id: 'b', texto: 'Expandir a más áreas y mejorar calidad de datos', correcta: true },
+                        { id: 'c', texto: 'Comprar la herramienta más cara del mercado', correcta: false }
+                    ],
+                    explicacion: 'La madurez se construye gradualmente. Saltar niveles sin fundamentos sólidos lleva al fracaso. Primero calidad y expansión.'
+                }
+            ];
+
+            const handleQuizAnswer = (questionId, answerId) => {
+                setQuizAnswers({...quizAnswers, [questionId]: answerId});
+            };
+
+            const calculateScore = () => {
+                let correct = 0;
+                quizQuestions.forEach(q => {
+                    const userAnswer = quizAnswers[q.id];
+                    const correctAnswer = q.opciones.find(o => o.correcta)?.id;
+                    if (userAnswer === correctAnswer) correct++;
+                });
+                return correct;
+            };
+
+            const tabs = [
+                { id: 'metodologia', label: 'Metodologías', icon: '📋' },
+                { id: 'madurez', label: 'Modelo de Madurez', icon: '📈' },
+                { id: 'exito', label: 'Factores de Éxito', icon: '✅' },
+                { id: 'riesgos', label: 'Gestión de Riesgos', icon: '⚠️' },
+                { id: 'quiz', label: 'Quiz', icon: '🎯' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white py-8">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <a href="../index.html" className="text-cyan-200 hover:text-white text-sm mb-4 inline-block">
+                                ← Volver al índice
+                            </a>
+                            <h1 className="text-3xl font-bold mb-2">Sesión 13: Estrategias de Implementación BI</h1>
+                            <p className="text-cyan-100">10 de abril, 2026 | Simulador Interactivo</p>
+                        </div>
+                    </header>
+
+                    {/* Tabs */}
+                    <nav className="bg-white shadow-sm sticky top-0 z-10">
+                        <div className="max-w-6xl mx-auto px-6">
+                            <div className="flex space-x-1 overflow-x-auto py-2">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                            activeTab === tab.id
+                                                ? 'bg-cyan-100 text-cyan-700'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        <span className="mr-2">{tab.icon}</span>
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Content */}
+                    <main className="max-w-6xl mx-auto px-6 py-8">
+
+                        {/* Tab: Metodologías */}
+                        {activeTab === 'metodologia' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Enfoques de Implementación BI</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        No existe un enfoque único. La elección depende del contexto organizacional,
+                                        madurez, presupuesto y tolerancia al riesgo.
+                                    </p>
+
+                                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                        {implementationApproaches.map(approach => (
+                                            <button
+                                                key={approach.id}
+                                                onClick={() => setSelectedApproach(approach)}
+                                                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                                    selectedApproach?.id === approach.id
+                                                        ? 'border-cyan-500 bg-cyan-50'
+                                                        : 'border-slate-200 hover:border-cyan-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-2xl">{approach.icono}</span>
+                                                    <span className="font-semibold text-slate-800">{approach.nombre}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-600 mb-2">{approach.descripcion}</p>
+                                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                                    {approach.duracion}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {selectedApproach && (
+                                        <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-6">
+                                            <h3 className="font-bold text-slate-800 mb-4">
+                                                {selectedApproach.icono} {selectedApproach.nombre}
+                                            </h3>
+
+                                            {/* Fases */}
+                                            <div className="mb-6">
+                                                <h4 className="text-sm font-semibold text-slate-700 mb-2">Fases típicas:</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedApproach.fases.map((fase, idx) => (
+                                                        <span key={idx} className="px-3 py-1 bg-white rounded-full text-sm text-slate-700">
+                                                            {idx + 1}. {fase}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-emerald-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-emerald-800 mb-2">✅ Ventajas</h4>
+                                                    <ul className="text-sm text-emerald-700 space-y-1">
+                                                        {selectedApproach.ventajas.map((v, i) => (
+                                                            <li key={i}>• {v}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-red-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-red-800 mb-2">❌ Desventajas</h4>
+                                                    <ul className="text-sm text-red-700 space-y-1">
+                                                        {selectedApproach.desventajas.map((d, i) => (
+                                                            <li key={i}>• {d}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 grid md:grid-cols-2 gap-4">
+                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-blue-800 mb-1">Mejor para:</h4>
+                                                    <p className="text-sm text-blue-700">{selectedApproach.mejorPara}</p>
+                                                </div>
+                                                <div className="bg-amber-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-amber-800 mb-1">Nivel de riesgo:</h4>
+                                                    <p className="text-sm text-amber-700">{selectedApproach.riesgo}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Modelo de Madurez */}
+                        {activeTab === 'madurez' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Modelo de Madurez de Analytics</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Evalúa dónde está tu organización y planifica el siguiente paso realista.
+                                        Saltar niveles sin fundamentos lleva al fracaso.
+                                    </p>
+
+                                    {/* Slider de madurez */}
+                                    <div className="mb-8">
+                                        <div className="flex justify-between mb-2">
+                                            {maturityLevels.map(level => (
+                                                <button
+                                                    key={level.nivel}
+                                                    onClick={() => setMaturityLevel(level.nivel)}
+                                                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
+                                                        maturityLevel === level.nivel
+                                                            ? 'bg-cyan-500 text-white scale-110'
+                                                            : maturityLevel > level.nivel
+                                                                ? 'bg-cyan-200 text-cyan-800'
+                                                                : 'bg-slate-200 text-slate-600'
+                                                    }`}
+                                                >
+                                                    {level.nivel}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="relative h-2 bg-slate-200 rounded-full">
+                                            <div
+                                                className="absolute left-0 top-0 h-full bg-cyan-500 rounded-full transition-all"
+                                                style={{ width: `${(maturityLevel - 1) * 25}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Detalle del nivel */}
+                                    {maturityLevels.filter(l => l.nivel === maturityLevel).map(level => (
+                                        <div key={level.nivel} className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <span className="text-3xl font-bold text-cyan-600">Nivel {level.nivel}</span>
+                                                <span className="font-semibold text-slate-800 text-xl">{level.nombre}</span>
+                                            </div>
+
+                                            <p className="text-slate-700 mb-4">{level.descripcion}</p>
+
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-slate-800 mb-2">Características típicas:</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        {level.caracteristicas.map((c, i) => (
+                                                            <li key={i}>• {c}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-emerald-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-emerald-800 mb-2">Siguiente paso:</h4>
+                                                    <p className="text-sm text-emerald-700">{level.accion}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Tabla comparativa */}
+                                <div className="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
+                                    <h3 className="font-bold text-slate-800 mb-4">Resumen de Niveles</h3>
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b">
+                                                <th className="text-left py-2 px-3">Nivel</th>
+                                                <th className="text-left py-2 px-3">Nombre</th>
+                                                <th className="text-left py-2 px-3">Indicador Clave</th>
+                                                <th className="text-left py-2 px-3">Tecnología Típica</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr className="border-b">
+                                                <td className="py-2 px-3 font-bold text-cyan-600">1</td>
+                                                <td className="py-2 px-3">Inicial</td>
+                                                <td className="py-2 px-3">Reportes manuales</td>
+                                                <td className="py-2 px-3">Excel, emails</td>
+                                            </tr>
+                                            <tr className="border-b">
+                                                <td className="py-2 px-3 font-bold text-cyan-600">2</td>
+                                                <td className="py-2 px-3">Gestionado</td>
+                                                <td className="py-2 px-3">Dashboards básicos</td>
+                                                <td className="py-2 px-3">Power BI, Tableau básico</td>
+                                            </tr>
+                                            <tr className="border-b">
+                                                <td className="py-2 px-3 font-bold text-cyan-600">3</td>
+                                                <td className="py-2 px-3">Definido</td>
+                                                <td className="py-2 px-3">KPIs corporativos</td>
+                                                <td className="py-2 px-3">DW empresarial, Self-service</td>
+                                            </tr>
+                                            <tr className="border-b">
+                                                <td className="py-2 px-3 font-bold text-cyan-600">4</td>
+                                                <td className="py-2 px-3">Cuantitativamente Gestionado</td>
+                                                <td className="py-2 px-3">Predicción de negocio</td>
+                                                <td className="py-2 px-3">ML integrado, Cloud DW</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-2 px-3 font-bold text-cyan-600">5</td>
+                                                <td className="py-2 px-3">Optimizado</td>
+                                                <td className="py-2 px-3">IA prescriptiva</td>
+                                                <td className="py-2 px-3">Tiempo real, AutoML</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Factores de Éxito */}
+                        {activeTab === 'exito' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Factores Críticos de Éxito</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Estos factores determinan el éxito o fracaso del proyecto. Evalúa tu situación
+                                        y toma acciones correctivas temprano.
+                                    </p>
+
+                                    <div className="space-y-4">
+                                        {successFactors.map((factor, idx) => (
+                                            <div key={idx} className="border rounded-lg overflow-hidden">
+                                                <div className="bg-slate-50 px-4 py-3 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-2xl">{factor.icono}</span>
+                                                        <div>
+                                                            <span className="font-semibold text-slate-800">{factor.factor}</span>
+                                                            <span className={`ml-3 text-xs px-2 py-0.5 rounded ${
+                                                                factor.importancia === 'Crítico'
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : factor.importancia === 'Alto'
+                                                                        ? 'bg-amber-100 text-amber-700'
+                                                                        : 'bg-blue-100 text-blue-700'
+                                                            }`}>
+                                                                {factor.importancia}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4">
+                                                    <p className="text-sm text-slate-600 mb-4">{factor.descripcion}</p>
+                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                        <div className="bg-emerald-50 rounded-lg p-3">
+                                                            <h5 className="text-xs font-semibold text-emerald-700 uppercase mb-2">Señales Positivas</h5>
+                                                            <ul className="text-sm text-emerald-600 space-y-1">
+                                                                {factor.señalesPositivas.map((s, i) => (
+                                                                    <li key={i}>✓ {s}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                        <div className="bg-red-50 rounded-lg p-3">
+                                                            <h5 className="text-xs font-semibold text-red-700 uppercase mb-2">Señales de Alerta</h5>
+                                                            <ul className="text-sm text-red-600 space-y-1">
+                                                                {factor.señalesNegativas.map((s, i) => (
+                                                                    <li key={i}>⚠ {s}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Gestión de Riesgos */}
+                        {activeTab === 'riesgos' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Riesgos Comunes en Proyectos BI</h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Identifica riesgos temprano y prepara planes de mitigación.
+                                        Selecciona un riesgo para ver detalles.
+                                    </p>
+
+                                    <div className="grid md:grid-cols-3 gap-3 mb-6">
+                                        {commonRisks.map(risk => (
+                                            <button
+                                                key={risk.id}
+                                                onClick={() => setSelectedRisk(risk)}
+                                                className={`p-3 rounded-lg border-2 text-left transition-all ${
+                                                    selectedRisk?.id === risk.id
+                                                        ? 'border-red-500 bg-red-50'
+                                                        : 'border-slate-200 hover:border-red-300'
+                                                }`}
+                                            >
+                                                <h4 className="font-semibold text-slate-800">{risk.riesgo}</h4>
+                                                <div className="flex gap-2 mt-2">
+                                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                                        risk.probabilidad === 'Alta'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                        Prob: {risk.probabilidad}
+                                                    </span>
+                                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                                        risk.impacto === 'Alto' || risk.impacto === 'Crítico'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                        Imp: {risk.impacto}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {selectedRisk && (
+                                        <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6">
+                                            <h3 className="font-bold text-slate-800 text-lg mb-2">{selectedRisk.riesgo}</h3>
+                                            <p className="text-slate-600 mb-4">{selectedRisk.descripcion}</p>
+
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="bg-white rounded-lg p-4">
+                                                    <h4 className="font-semibold text-slate-800 mb-2">Señales de que está ocurriendo:</h4>
+                                                    <ul className="text-sm text-slate-600 space-y-1">
+                                                        {selectedRisk.señales.map((s, i) => (
+                                                            <li key={i}>• {s}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-emerald-50 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-emerald-800 mb-2">Plan de mitigación:</h4>
+                                                    <p className="text-sm text-emerald-700">{selectedRisk.mitigacion}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Matriz de riesgos */}
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h3 className="font-bold text-slate-800 mb-4">Matriz de Probabilidad vs Impacto</h3>
+                                    <div className="grid grid-cols-4 gap-1 text-center text-sm">
+                                        <div className="font-semibold text-slate-600 py-2"></div>
+                                        <div className="font-semibold text-slate-600 py-2">Bajo</div>
+                                        <div className="font-semibold text-slate-600 py-2">Medio</div>
+                                        <div className="font-semibold text-slate-600 py-2">Alto/Crítico</div>
+
+                                        <div className="font-semibold text-slate-600 py-2 text-left">Alta</div>
+                                        <div className="bg-amber-100 py-4 rounded">Monitorear</div>
+                                        <div className="bg-orange-200 py-4 rounded">Importante</div>
+                                        <div className="bg-red-300 py-4 rounded font-semibold">
+                                            Scope Creep<br/>Datos
+                                        </div>
+
+                                        <div className="font-semibold text-slate-600 py-2 text-left">Media</div>
+                                        <div className="bg-green-100 py-4 rounded">Aceptar</div>
+                                        <div className="bg-amber-100 py-4 rounded">
+                                            Deuda Técnica
+                                        </div>
+                                        <div className="bg-orange-200 py-4 rounded">
+                                            Adopción<br/>Sponsor
+                                        </div>
+
+                                        <div className="font-semibold text-slate-600 py-2 text-left">Baja</div>
+                                        <div className="bg-green-100 py-4 rounded">Aceptar</div>
+                                        <div className="bg-green-100 py-4 rounded">Aceptar</div>
+                                        <div className="bg-amber-100 py-4 rounded">Monitorear</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Quiz */}
+                        {activeTab === 'quiz' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-slate-800 mb-4">Quiz: Estrategias de Implementación BI</h2>
+
+                                    <div className="space-y-6">
+                                        {quizQuestions.map((q, qIdx) => (
+                                            <div key={q.id} className="border rounded-lg p-4">
+                                                <h3 className="font-medium text-slate-800 mb-3">
+                                                    {qIdx + 1}. {q.pregunta}
+                                                </h3>
+                                                <div className="space-y-2">
+                                                    {q.opciones.map(opcion => {
+                                                        const isSelected = quizAnswers[q.id] === opcion.id;
+                                                        const isCorrect = opcion.correcta;
+                                                        let bgColor = 'bg-slate-50 hover:bg-slate-100';
+
+                                                        if (showResults && isSelected) {
+                                                            bgColor = isCorrect ? 'bg-emerald-100 border-emerald-500' : 'bg-red-100 border-red-500';
+                                                        } else if (showResults && isCorrect) {
+                                                            bgColor = 'bg-emerald-50';
+                                                        } else if (isSelected) {
+                                                            bgColor = 'bg-cyan-100 border-cyan-500';
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={opcion.id}
+                                                                onClick={() => !showResults && handleQuizAnswer(q.id, opcion.id)}
+                                                                className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${bgColor} ${
+                                                                    isSelected ? 'border-cyan-500' : 'border-transparent'
+                                                                }`}
+                                                                disabled={showResults}
+                                                            >
+                                                                <span className="font-medium text-slate-600 mr-2">
+                                                                    {opcion.id.toUpperCase()})
+                                                                </span>
+                                                                {opcion.texto}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {showResults && (
+                                                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                                        <p className="text-sm text-blue-800">
+                                                            <strong>Explicación:</strong> {q.explicacion}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 flex justify-between items-center">
+                                        <button
+                                            onClick={() => {
+                                                setShowResults(false);
+                                                setQuizAnswers({});
+                                            }}
+                                            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                                        >
+                                            Reiniciar Quiz
+                                        </button>
+
+                                        {!showResults ? (
+                                            <button
+                                                onClick={() => setShowResults(true)}
+                                                className="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+                                                disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                                            >
+                                                Ver Resultados
+                                            </button>
+                                        ) : (
+                                            <div className="text-right">
+                                                <p className="text-2xl font-bold text-slate-800">
+                                                    {calculateScore()}/{quizQuestions.length}
+                                                </p>
+                                                <p className="text-sm text-slate-600">
+                                                    {calculateScore() === quizQuestions.length
+                                                        ? '¡Excelente! Dominas las estrategias BI'
+                                                        : calculateScore() >= 3
+                                                            ? 'Buen trabajo, sigue aprendiendo'
+                                                            : 'Revisa los conceptos y vuelve a intentar'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-800 text-white py-8 mt-12">
+                        <div className="max-w-6xl mx-auto px-6 text-center">
+                            <p className="text-slate-400">
+                                Sesión 13: Estrategias de Implementación BI | ADEN University
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <a href="laboratorio.html" className="text-cyan-400 hover:text-cyan-300">
+                                    Ir al Laboratorio →
+                                </a>
+                                <a href="ejercicio-individual.html" className="text-cyan-400 hover:text-cyan-300">
+                                    Ejercicio Individual →
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

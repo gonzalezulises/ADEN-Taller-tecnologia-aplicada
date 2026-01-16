@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 08: Algoritmos de Clasificacion y Clustering - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Algoritmos de clasificacion
+        const classificationAlgos = [
+            {
+                name: 'Decision Tree',
+                icon: '🌳',
+                pros: ['Facil de interpretar', 'No requiere escalado', 'Maneja categoricas'],
+                cons: ['Tiende a overfitting', 'Inestable', 'Sesgo hacia clases mayoritarias'],
+                useCase: 'Reglas de negocio explicables, aprobacion de credito',
+                hyperparams: ['max_depth', 'min_samples_split', 'criterion']
+            },
+            {
+                name: 'Random Forest',
+                icon: '🌲',
+                pros: ['Reduce overfitting', 'Robusto', 'Importancia de features'],
+                cons: ['Menos interpretable', 'Lento en prediccion', 'Requiere mas memoria'],
+                useCase: 'Prediccion de churn, deteccion de fraude',
+                hyperparams: ['n_estimators', 'max_depth', 'max_features']
+            },
+            {
+                name: 'Logistic Regression',
+                icon: '📈',
+                pros: ['Probabilidades', 'Interpretable', 'Rapido'],
+                cons: ['Asume linealidad', 'Sensible a outliers', 'Requiere escalado'],
+                useCase: 'Probabilidad de conversion, scoring crediticio',
+                hyperparams: ['C', 'penalty', 'solver']
+            },
+            {
+                name: 'K-Nearest Neighbors',
+                icon: '👥',
+                pros: ['Simple', 'Sin entrenamiento', 'No parametrico'],
+                cons: ['Lento en prediccion', 'Sensible a escala', 'Maldicion dimensionalidad'],
+                useCase: 'Sistemas de recomendacion, clasificacion de imagenes',
+                hyperparams: ['n_neighbors', 'weights', 'metric']
+            }
+        ];
+
+        // Algoritmos de clustering
+        const clusteringAlgos = [
+            {
+                name: 'K-Means',
+                icon: '⭕',
+                pros: ['Rapido', 'Escalable', 'Simple'],
+                cons: ['Requiere K', 'Sensible a inicializacion', 'Clusters esfericos'],
+                useCase: 'Segmentacion de clientes, compresion de imagenes',
+                hyperparams: ['n_clusters', 'init', 'n_init']
+            },
+            {
+                name: 'Hierarchical',
+                icon: '🌿',
+                pros: ['No requiere K', 'Dendrograma visual', 'Jerarquia natural'],
+                cons: ['O(n²) memoria', 'No escalable', 'Dificil de interpretar'],
+                useCase: 'Taxonomias, agrupacion de documentos',
+                hyperparams: ['n_clusters', 'linkage', 'affinity']
+            },
+            {
+                name: 'DBSCAN',
+                icon: '🔷',
+                pros: ['Detecta outliers', 'Clusters arbitrarios', 'No requiere K'],
+                cons: ['Sensible a eps', 'Problemas con densidad variable', 'Dificil en alta dimension'],
+                useCase: 'Deteccion de anomalias, clusters geograficos',
+                hyperparams: ['eps', 'min_samples', 'metric']
+            }
+        ];
+
+        // Metricas de evaluacion
+        const metrics = {
+            classification: [
+                { name: 'Accuracy', formula: '(TP+TN)/(TP+TN+FP+FN)', desc: 'Proporcion de predicciones correctas', when: 'Clases balanceadas' },
+                { name: 'Precision', formula: 'TP/(TP+FP)', desc: 'De los que predije positivo, cuantos son correctos', when: 'Costo alto de falso positivo' },
+                { name: 'Recall', formula: 'TP/(TP+FN)', desc: 'De los positivos reales, cuantos detecte', when: 'Costo alto de falso negativo' },
+                { name: 'F1-Score', formula: '2*(Prec*Rec)/(Prec+Rec)', desc: 'Media armonica de precision y recall', when: 'Balance precision-recall' },
+                { name: 'AUC-ROC', formula: 'Area bajo curva ROC', desc: 'Capacidad de discriminacion', when: 'Comparar modelos' }
+            ],
+            clustering: [
+                { name: 'Silhouette', formula: '(b-a)/max(a,b)', desc: 'Cohesion vs separacion', when: 'Evaluar calidad general' },
+                { name: 'Inercia', formula: 'Suma distancias al centroide', desc: 'Compactitud de clusters', when: 'Metodo del codo' },
+                { name: 'Davies-Bouldin', formula: 'Promedio similitud clusters', desc: 'Menor es mejor', when: 'Sin ground truth' }
+            ]
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedClassAlgo, setSelectedClassAlgo] = useState(null);
+            const [selectedClusterAlgo, setSelectedClusterAlgo] = useState(null);
+            const [kValue, setKValue] = useState(3);
+            const [showElbow, setShowElbow] = useState(false);
+
+            const tabs = [
+                { id: 0, label: 'Clasificacion', icon: '🎯' },
+                { id: 1, label: 'Clustering', icon: '🔵' },
+                { id: 2, label: 'Metricas', icon: '📊' },
+                { id: 3, label: 'Codigo Python', icon: '🐍' }
+            ];
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-rose-600 to-pink-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-rose-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 08: Algoritmos de Clasificacion y Clustering</h1>
+                        <p className="text-rose-100">Decision Trees, Random Forest, K-Means y evaluacion de modelos</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-rose-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-rose-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: Clasificacion */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Algoritmos de Clasificacion</h2>
+                                    <p className="text-gray-600">
+                                        Predicen una categoria o clase para cada observacion. El modelo aprende de ejemplos etiquetados.
+                                    </p>
+                                </div>
+
+                                {/* Supervised vs Unsupervised */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                        <h3 className="font-bold text-blue-800 mb-2">🎯 Aprendizaje Supervisado</h3>
+                                        <p className="text-sm text-gray-700 mb-2">
+                                            Tenemos datos etiquetados (X, y). El modelo aprende la relacion entre features y target.
+                                        </p>
+                                        <div className="text-xs text-blue-600">
+                                            Ejemplos: Clasificacion, Regresion
+                                        </div>
+                                    </div>
+                                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                                        <h3 className="font-bold text-purple-800 mb-2">🔍 Aprendizaje No Supervisado</h3>
+                                        <p className="text-sm text-gray-700 mb-2">
+                                            Solo tenemos X, sin etiquetas. El modelo busca patrones o estructura en los datos.
+                                        </p>
+                                        <div className="text-xs text-purple-600">
+                                            Ejemplos: Clustering, Reduccion dimensionalidad
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Algorithms grid */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {classificationAlgos.map((algo, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedClassAlgo(selectedClassAlgo === idx ? null : idx)}
+                                            className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                                                selectedClassAlgo === idx
+                                                    ? 'border-rose-500 bg-rose-50 shadow-lg'
+                                                    : 'border-gray-200 hover:border-rose-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className="text-3xl">{algo.icon}</span>
+                                                <h3 className="font-bold text-lg">{algo.name}</h3>
+                                            </div>
+
+                                            {selectedClassAlgo === idx && (
+                                                <div className="mt-3 space-y-3 text-sm">
+                                                    <div>
+                                                        <span className="font-medium text-green-700">✓ Ventajas:</span>
+                                                        <ul className="ml-4 text-gray-600">
+                                                            {algo.pros.map((p, i) => <li key={i}>• {p}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-red-700">✗ Desventajas:</span>
+                                                        <ul className="ml-4 text-gray-600">
+                                                            {algo.cons.map((c, i) => <li key={i}>• {c}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-blue-700">📋 Caso de uso:</span>
+                                                        <p className="ml-4 text-gray-600">{algo.useCase}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-purple-700">⚙️ Hiperparametros:</span>
+                                                        <div className="flex flex-wrap gap-1 ml-4 mt-1">
+                                                            {algo.hyperparams.map((h, i) => (
+                                                                <span key={i} className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
+                                                                    {h}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Decision Tree Visual */}
+                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Visualizacion: Decision Tree</h3>
+                                    <div className="flex flex-col items-center">
+                                        <div className="bg-white p-3 rounded-lg shadow border-2 border-green-500">
+                                            <div className="text-center font-bold">¿Edad > 30?</div>
+                                        </div>
+                                        <div className="flex gap-20 mt-4">
+                                            <div className="text-center">
+                                                <div className="text-green-600 mb-2">Si</div>
+                                                <div className="bg-white p-2 rounded-lg shadow border border-gray-300">
+                                                    ¿Ingreso > 50K?
+                                                </div>
+                                                <div className="flex gap-8 mt-3">
+                                                    <div className="text-center">
+                                                        <div className="text-green-600 text-xs">Si</div>
+                                                        <div className="bg-green-100 p-2 rounded mt-1 text-sm">Aprobado ✓</div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-red-600 text-xs">No</div>
+                                                        <div className="bg-amber-100 p-2 rounded mt-1 text-sm">Revisar</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-red-600 mb-2">No</div>
+                                                <div className="bg-red-100 p-2 rounded-lg shadow">
+                                                    Rechazado ✗
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: Clustering */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Algoritmos de Clustering</h2>
+                                    <p className="text-gray-600">
+                                        Agrupan observaciones similares sin etiquetas previas. Descubren estructura en los datos.
+                                    </p>
+                                </div>
+
+                                {/* Algorithms grid */}
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {clusteringAlgos.map((algo, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedClusterAlgo(selectedClusterAlgo === idx ? null : idx)}
+                                            className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                                                selectedClusterAlgo === idx
+                                                    ? 'border-purple-500 bg-purple-50 shadow-lg'
+                                                    : 'border-gray-200 hover:border-purple-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-2xl">{algo.icon}</span>
+                                                <h3 className="font-bold">{algo.name}</h3>
+                                            </div>
+
+                                            {selectedClusterAlgo === idx && (
+                                                <div className="mt-3 space-y-2 text-sm">
+                                                    <div>
+                                                        <span className="font-medium text-green-700">✓ Pros:</span>
+                                                        <ul className="text-gray-600 text-xs">
+                                                            {algo.pros.map((p, i) => <li key={i}>• {p}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-red-700">✗ Cons:</span>
+                                                        <ul className="text-gray-600 text-xs">
+                                                            {algo.cons.map((c, i) => <li key={i}>• {c}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="text-xs">
+                                                        <span className="font-medium text-blue-700">📋</span> {algo.useCase}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* K-Means Interactive */}
+                                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Simulador: K-Means</h3>
+
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <label className="font-medium">Numero de clusters (K):</label>
+                                        <input
+                                            type="range"
+                                            min="2"
+                                            max="6"
+                                            value={kValue}
+                                            onChange={(e) => setKValue(parseInt(e.target.value))}
+                                            className="w-32"
+                                        />
+                                        <span className="bg-purple-600 text-white px-3 py-1 rounded-full font-bold">
+                                            K = {kValue}
+                                        </span>
+                                    </div>
+
+                                    {/* Visual clusters */}
+                                    <div className="bg-white p-4 rounded-lg border">
+                                        <div className="flex justify-around items-center h-40">
+                                            {Array.from({ length: kValue }).map((_, idx) => {
+                                                const colors = ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-amber-400', 'bg-purple-400', 'bg-pink-400'];
+                                                return (
+                                                    <div key={idx} className="text-center">
+                                                        <div className={`w-16 h-16 ${colors[idx]} rounded-full flex items-center justify-center text-white font-bold shadow-lg`}>
+                                                            C{idx + 1}
+                                                        </div>
+                                                        <div className="text-xs mt-2 text-gray-500">
+                                                            Cluster {idx + 1}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowElbow(!showElbow)}
+                                        className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+                                    >
+                                        {showElbow ? 'Ocultar' : 'Ver'} Metodo del Codo
+                                    </button>
+
+                                    {showElbow && (
+                                        <div className="mt-4 bg-white p-4 rounded-lg border">
+                                            <h4 className="font-bold mb-2">Metodo del Codo (Elbow Method)</h4>
+                                            <p className="text-sm text-gray-600 mb-3">
+                                                Grafica inercia vs K. El "codo" indica el K optimo.
+                                            </p>
+                                            <div className="flex items-end gap-2 h-32">
+                                                {[1, 2, 3, 4, 5, 6].map((k) => {
+                                                    const heights = [100, 70, 45, 35, 30, 28];
+                                                    return (
+                                                        <div key={k} className="flex flex-col items-center">
+                                                            <div
+                                                                className={`w-8 ${k === 3 ? 'bg-purple-600' : 'bg-purple-300'} rounded-t`}
+                                                                style={{ height: `${heights[k-1]}%` }}
+                                                            />
+                                                            <span className="text-xs mt-1">K={k}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="text-center text-sm text-purple-700 font-medium mt-2">
+                                                ↑ K optimo = 3 (punto de inflexion)
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Metricas */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Metricas de Evaluacion</h2>
+                                    <p className="text-gray-600">
+                                        Miden el desempeno del modelo. La metrica correcta depende del problema de negocio.
+                                    </p>
+                                </div>
+
+                                {/* Confusion Matrix */}
+                                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Matriz de Confusion</h3>
+                                    <div className="flex justify-center">
+                                        <table className="border-collapse">
+                                            <thead>
+                                                <tr>
+                                                    <th className="p-2"></th>
+                                                    <th className="p-2"></th>
+                                                    <th colSpan="2" className="p-2 text-center font-bold text-gray-700">Predicho</th>
+                                                </tr>
+                                                <tr>
+                                                    <th className="p-2"></th>
+                                                    <th className="p-2"></th>
+                                                    <th className="p-2 text-center text-sm">Positivo</th>
+                                                    <th className="p-2 text-center text-sm">Negativo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <th rowSpan="2" className="p-2 font-bold text-gray-700 vertical-rl" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>Real</th>
+                                                    <th className="p-2 text-sm">Positivo</th>
+                                                    <td className="p-4 bg-green-200 border text-center font-bold">
+                                                        TP<br/><span className="text-xs font-normal">Verdadero Positivo</span>
+                                                    </td>
+                                                    <td className="p-4 bg-red-200 border text-center font-bold">
+                                                        FN<br/><span className="text-xs font-normal">Falso Negativo</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th className="p-2 text-sm">Negativo</th>
+                                                    <td className="p-4 bg-red-200 border text-center font-bold">
+                                                        FP<br/><span className="text-xs font-normal">Falso Positivo</span>
+                                                    </td>
+                                                    <td className="p-4 bg-green-200 border text-center font-bold">
+                                                        TN<br/><span className="text-xs font-normal">Verdadero Negativo</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Classification metrics */}
+                                <div>
+                                    <h3 className="font-bold text-lg mb-3">Metricas de Clasificacion</h3>
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {metrics.classification.map((m, idx) => (
+                                            <div key={idx} className="border rounded-lg p-3 hover:shadow-md transition-all">
+                                                <h4 className="font-bold text-rose-700">{m.name}</h4>
+                                                <div className="bg-gray-100 p-1 rounded text-xs font-mono my-1">{m.formula}</div>
+                                                <p className="text-xs text-gray-600">{m.desc}</p>
+                                                <p className="text-xs text-blue-600 mt-1">Usar cuando: {m.when}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Clustering metrics */}
+                                <div>
+                                    <h3 className="font-bold text-lg mb-3">Metricas de Clustering</h3>
+                                    <div className="grid md:grid-cols-3 gap-3">
+                                        {metrics.clustering.map((m, idx) => (
+                                            <div key={idx} className="border rounded-lg p-3 hover:shadow-md transition-all">
+                                                <h4 className="font-bold text-purple-700">{m.name}</h4>
+                                                <div className="bg-gray-100 p-1 rounded text-xs font-mono my-1">{m.formula}</div>
+                                                <p className="text-xs text-gray-600">{m.desc}</p>
+                                                <p className="text-xs text-blue-600 mt-1">Usar cuando: {m.when}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Python Code */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Implementacion en Python</h2>
+                                    <p className="text-gray-600">Codigo listo para usar con scikit-learn.</p>
+                                </div>
+
+                                {/* Classification code */}
+                                <div>
+                                    <h3 className="font-bold text-lg mb-2">Random Forest - Clasificacion</h3>
+                                    <div className="bg-gray-800 text-gray-100 p-4 rounded-xl text-sm overflow-x-auto">
+                                        <pre>
+{`from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import pandas as pd
+
+# Cargar datos
+df = pd.read_csv('datos.csv')
+X = df.drop('target', axis=1)
+y = df['target']
+
+# Split train/test
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Entrenar modelo
+rf = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    random_state=42
+)
+rf.fit(X_train, y_train)
+
+# Predecir
+y_pred = rf.predict(X_test)
+
+# Evaluar
+print("Matriz de Confusion:")
+print(confusion_matrix(y_test, y_pred))
+print("\\nReporte de Clasificacion:")
+print(classification_report(y_test, y_pred))
+
+# Importancia de features
+importances = pd.DataFrame({
+    'feature': X.columns,
+    'importance': rf.feature_importances_
+}).sort_values('importance', ascending=False)
+print("\\nTop 5 Features:")
+print(importances.head())`}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Clustering code */}
+                                <div>
+                                    <h3 className="font-bold text-lg mb-2">K-Means - Clustering</h3>
+                                    <div className="bg-gray-800 text-gray-100 p-4 rounded-xl text-sm overflow-x-auto">
+                                        <pre>
+{`from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
+
+# Escalar datos (importante para K-Means)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Metodo del codo
+inertias = []
+silhouettes = []
+K_range = range(2, 11)
+
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    inertias.append(kmeans.inertia_)
+    silhouettes.append(silhouette_score(X_scaled, kmeans.labels_))
+
+# Graficar
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+axes[0].plot(K_range, inertias, 'bo-')
+axes[0].set_title('Metodo del Codo')
+axes[0].set_xlabel('K')
+axes[0].set_ylabel('Inercia')
+
+axes[1].plot(K_range, silhouettes, 'ro-')
+axes[1].set_title('Silhouette Score')
+axes[1].set_xlabel('K')
+axes[1].set_ylabel('Score')
+plt.show()
+
+# Entrenar con K optimo
+k_optimo = 4
+kmeans_final = KMeans(n_clusters=k_optimo, random_state=42)
+df['cluster'] = kmeans_final.fit_predict(X_scaled)
+
+# Perfil de clusters
+print(df.groupby('cluster').mean())`}
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a href="laboratorio.html" className="bg-rose-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-rose-700">
+                            Ir al Laboratorio →
+                        </a>
+                        <a href="ejercicio-individual.html" className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700">
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 08 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

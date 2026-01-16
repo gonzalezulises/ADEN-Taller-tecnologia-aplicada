@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Disena tu ETL - Sesion 06</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Casos de empresas para ETL
+        const companyCases = [
+            {
+                id: 'banco',
+                name: 'BancoDigital PA',
+                industry: 'Banca',
+                icon: '🏦',
+                color: 'blue',
+                description: 'Banco digital que necesita consolidar transacciones de 5 canales diferentes: ATM, banca en linea, app movil, sucursales y corresponsales.',
+                sources: [
+                    { name: 'ATM', format: 'JSON', frequency: 'Cada 5 min', volume: '50K/dia' },
+                    { name: 'Banca Online', format: 'PostgreSQL', frequency: 'Real-time', volume: '200K/dia' },
+                    { name: 'App Movil', format: 'MongoDB (JSON)', frequency: 'Real-time', volume: '300K/dia' },
+                    { name: 'Sucursales', format: 'CSV (legacy)', frequency: 'Batch nocturno', volume: '30K/dia' },
+                    { name: 'Corresponsales', format: 'API REST', frequency: 'Cada hora', volume: '80K/dia' }
+                ],
+                challenges: [
+                    'Diferentes formatos de fecha y hora',
+                    'Codigos de sucursal inconsistentes',
+                    'Tipos de transaccion con nomenclatura diferente',
+                    'Montos en diferentes formatos (con/sin decimales)',
+                    'Datos de cliente fragmentados'
+                ],
+                target: 'Data Warehouse para reportes regulatorios y analisis de fraude'
+            },
+            {
+                id: 'retail',
+                name: 'MegaStore Centroamerica',
+                industry: 'Retail',
+                icon: '🛒',
+                color: 'orange',
+                description: 'Cadena de supermercados con 50 tiendas en 5 paises que necesita consolidar ventas, inventarios y promociones.',
+                sources: [
+                    { name: 'POS (Cajas)', format: 'SQL Server', frequency: 'Cada 15 min', volume: '1M/dia' },
+                    { name: 'E-commerce', format: 'MySQL', frequency: 'Real-time', volume: '100K/dia' },
+                    { name: 'Inventarios', format: 'SAP (BAPI)', frequency: 'Cada hora', volume: '500K/dia' },
+                    { name: 'Promociones', format: 'Excel', frequency: 'Semanal', volume: '5K/semana' },
+                    { name: 'Proveedores', format: 'EDI (XML)', frequency: 'Diario', volume: '10K/dia' }
+                ],
+                challenges: [
+                    'Diferentes monedas por pais (USD, PAB, GTQ, HNL, NIO)',
+                    'Codigos de producto locales vs globales',
+                    'Horarios de cierre diferentes por pais',
+                    'Categorias de producto inconsistentes',
+                    'Datos de cliente con GDPR/proteccion de datos'
+                ],
+                target: 'Data Warehouse para analisis de ventas, forecasting de inventario y optimizacion de promociones'
+            },
+            {
+                id: 'salud',
+                name: 'RedSalud Integral',
+                industry: 'Salud',
+                icon: '🏥',
+                color: 'green',
+                description: 'Red de clinicas y laboratorios que necesita integrar datos de pacientes, citas, resultados de laboratorio y facturacion.',
+                sources: [
+                    { name: 'HIS (Sistema Hospitalario)', format: 'Oracle', frequency: 'Real-time', volume: '50K/dia' },
+                    { name: 'LIS (Laboratorio)', format: 'HL7 v2 (texto)', frequency: 'Cada 10 min', volume: '20K/dia' },
+                    { name: 'Citas Online', format: 'API REST (JSON)', frequency: 'Real-time', volume: '5K/dia' },
+                    { name: 'Facturacion', format: 'SAP', frequency: 'Batch diario', volume: '30K/dia' },
+                    { name: 'Aseguradoras', format: 'EDI 837/835', frequency: 'Diario', volume: '15K/dia' }
+                ],
+                challenges: [
+                    'Datos de pacientes sensibles (PHI/HIPAA)',
+                    'Codigos de diagnostico (ICD-10) inconsistentes',
+                    'Formato HL7 complejo con segmentos variables',
+                    'Duplicados de pacientes (mismo paciente, diferentes IDs)',
+                    'Integridad referencial entre sistemas'
+                ],
+                target: 'Data Warehouse para analisis clinico, gestion de capacidad y reportes a aseguradoras'
+            },
+            {
+                id: 'logistica',
+                name: 'CargoExpress Americas',
+                industry: 'Logistica',
+                icon: '🚚',
+                color: 'purple',
+                description: 'Empresa de logistica y courier que necesita integrar tracking de envios, flotas GPS, almacenes y facturacion.',
+                sources: [
+                    { name: 'TMS (Transporte)', format: 'PostgreSQL', frequency: 'Real-time', volume: '200K/dia' },
+                    { name: 'GPS Flota', format: 'IoT Stream (Kafka)', frequency: 'Cada 30 seg', volume: '5M/dia' },
+                    { name: 'WMS (Almacen)', format: 'SAP', frequency: 'Cada 5 min', volume: '100K/dia' },
+                    { name: 'Clientes Web', format: 'API REST', frequency: 'Real-time', volume: '50K/dia' },
+                    { name: 'Partners', format: 'SFTP (CSV)', frequency: 'Cada 2 horas', volume: '30K/dia' }
+                ],
+                challenges: [
+                    'Datos GPS de alta frecuencia (downsampling)',
+                    'Estados de envio con nomenclatura diferente',
+                    'Zonas horarias multiples',
+                    'Pesos y medidas en diferentes unidades',
+                    'Late arriving data (actualizaciones tardias)'
+                ],
+                target: 'Data Warehouse para optimizacion de rutas, SLAs de entrega y analisis de costos'
+            }
+        ];
+
+        const phases = [
+            {
+                id: 1,
+                title: 'Analizar Fuentes de Datos',
+                description: 'Identifica las fuentes, sus formatos y los problemas de calidad',
+                prompt: (company) => `Actua como un Data Engineer senior. Estoy disenando un ETL para ${company.name}, ${company.description}
+
+Las fuentes de datos son:
+${company.sources.map(s => `- ${s.name}: ${s.format}, frecuencia ${s.frequency}, volumen ${s.volume}`).join('\n')}
+
+Los desafios identificados son:
+${company.challenges.map(c => `- ${c}`).join('\n')}
+
+Destino: ${company.target}
+
+Necesito que:
+1. Analices cada fuente y sus particularidades tecnicas
+2. Identifiques los campos clave que debemos extraer de cada una
+3. Propongas un esquema de staging unificado
+4. Listes las transformaciones principales que necesitaremos
+
+Dame un analisis estructurado con tablas cuando sea apropiado.`
+            },
+            {
+                id: 2,
+                title: 'Disenar Transformaciones',
+                description: 'Define los pasos de transformacion para cada flujo',
+                prompt: (company) => `Continuando con el ETL para ${company.name}, ahora necesito disenar las transformaciones en detalle.
+
+Para cada fuente de datos:
+${company.sources.map(s => `- ${s.name} (${s.format})`).join('\n')}
+
+Considerando estos desafios:
+${company.challenges.map(c => `- ${c}`).join('\n')}
+
+Diseña las transformaciones usando pasos de Pentaho PDI:
+1. Para cada fuente, lista los pasos de transformacion en orden
+2. Especifica que paso de Pentaho usar (Table input, CSV input, Filter rows, Select values, Calculator, String operations, Value mapper, etc.)
+3. Detalla la configuracion de cada paso
+4. Incluye validaciones de calidad de datos
+5. Propone como manejar registros erroneos
+
+Usa formato de tabla: | Paso | Componente PDI | Configuracion | Proposito |`
+            },
+            {
+                id: 3,
+                title: 'Definir Jobs y Orquestacion',
+                description: 'Estructura los jobs, manejo de errores y scheduling',
+                prompt: (company) => `Para el ETL de ${company.name}, necesito disenar la orquestacion con Jobs de Pentaho.
+
+Contexto:
+- ${company.sources.length} fuentes de datos con diferentes frecuencias
+- Destino: ${company.target}
+- Debe manejar errores y reintentos
+
+Diseña:
+1. Estructura de Jobs (job principal y sub-jobs)
+2. Secuencia de ejecucion (que se puede paralelizar)
+3. Manejo de errores para cada paso critico
+4. Sistema de logs y alertas
+5. Estrategia de recovery (que hacer si falla a mitad)
+6. Schedule recomendado (cron expressions)
+
+Incluye un diagrama ASCII del flujo del job principal.`
+            },
+            {
+                id: 4,
+                title: 'Calidad de Datos y Validacion',
+                description: 'Define reglas de calidad y validacion de datos',
+                prompt: (company) => `Para el ETL de ${company.name}, necesito implementar controles de calidad de datos.
+
+Fuentes: ${company.sources.map(s => s.name).join(', ')}
+Desafios: ${company.challenges.join('; ')}
+
+Diseña:
+1. Reglas de validacion para cada campo critico (formato, rango, nulidad)
+2. Checks de integridad referencial entre fuentes
+3. Metricas de calidad a medir (completitud, precision, consistencia)
+4. Thresholds de aceptacion (ej: maximo 5% nulos en campo X)
+5. Proceso de quarantine para registros invalidos
+6. Dashboard de monitoreo de calidad sugerido
+
+Usa formato de tabla para las reglas: | Campo | Regla | Threshold | Accion si falla |`
+            },
+            {
+                id: 5,
+                title: 'Documentar y Presentar',
+                description: 'Genera documentacion tecnica y de usuario',
+                prompt: (company) => `Genera la documentacion completa del ETL para ${company.name}.
+
+Incluye:
+1. RESUMEN EJECUTIVO (1 parrafo para gerencia)
+
+2. ARQUITECTURA DEL ETL
+   - Diagrama de flujo de datos
+   - Componentes involucrados
+   - Tecnologias usadas
+
+3. DICCIONARIO DE DATOS
+   - Tabla destino con todos los campos
+   - Origen de cada campo
+   - Transformaciones aplicadas
+
+4. PROCEDIMIENTOS OPERATIVOS
+   - Como ejecutar manualmente
+   - Como verificar si se ejecuto correctamente
+   - Troubleshooting de errores comunes
+
+5. SLA Y METRICAS
+   - Tiempo de ejecucion esperado
+   - Ventana de mantenimiento
+   - Contactos de escalacion
+
+Formatea como documento profesional listo para entregar.`
+            }
+        ];
+
+        function App() {
+            const [selectedCompany, setSelectedCompany] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(0);
+            const [copiedPrompt, setCopiedPrompt] = useState(null);
+
+            const copyPrompt = (prompt, phaseId) => {
+                navigator.clipboard.writeText(prompt);
+                setCopiedPrompt(phaseId);
+                setTimeout(() => setCopiedPrompt(null), 2000);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-violet-100 mb-2">
+                            <a href="./" className="hover:text-white">← Volver al simulador</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Ejercicio Individual: Disena tu ETL</h1>
+                        <p className="text-violet-100">Usa IA para disenar un proceso ETL completo con Pentaho PDI</p>
+                        <div className="flex items-center gap-2 mt-3">
+                            <span className="bg-amber-400 text-amber-900 px-3 py-1 rounded-full text-sm font-medium">
+                                Laboratorio ETL Pentaho - 10% Nota Final
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Company Selection */}
+                    {!selectedCompany ? (
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Selecciona tu Caso de Empresa</h2>
+                                <p className="text-gray-600 mb-6">
+                                    Elige una empresa y diseña un proceso ETL completo con ayuda de IA.
+                                    Cada caso presenta desafios unicos de integracion de datos.
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {companyCases.map((company) => (
+                                        <div
+                                            key={company.id}
+                                            onClick={() => setSelectedCompany(company)}
+                                            className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
+                                                company.color === 'blue' ? 'hover:border-blue-500 hover:bg-blue-50' :
+                                                company.color === 'orange' ? 'hover:border-orange-500 hover:bg-orange-50' :
+                                                company.color === 'green' ? 'hover:border-green-500 hover:bg-green-50' :
+                                                'hover:border-purple-500 hover:bg-purple-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <span className="text-4xl">{company.icon}</span>
+                                                <div>
+                                                    <h3 className="font-bold text-lg">{company.name}</h3>
+                                                    <span className={`text-sm px-2 py-0.5 rounded ${
+                                                        company.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                                                        company.color === 'orange' ? 'bg-orange-100 text-orange-700' :
+                                                        company.color === 'green' ? 'bg-green-100 text-green-700' :
+                                                        'bg-purple-100 text-purple-700'
+                                                    }`}>
+                                                        {company.industry}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-600 text-sm mb-3">{company.description}</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {company.sources.slice(0, 3).map((source, idx) => (
+                                                    <span key={idx} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                                                        {source.name}
+                                                    </span>
+                                                ))}
+                                                {company.sources.length > 3 && (
+                                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                                                        +{company.sources.length - 3} mas
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                                <h3 className="font-bold text-amber-800 mb-3">Instrucciones del Ejercicio</h3>
+                                <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li>Selecciona un caso de empresa de tu interes</li>
+                                    <li>Completa las 5 fases usando los prompts de IA proporcionados</li>
+                                    <li>Documenta las respuestas de la IA en un documento</li>
+                                    <li>Implementa al menos 1 transformacion en Pentaho (o simula en Python)</li>
+                                    <li>Entrega: documento + archivos .ktr/.kjb + capturas de pantalla</li>
+                                </ol>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Selected Company View */
+                        <div className="space-y-6">
+                            {/* Company Header */}
+                            <div className={`rounded-xl p-6 ${
+                                selectedCompany.color === 'blue' ? 'bg-blue-50 border border-blue-200' :
+                                selectedCompany.color === 'orange' ? 'bg-orange-50 border border-orange-200' :
+                                selectedCompany.color === 'green' ? 'bg-green-50 border border-green-200' :
+                                'bg-purple-50 border border-purple-200'
+                            }`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-5xl">{selectedCompany.icon}</span>
+                                        <div>
+                                            <h2 className="text-2xl font-bold">{selectedCompany.name}</h2>
+                                            <p className="text-gray-600">{selectedCompany.industry}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setSelectedCompany(null); setCurrentPhase(0); }}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        Cambiar empresa
+                                    </button>
+                                </div>
+                                <p className="mt-4 text-gray-700">{selectedCompany.description}</p>
+                            </div>
+
+                            {/* Sources Summary */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Fuentes de Datos</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="text-left p-2">Fuente</th>
+                                                <th className="text-left p-2">Formato</th>
+                                                <th className="text-left p-2">Frecuencia</th>
+                                                <th className="text-left p-2">Volumen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedCompany.sources.map((source, idx) => (
+                                                <tr key={idx} className="border-b">
+                                                    <td className="p-2 font-medium">{source.name}</td>
+                                                    <td className="p-2"><code className="bg-gray-100 px-1 rounded">{source.format}</code></td>
+                                                    <td className="p-2">{source.frequency}</td>
+                                                    <td className="p-2">{source.volume}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <h4 className="font-bold mt-4 mb-2">Desafios Principales</h4>
+                                <ul className="grid md:grid-cols-2 gap-2">
+                                    {selectedCompany.challenges.map((challenge, idx) => (
+                                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                            <span className="text-red-500">⚠</span>
+                                            {challenge}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Phases */}
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Fases del Diseño ETL</h3>
+
+                                {/* Phase tabs */}
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {phases.map((phase, idx) => (
+                                        <button
+                                            key={phase.id}
+                                            onClick={() => setCurrentPhase(idx)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                currentPhase === idx
+                                                    ? 'bg-violet-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-violet-100'
+                                            }`}
+                                        >
+                                            Fase {phase.id}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Current phase content */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-xl font-bold text-gray-800">
+                                            Fase {phases[currentPhase].id}: {phases[currentPhase].title}
+                                        </h4>
+                                        <p className="text-gray-600">{phases[currentPhase].description}</p>
+                                    </div>
+
+                                    <div className="bg-gray-50 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h5 className="font-medium text-gray-700">
+                                                Prompt para ChatGPT / Claude / Gemini
+                                            </h5>
+                                            <button
+                                                onClick={() => copyPrompt(phases[currentPhase].prompt(selectedCompany), phases[currentPhase].id)}
+                                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                                                    copiedPrompt === phases[currentPhase].id
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-violet-600 text-white hover:bg-violet-700'
+                                                }`}
+                                            >
+                                                {copiedPrompt === phases[currentPhase].id ? '✓ Copiado!' : 'Copiar prompt'}
+                                            </button>
+                                        </div>
+                                        <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
+                                            {phases[currentPhase].prompt(selectedCompany)}
+                                        </pre>
+                                    </div>
+
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                        <h5 className="font-medium text-amber-800 mb-2">Que esperar de la IA</h5>
+                                        <p className="text-sm text-gray-700">
+                                            {currentPhase === 0 && 'La IA te dará un análisis detallado de cada fuente, campos a extraer y un esquema de staging.'}
+                                            {currentPhase === 1 && 'Obtendrás una lista de pasos de Pentaho con su configuración específica para cada transformación.'}
+                                            {currentPhase === 2 && 'Recibirás un diseño de jobs con flujo de ejecución, manejo de errores y cron expressions.'}
+                                            {currentPhase === 3 && 'La IA proporcionará reglas de validación, thresholds y acciones para cada campo crítico.'}
+                                            {currentPhase === 4 && 'Obtendrás documentación profesional lista para entregar, incluyendo diagramas y procedimientos.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Navigation */}
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.max(0, currentPhase - 1))}
+                                        disabled={currentPhase === 0}
+                                        className="px-4 py-2 text-gray-600 disabled:opacity-50"
+                                    >
+                                        ← Fase anterior
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.min(phases.length - 1, currentPhase + 1))}
+                                        disabled={currentPhase === phases.length - 1}
+                                        className="px-4 py-2 bg-violet-600 text-white rounded-lg disabled:opacity-50"
+                                    >
+                                        Siguiente fase →
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Deliverables */}
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                                <h3 className="font-bold text-green-800 mb-3">Entregables del Ejercicio</h3>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Documento de Diseño</strong>: Respuestas de las 5 fases consolidadas (Word/PDF)
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Transformacion en Pentaho</strong>: Al menos 1 archivo .ktr funcional
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Job de Orquestacion</strong>: Archivo .kjb con el flujo del proceso
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-green-600">✓</span>
+                                        <div>
+                                            <strong>Capturas de Pantalla</strong>: Evidencia de ejecucion en Spoon
+                                        </div>
+                                    </li>
+                                </ul>
+
+                                <div className="mt-4 bg-white rounded-lg p-4">
+                                    <h4 className="font-medium text-gray-800 mb-2">Criterios de Evaluacion</h4>
+                                    <table className="w-full text-sm">
+                                        <tbody>
+                                            <tr className="border-b"><td className="py-1">Completitud del diseño (5 fases)</td><td className="text-right">30%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Calidad tecnica de transformaciones</td><td className="text-right">25%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Manejo de errores y calidad de datos</td><td className="text-right">20%</td></tr>
+                                            <tr className="border-b"><td className="py-1">Documentacion y presentacion</td><td className="text-right">15%</td></tr>
+                                            <tr><td className="py-1">Implementacion funcional en Pentaho</td><td className="text-right">10%</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Ejercicio Individual Sesion 06 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 11: Dashboards Interactivos en Tableau - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .code-block { font-family: 'Fira Code', 'Consolas', monospace; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Conexiones de datos
+        const dataConnections = [
+            { type: 'Archivo', options: ['Excel', 'CSV', 'JSON', 'PDF'], icon: '📁' },
+            { type: 'Base de Datos', options: ['PostgreSQL', 'MySQL', 'SQL Server', 'Oracle'], icon: '🗄️' },
+            { type: 'Cloud', options: ['Google Sheets', 'Salesforce', 'AWS', 'Azure'], icon: '☁️' },
+            { type: 'Web', options: ['Web Data Connector', 'REST API', 'OData'], icon: '🌐' }
+        ];
+
+        // Campos calculados comunes
+        const calculatedFields = [
+            {
+                name: 'Ventas YoY',
+                formula: '(SUM([Ventas]) - LOOKUP(SUM([Ventas]), -1)) / ABS(LOOKUP(SUM([Ventas]), -1))',
+                category: 'Crecimiento',
+                use: 'Comparar con periodo anterior'
+            },
+            {
+                name: 'Running Total',
+                formula: 'RUNNING_SUM(SUM([Ventas]))',
+                category: 'Acumulado',
+                use: 'Total acumulado en el tiempo'
+            },
+            {
+                name: 'Porcentaje del Total',
+                formula: 'SUM([Ventas]) / TOTAL(SUM([Ventas]))',
+                category: 'Contribucion',
+                use: 'Participacion de cada categoria'
+            },
+            {
+                name: 'Rank',
+                formula: 'RANK(SUM([Ventas]))',
+                category: 'Clasificacion',
+                use: 'Ordenar de mayor a menor'
+            },
+            {
+                name: 'IF Condicional',
+                formula: 'IF [Profit] > 0 THEN "Ganancia" ELSE "Perdida" END',
+                category: 'Logica',
+                use: 'Clasificar segun condicion'
+            },
+            {
+                name: 'CASE Multiple',
+                formula: 'CASE [Region] WHEN "Norte" THEN 1 WHEN "Sur" THEN 2 ELSE 3 END',
+                category: 'Logica',
+                use: 'Multiples condiciones'
+            }
+        ];
+
+        // Tipos de filtros
+        const filterTypes = [
+            { name: 'Dimension Filter', desc: 'Filtra por valores de categoria', example: 'Mostrar solo Region Norte' },
+            { name: 'Measure Filter', desc: 'Filtra por rango de valores', example: 'Ventas > $10,000' },
+            { name: 'Date Filter', desc: 'Filtra por periodo', example: 'Ultimos 30 dias' },
+            { name: 'Top N Filter', desc: 'Muestra top/bottom', example: 'Top 10 productos' },
+            { name: 'Context Filter', desc: 'Filtro prioritario', example: 'Primero Region, luego Categoria' }
+        ];
+
+        // Acciones de dashboard
+        const dashboardActions = [
+            {
+                type: 'Filter',
+                desc: 'Click en un elemento filtra otros charts',
+                config: 'Dashboard > Actions > Add Action > Filter',
+                example: 'Click en barra de Region filtra tabla de productos'
+            },
+            {
+                type: 'Highlight',
+                desc: 'Resalta elementos relacionados',
+                config: 'Dashboard > Actions > Add Action > Highlight',
+                example: 'Hover en categoria resalta todas las instancias'
+            },
+            {
+                type: 'URL',
+                desc: 'Navega a pagina externa',
+                config: 'Dashboard > Actions > Add Action > Go to URL',
+                example: 'Click en producto abre pagina de detalle'
+            },
+            {
+                type: 'Set',
+                desc: 'Agrega/quita elementos de un Set',
+                config: 'Dashboard > Actions > Add Action > Change Set Values',
+                example: 'Construir seleccion personalizada'
+            },
+            {
+                type: 'Parameter',
+                desc: 'Cambia valor de parametro',
+                config: 'Dashboard > Actions > Add Action > Change Parameter',
+                example: 'Click en fecha cambia parametro de periodo'
+            }
+        ];
+
+        // Parametros
+        const parameters = [
+            { name: 'Fecha Inicio', type: 'Date', use: 'Filtrar rango de fechas dinamico' },
+            { name: 'Top N', type: 'Integer', use: 'Usuario elige cuantos items mostrar' },
+            { name: 'Metrica', type: 'String (List)', use: 'Cambiar entre Ventas, Profit, Qty' },
+            { name: 'Comparar con', type: 'String (List)', use: 'vs Mes anterior, vs Año anterior' }
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedCalc, setSelectedCalc] = useState(null);
+            const [selectedAction, setSelectedAction] = useState(0);
+
+            const tabs = [
+                { id: 0, label: 'Conexion de Datos', icon: '🔗' },
+                { id: 1, label: 'Campos Calculados', icon: '🧮' },
+                { id: 2, label: 'Filtros y Parametros', icon: '🎛️' },
+                { id: 3, label: 'Acciones Interactivas', icon: '🖱️' },
+                { id: 4, label: 'Mejores Practicas', icon: '✨' }
+            ];
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-orange-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 11: Dashboards Interactivos en Tableau</h1>
+                        <p className="text-orange-100">Construye dashboards profesionales con interactividad avanzada</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-orange-500 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-orange-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: Data Connection */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Conexion a Fuentes de Datos</h2>
+                                    <p className="text-gray-600">
+                                        Tableau puede conectarse a multiples fuentes de datos simultaneamente.
+                                    </p>
+                                </div>
+
+                                {/* Connection Types */}
+                                <div className="grid md:grid-cols-4 gap-4">
+                                    {dataConnections.map((conn, idx) => (
+                                        <div key={idx} className="border rounded-xl p-4 hover:shadow-md transition-all">
+                                            <div className="text-3xl mb-2">{conn.icon}</div>
+                                            <h4 className="font-bold mb-2">{conn.type}</h4>
+                                            <div className="flex flex-wrap gap-1">
+                                                {conn.options.map((opt, i) => (
+                                                    <span key={i} className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
+                                                        {opt}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Live vs Extract */}
+                                <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Live vs Extract</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h4 className="font-bold text-blue-700 mb-2">🔴 Live Connection</h4>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Consulta BD en tiempo real</li>
+                                                <li>• Datos siempre actualizados</li>
+                                                <li>• Mas lento (depende de BD)</li>
+                                                <li>• Requiere conexion activa</li>
+                                            </ul>
+                                            <p className="text-xs bg-blue-50 p-2 rounded mt-2">
+                                                <strong>Usa cuando:</strong> Datos cambian constantemente
+                                            </p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h4 className="font-bold text-green-700 mb-2">🟢 Extract (.hyper)</h4>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Copia local optimizada</li>
+                                                <li>• Muy rapido (en memoria)</li>
+                                                <li>• Requiere refresh programado</li>
+                                                <li>• Funciona offline</li>
+                                            </ul>
+                                            <p className="text-xs bg-green-50 p-2 rounded mt-2">
+                                                <strong>Usa cuando:</strong> Datos se actualizan diario/semanal
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Data Blending vs Join */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Unir Datos: Join vs Blend vs Relationship</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">JOIN</span>
+                                            <div>
+                                                <div className="font-medium">Misma fuente de datos</div>
+                                                <div className="text-sm text-gray-600">Une tablas en el Data Source (antes de crear hojas)</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <span className="bg-purple-500 text-white px-2 py-1 rounded text-xs">BLEND</span>
+                                            <div>
+                                                <div className="font-medium">Diferentes fuentes de datos</div>
+                                                <div className="text-sm text-gray-600">Combina en la visualizacion (requiere linking field)</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs">RELATIONSHIP</span>
+                                            <div>
+                                                <div className="font-medium">Modelo relacional flexible (recomendado)</div>
+                                                <div className="text-sm text-gray-600">Define relaciones, Tableau optimiza joins automaticamente</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: Calculated Fields */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Campos Calculados</h2>
+                                    <p className="text-gray-600">
+                                        Crea metricas personalizadas usando el lenguaje de formulas de Tableau.
+                                    </p>
+                                </div>
+
+                                {/* Calculated fields grid */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {calculatedFields.map((calc, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedCalc(selectedCalc === idx ? null : idx)}
+                                            className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                                                selectedCalc === idx
+                                                    ? 'border-orange-500 bg-orange-50 shadow-md'
+                                                    : 'hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="font-bold">{calc.name}</h4>
+                                                <span className="text-xs bg-gray-200 px-2 py-0.5 rounded">{calc.category}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-2">{calc.use}</p>
+                                            {selectedCalc === idx && (
+                                                <div className="bg-gray-900 text-green-400 p-3 rounded-lg mt-3 overflow-x-auto">
+                                                    <code className="text-sm code-block">{calc.formula}</code>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* LOD Expressions */}
+                                <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-r-xl">
+                                    <h3 className="font-bold text-lg text-purple-800 mb-3">LOD Expressions (Level of Detail)</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Controla a que nivel de granularidad se calcula una medida.
+                                    </p>
+                                    <div className="space-y-3">
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-medium text-purple-700">FIXED</div>
+                                            <code className="text-sm text-gray-600">{'{FIXED [Region] : SUM([Ventas])}'}</code>
+                                            <p className="text-xs text-gray-500 mt-1">Calcula al nivel especificado, ignorando filtros de vista</p>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-medium text-purple-700">INCLUDE</div>
+                                            <code className="text-sm text-gray-600">{'{INCLUDE [Producto] : AVG([Precio])}'}</code>
+                                            <p className="text-xs text-gray-500 mt-1">Agrega dimension al calculo</p>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-lg">
+                                            <div className="font-medium text-purple-700">EXCLUDE</div>
+                                            <code className="text-sm text-gray-600">{'{EXCLUDE [Mes] : SUM([Ventas])}'}</code>
+                                            <p className="text-xs text-gray-500 mt-1">Remueve dimension del calculo</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Quick Table Calculations */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Quick Table Calculations</h3>
+                                    <p className="text-gray-600 mb-3">Click derecho en medida → Quick Table Calculation</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Running Total', 'Difference', 'Percent Difference', 'Percent of Total', 'Rank', 'Percentile', 'Moving Average', 'YTD Total', 'Compound Growth Rate'].map((calc, i) => (
+                                            <span key={i} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                                                {calc}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Filters and Parameters */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Filtros y Parametros</h2>
+                                    <p className="text-gray-600">
+                                        Controla que datos se muestran y permite interactividad del usuario.
+                                    </p>
+                                </div>
+
+                                {/* Filter Types */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Tipos de Filtros</h3>
+                                    <div className="space-y-3">
+                                        {filterTypes.map((filter, idx) => (
+                                            <div key={idx} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg">
+                                                <div className="w-32 font-medium text-orange-700">{filter.name}</div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm text-gray-700">{filter.desc}</div>
+                                                    <div className="text-xs text-gray-500 mt-1">Ej: {filter.example}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Filter Order of Operations */}
+                                <div className="bg-amber-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Orden de Operaciones de Filtros</h3>
+                                    <div className="flex flex-col md:flex-row items-center gap-2">
+                                        {['Extract', 'Data Source', 'Context', 'Dimension', 'Measure', 'Table Calc'].map((step, i) => (
+                                            <React.Fragment key={i}>
+                                                <div className={`px-4 py-2 rounded-lg text-center ${
+                                                    i < 3 ? 'bg-amber-200' : 'bg-amber-100'
+                                                }`}>
+                                                    <div className="text-xs text-amber-800">{i + 1}</div>
+                                                    <div className="font-medium text-sm">{step}</div>
+                                                </div>
+                                                {i < 5 && <span className="text-amber-400">→</span>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-3">
+                                        Context Filters se aplican antes que otros filtros. Utiles para Top N dinamico.
+                                    </p>
+                                </div>
+
+                                {/* Parameters */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Parametros</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        Valores que el usuario puede cambiar para modificar calculos o filtros.
+                                    </p>
+                                    <div className="grid md:grid-cols-2 gap-3">
+                                        {parameters.map((param, idx) => (
+                                            <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h5 className="font-medium">{param.name}</h5>
+                                                    <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded">
+                                                        {param.type}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-600">{param.use}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="bg-green-50 p-4 rounded-lg mt-4">
+                                        <h5 className="font-medium text-green-800 mb-2">Usar Parametro en Calculo</h5>
+                                        <code className="text-sm bg-white p-2 rounded block">
+                                            IF [Metrica Seleccionada] = "Ventas" THEN [Ventas] ELSE [Profit] END
+                                        </code>
+                                    </div>
+                                </div>
+
+                                {/* Show Filter */}
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <h4 className="font-bold text-blue-800 mb-2">Mostrar Filtros en Dashboard</h4>
+                                    <ol className="text-sm text-gray-700 space-y-1">
+                                        <li>1. Arrastra dimension/medida a Filters shelf</li>
+                                        <li>2. Click derecho en el filtro → Show Filter</li>
+                                        <li>3. Click en dropdown del filtro → tipo de control (Single, Multi, Slider)</li>
+                                        <li>4. En Dashboard: Floating vs Tiled</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Dashboard Actions */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Acciones de Dashboard</h2>
+                                    <p className="text-gray-600">
+                                        Conecta visualizaciones para crear experiencias interactivas.
+                                    </p>
+                                </div>
+
+                                {/* Actions types */}
+                                <div className="flex gap-2 flex-wrap mb-4">
+                                    {dashboardActions.map((action, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedAction(idx)}
+                                            className={`px-4 py-2 rounded-lg font-medium ${
+                                                selectedAction === idx
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {action.type}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-xl mb-3">{dashboardActions[selectedAction].type} Action</h3>
+                                    <p className="text-gray-700 mb-4">{dashboardActions[selectedAction].desc}</p>
+
+                                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                        <h5 className="font-medium text-gray-700 mb-2">Como configurar:</h5>
+                                        <code className="text-sm text-orange-700">{dashboardActions[selectedAction].config}</code>
+                                    </div>
+
+                                    <div className="bg-green-50 p-4 rounded-lg">
+                                        <h5 className="font-medium text-green-800 mb-2">Ejemplo:</h5>
+                                        <p className="text-gray-700">{dashboardActions[selectedAction].example}</p>
+                                    </div>
+                                </div>
+
+                                {/* Action Configuration */}
+                                <div className="bg-orange-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Configuracion de Acciones</h3>
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Run Action On</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• <strong>Hover:</strong> Al pasar mouse</li>
+                                                <li>• <strong>Select:</strong> Al hacer click</li>
+                                                <li>• <strong>Menu:</strong> Click derecho</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Source Sheet</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Cual hoja dispara la accion</li>
+                                                <li>• Puede ser "All Sheets"</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Target Sheet</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Cual hoja recibe la accion</li>
+                                                <li>• Puede ser multiple</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Buttons and Navigation */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Navegacion entre Dashboards</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Navigation Button</h5>
+                                            <p className="text-sm text-gray-600 mb-2">Objects → Button → Navigation</p>
+                                            <p className="text-sm">Boton que lleva a otro dashboard o URL</p>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Sheet Navigation Action</h5>
+                                            <p className="text-sm text-gray-600 mb-2">Dashboard → Actions → Go to Sheet</p>
+                                            <p className="text-sm">Click en chart navega a detalle</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 4: Best Practices */}
+                        {activeTab === 4 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Mejores Practicas en Tableau</h2>
+                                    <p className="text-gray-600">
+                                        Tips para dashboards performantes y mantenibles.
+                                    </p>
+                                </div>
+
+                                {/* Performance */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4 text-red-700">⚡ Performance</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h5 className="font-medium text-green-700 mb-2">✓ Hacer</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Usar Extracts en vez de Live cuando sea posible</li>
+                                                <li>• Limitar filas en la fuente de datos</li>
+                                                <li>• Usar Context Filters para Top N</li>
+                                                <li>• Agregar datos antes de Tableau (ETL)</li>
+                                                <li>• Usar FIXED LOD en vez de muchos calculos</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h5 className="font-medium text-red-700 mb-2">✗ Evitar</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Demasiadas hojas en un dashboard (>10)</li>
+                                                <li>• Calculos con strings (CONTAINS, REPLACE)</li>
+                                                <li>• Blends con millones de filas</li>
+                                                <li>• Filtros que recargan todo el dashboard</li>
+                                                <li>• Imagenes de alta resolucion como fondo</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Design */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4 text-blue-700">🎨 Diseño</h3>
+                                    <ul className="space-y-2">
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-blue-500">▸</span>
+                                            <span><strong>Tamaño fijo:</strong> Diseña para la resolucion del usuario (1920x1080 es comun)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-blue-500">▸</span>
+                                            <span><strong>Containers:</strong> Usa Horizontal/Vertical containers para layout flexible</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-blue-500">▸</span>
+                                            <span><strong>Padding:</strong> Inner/Outer padding consistente (8px, 16px)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-blue-500">▸</span>
+                                            <span><strong>Colores:</strong> Crea paleta personalizada en Preferences.tps</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Governance */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4 text-purple-700">📋 Gobernanza</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-purple-50 p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Nombrado</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Workbooks: [Depto]_[Tema]_vX.X</li>
+                                                <li>• Sheets: Descriptivo, no "Sheet 1"</li>
+                                                <li>• Calculos: [Tipo]_[Nombre] (ej: KPI_Ventas_YoY)</li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-purple-50 p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Documentacion</h5>
+                                            <ul className="text-sm text-gray-600 space-y-1">
+                                                <li>• Agregar comentarios a calculos complejos</li>
+                                                <li>• Descripcion en cada campo calculado</li>
+                                                <li>• README en proyecto Tableau Server</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Publishing */}
+                                <div className="bg-green-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4 text-green-800">📤 Publicacion</h3>
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Tableau Public</h5>
+                                            <p className="text-sm text-gray-600">Gratis, publico, portfolios</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Tableau Server</h5>
+                                            <p className="text-sm text-gray-600">On-premise, permisos, gobernanza</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold mb-2">Tableau Cloud</h5>
+                                            <p className="text-sm text-gray-600">SaaS, sin infraestructura</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a href="laboratorio.html" className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600">
+                            Ir al Laboratorio →
+                        </a>
+                        <a href="ejercicio-individual.html" className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700">
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 11 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

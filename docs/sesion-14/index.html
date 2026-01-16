@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 14: Presentaciones Finales - Guía | ADEN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ==========================================
+        // GUÍA DE PRESENTACIONES FINALES
+        // ==========================================
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('rubrica');
+            const [selectedCriteria, setSelectedCriteria] = useState(null);
+            const [selfEvaluation, setSelfEvaluation] = useState({});
+            const [showFeedback, setShowFeedback] = useState(false);
+            const [practiceMode, setPracticeMode] = useState(false);
+            const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+            const [timerRunning, setTimerRunning] = useState(false);
+
+            // Rúbrica de evaluación del proyecto
+            const rubricaCriterios = [
+                {
+                    id: 'contenido',
+                    nombre: 'Contenido Técnico',
+                    peso: 30,
+                    icono: '📊',
+                    descripcion: 'Calidad del análisis, metodología y resultados',
+                    niveles: [
+                        { nivel: 4, nombre: 'Excelente', puntos: '27-30', descripcion: 'Análisis profundo, metodología rigurosa, insights accionables con impacto medible' },
+                        { nivel: 3, nombre: 'Bueno', puntos: '21-26', descripcion: 'Análisis sólido, metodología correcta, recomendaciones claras' },
+                        { nivel: 2, nombre: 'Aceptable', puntos: '15-20', descripcion: 'Análisis básico, algunos errores metodológicos, recomendaciones genéricas' },
+                        { nivel: 1, nombre: 'Insuficiente', puntos: '0-14', descripcion: 'Análisis superficial, errores significativos, sin recomendaciones claras' }
+                    ]
+                },
+                {
+                    id: 'dashboard',
+                    nombre: 'Dashboard y Visualización',
+                    peso: 25,
+                    icono: '📈',
+                    descripcion: 'Calidad del dashboard en Tableau y visualizaciones',
+                    niveles: [
+                        { nivel: 4, nombre: 'Excelente', puntos: '23-25', descripcion: 'Dashboard interactivo, diseño profesional, storytelling visual efectivo' },
+                        { nivel: 3, nombre: 'Bueno', puntos: '18-22', descripcion: 'Dashboard funcional, diseño limpio, visualizaciones apropiadas' },
+                        { nivel: 2, nombre: 'Aceptable', puntos: '13-17', descripcion: 'Dashboard básico, algunas visualizaciones confusas' },
+                        { nivel: 1, nombre: 'Insuficiente', puntos: '0-12', descripcion: 'Dashboard incompleto, visualizaciones inadecuadas' }
+                    ]
+                },
+                {
+                    id: 'roadmap',
+                    nombre: 'Roadmap de Implementación',
+                    peso: 20,
+                    icono: '🗺️',
+                    descripcion: 'Viabilidad y completitud del plan de implementación',
+                    niveles: [
+                        { nivel: 4, nombre: 'Excelente', puntos: '18-20', descripcion: 'Roadmap detallado, fases claras, riesgos identificados, presupuesto realista' },
+                        { nivel: 3, nombre: 'Bueno', puntos: '14-17', descripcion: 'Roadmap completo, cronograma razonable, considera recursos' },
+                        { nivel: 2, nombre: 'Aceptable', puntos: '10-13', descripcion: 'Roadmap básico, falta detalle en algunas áreas' },
+                        { nivel: 1, nombre: 'Insuficiente', puntos: '0-9', descripcion: 'Roadmap incompleto o poco realista' }
+                    ]
+                },
+                {
+                    id: 'presentacion',
+                    nombre: 'Calidad de Presentación',
+                    peso: 15,
+                    icono: '🎤',
+                    descripcion: 'Habilidades de comunicación y manejo del tiempo',
+                    niveles: [
+                        { nivel: 4, nombre: 'Excelente', puntos: '14-15', descripcion: 'Comunicación clara, manejo del tiempo perfecto, respuestas sólidas a preguntas' },
+                        { nivel: 3, nombre: 'Bueno', puntos: '11-13', descripcion: 'Buena comunicación, tiempo adecuado, responde bien' },
+                        { nivel: 2, nombre: 'Aceptable', puntos: '8-10', descripcion: 'Comunicación aceptable, algunos problemas de tiempo' },
+                        { nivel: 1, nombre: 'Insuficiente', puntos: '0-7', descripcion: 'Comunicación deficiente, no maneja el tiempo' }
+                    ]
+                },
+                {
+                    id: 'equipo',
+                    nombre: 'Trabajo en Equipo',
+                    peso: 10,
+                    icono: '👥',
+                    descripcion: 'Colaboración, integración y participación equitativa',
+                    niveles: [
+                        { nivel: 4, nombre: 'Excelente', puntos: '9-10', descripcion: 'Todos participan equitativamente, trabajo claramente integrado' },
+                        { nivel: 3, nombre: 'Bueno', puntos: '7-8', descripcion: 'Buena distribución, trabajo coherente' },
+                        { nivel: 2, nombre: 'Aceptable', puntos: '5-6', descripcion: 'Participación desigual pero aceptable' },
+                        { nivel: 1, nombre: 'Insuficiente', puntos: '0-4', descripcion: 'Un miembro domina, trabajo fragmentado' }
+                    ]
+                }
+            ];
+
+            // Tips por sección de la presentación
+            const presentationTips = [
+                {
+                    seccion: 'Apertura',
+                    duracion: '2 min',
+                    icono: '🎬',
+                    tips: [
+                        'Comienza con un dato impactante o pregunta provocadora',
+                        'Presenta al equipo brevemente (nombres y roles)',
+                        'Establece la agenda de los próximos 15 minutos',
+                        'NO uses: "Bueno, vamos a comenzar..." o "Hola, somos el grupo X"'
+                    ],
+                    ejemplo: '"El 67% de los proyectos BI fallan por falta de alineación con el negocio. Hoy les mostraremos cómo evitar ser parte de esa estadística..."'
+                },
+                {
+                    seccion: 'Problema y Contexto',
+                    duracion: '3 min',
+                    icono: '🎯',
+                    tips: [
+                        'Define claramente el problema de negocio',
+                        'Cuantifica el impacto actual ($$, %, tiempo)',
+                        'Explica por qué es relevante resolverlo ahora',
+                        'Conecta con la estrategia organizacional'
+                    ],
+                    ejemplo: '"RetailMax pierde $2.3M anuales en productos agotados. Con 340 SKUs y 12 tiendas, necesitan visibilidad en tiempo real..."'
+                },
+                {
+                    seccion: 'Solución Propuesta',
+                    duracion: '5 min',
+                    icono: '💡',
+                    tips: [
+                        'Muestra el dashboard EN VIVO (no capturas)',
+                        'Demuestra 2-3 interacciones clave',
+                        'Explica cómo responde las preguntas de negocio',
+                        'Destaca el insight más valioso encontrado'
+                    ],
+                    ejemplo: '"Al filtrar por región y mes, descubrimos que el 80% de los agotados ocurren en las tiendas del interior durante los primeros 10 días del mes..."'
+                },
+                {
+                    seccion: 'Roadmap de Implementación',
+                    duracion: '3 min',
+                    icono: '🗺️',
+                    tips: [
+                        'Presenta fases con entregables concretos',
+                        'Muestra timeline visual (Gantt simplificado)',
+                        'Menciona inversión y ROI esperado',
+                        'Identifica los 3 riesgos principales y mitigaciones'
+                    ],
+                    ejemplo: '"Fase 1: Quick wins en 3 meses con inversión de $45K. ROI proyectado de 280% al año..."'
+                },
+                {
+                    seccion: 'Cierre y Q&A',
+                    duracion: '2 min',
+                    icono: '🏁',
+                    tips: [
+                        'Resume en 3 puntos clave (no más)',
+                        'Termina con call-to-action claro',
+                        'Prepárate para preguntas difíciles',
+                        'NO digas: "Eso es todo" o "¿Alguna pregunta?"'
+                    ],
+                    ejemplo: '"Con esta solución, RetailMax pasará de decisiones reactivas a predictivas. El siguiente paso: aprobar el piloto de $45K para la Fase 1. ¿Qué preguntas tienen sobre el alcance?"'
+                }
+            ];
+
+            // Preguntas difíciles comunes
+            const preguntasDificiles = [
+                {
+                    pregunta: '¿Cómo validaron que los datos son confiables?',
+                    categoria: 'Metodología',
+                    respuestaModelo: 'Realizamos validación cruzada con reportes existentes, identificamos y documentamos 3% de inconsistencias que fueron limpiadas. El proceso ETL incluye reglas de calidad que alertan anomalías.',
+                    trampa: 'No decir "confiamos en que los datos están bien" sin evidencia'
+                },
+                {
+                    pregunta: '¿Qué pasa si el presupuesto se reduce a la mitad?',
+                    categoria: 'Roadmap',
+                    respuestaModelo: 'Priorizaríamos la Fase 1 que tiene el 60% del impacto. El dashboard core y 2 KPIs principales se mantendrían, posponiendo analytics avanzados para Fase 2.',
+                    trampa: 'No decir "no se puede hacer" - siempre hay alternativas'
+                },
+                {
+                    pregunta: '¿Por qué eligieron esas métricas y no otras?',
+                    categoria: 'Contenido',
+                    respuestaModelo: 'Las métricas seleccionadas responden directamente a las 3 preguntas de negocio definidas con stakeholders. Descartamos métricas vanidosas como "número de transacciones" por carecer de contexto.',
+                    trampa: 'No decir "son las que encontramos" - mostrar criterio'
+                },
+                {
+                    pregunta: '¿Qué harían diferente si empezaran de nuevo?',
+                    categoria: 'Reflexión',
+                    respuestaModelo: 'Invertiríamos más tiempo en entrevistas con usuarios finales antes de diseñar el dashboard. También estableceríamos checks de calidad de datos más temprano en el proceso.',
+                    trampa: 'No decir "nada, todo salió perfecto" - demuestra aprendizaje'
+                },
+                {
+                    pregunta: '¿Cómo aseguran la adopción por parte de los usuarios?',
+                    categoria: 'Cambio',
+                    respuestaModelo: 'Incluimos plan de change management con capacitación por roles, champions en cada área, y métricas de adopción. Las primeras 4 semanas tendrán soporte dedicado.',
+                    trampa: 'No asumir que "si lo construyes, vendrán"'
+                }
+            ];
+
+            // Calcular autoevaluación
+            const calcularPuntaje = () => {
+                let total = 0;
+                rubricaCriterios.forEach(criterio => {
+                    if (selfEvaluation[criterio.id]) {
+                        const nivel = selfEvaluation[criterio.id];
+                        total += (nivel / 4) * criterio.peso;
+                    }
+                });
+                return Math.round(total);
+            };
+
+            // Timer para práctica
+            React.useEffect(() => {
+                let interval = null;
+                if (timerRunning && timeRemaining > 0) {
+                    interval = setInterval(() => {
+                        setTimeRemaining(prev => prev - 1);
+                    }, 1000);
+                } else if (timeRemaining === 0) {
+                    setTimerRunning(false);
+                }
+                return () => clearInterval(interval);
+            }, [timerRunning, timeRemaining]);
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const tabs = [
+                { id: 'rubrica', label: 'Rúbrica', icon: '📋' },
+                { id: 'estructura', label: 'Estructura', icon: '🎬' },
+                { id: 'preguntas', label: 'Q&A Difícil', icon: '❓' },
+                { id: 'practica', label: 'Práctica', icon: '⏱️' },
+                { id: 'checklist', label: 'Checklist', icon: '✅' }
+            ];
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-2xl p-8 mb-8">
+                        <div className="flex items-center gap-2 text-purple-200 text-sm mb-2">
+                            <span>Sesión 14</span>
+                            <span>•</span>
+                            <span>17 de abril, 2026</span>
+                            <span>•</span>
+                            <span>Unidad 5: Estrategias y Tendencias</span>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Presentaciones Finales del Proyecto</h1>
+                        <p className="text-purple-100">
+                            Guía completa para la defensa del proyecto integrador. Rúbrica de evaluación,
+                            estructura de presentación y preparación para preguntas.
+                        </p>
+                        <div className="mt-4 flex gap-4">
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                                🎯 Presentación: 15 minutos
+                            </span>
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                                ❓ Q&A: 5 minutos
+                            </span>
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                                📊 Peso total: 65% del curso
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-2xl shadow-sm border p-6">
+                        {/* Rúbrica Tab */}
+                        {activeTab === 'rubrica' && (
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">
+                                    Rúbrica de Evaluación del Proyecto
+                                </h2>
+                                <p className="text-slate-600 mb-6">
+                                    El proyecto integrador vale 65% de la nota final. Usa esta rúbrica para
+                                    autoevaluar tu trabajo antes de la presentación.
+                                </p>
+
+                                <div className="space-y-4">
+                                    {rubricaCriterios.map(criterio => (
+                                        <div
+                                            key={criterio.id}
+                                            className="border rounded-xl overflow-hidden"
+                                        >
+                                            <button
+                                                onClick={() => setSelectedCriteria(
+                                                    selectedCriteria === criterio.id ? null : criterio.id
+                                                )}
+                                                className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">{criterio.icono}</span>
+                                                    <div className="text-left">
+                                                        <h3 className="font-semibold text-slate-800">
+                                                            {criterio.nombre}
+                                                        </h3>
+                                                        <p className="text-sm text-slate-500">
+                                                            {criterio.descripcion}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium">
+                                                        {criterio.peso}%
+                                                    </span>
+                                                    <span className="text-slate-400">
+                                                        {selectedCriteria === criterio.id ? '▲' : '▼'}
+                                                    </span>
+                                                </div>
+                                            </button>
+
+                                            {selectedCriteria === criterio.id && (
+                                                <div className="p-4 border-t bg-white">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {criterio.niveles.map(nivel => (
+                                                            <button
+                                                                key={nivel.nivel}
+                                                                onClick={() => setSelfEvaluation({
+                                                                    ...selfEvaluation,
+                                                                    [criterio.id]: nivel.nivel
+                                                                })}
+                                                                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                                                    selfEvaluation[criterio.id] === nivel.nivel
+                                                                        ? 'border-indigo-500 bg-indigo-50'
+                                                                        : 'border-slate-200 hover:border-slate-300'
+                                                                }`}
+                                                            >
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <span className={`font-semibold ${
+                                                                        nivel.nivel === 4 ? 'text-green-600' :
+                                                                        nivel.nivel === 3 ? 'text-blue-600' :
+                                                                        nivel.nivel === 2 ? 'text-yellow-600' :
+                                                                        'text-red-600'
+                                                                    }`}>
+                                                                        {nivel.nombre}
+                                                                    </span>
+                                                                    <span className="text-sm text-slate-500">
+                                                                        {nivel.puntos} pts
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-sm text-slate-600">
+                                                                    {nivel.descripcion}
+                                                                </p>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Autoevaluación */}
+                                {Object.keys(selfEvaluation).length > 0 && (
+                                    <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+                                        <h3 className="font-semibold text-slate-800 mb-3">
+                                            Tu Autoevaluación
+                                        </h3>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-3xl font-bold text-indigo-600">
+                                                {calcularPuntaje()}/100
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="h-4 bg-white rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
+                                                        style={{ width: `${calcularPuntaje()}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <span className={`font-medium ${
+                                                calcularPuntaje() >= 90 ? 'text-green-600' :
+                                                calcularPuntaje() >= 70 ? 'text-blue-600' :
+                                                calcularPuntaje() >= 50 ? 'text-yellow-600' :
+                                                'text-red-600'
+                                            }`}>
+                                                {calcularPuntaje() >= 90 ? 'Excelente' :
+                                                 calcularPuntaje() >= 70 ? 'Bueno' :
+                                                 calcularPuntaje() >= 50 ? 'Aceptable' :
+                                                 'Necesita mejoras'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 mt-2">
+                                            Completa todos los criterios para obtener una evaluación más precisa.
+                                            Criterios evaluados: {Object.keys(selfEvaluation).length}/5
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Estructura Tab */}
+                        {activeTab === 'estructura' && (
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">
+                                    Estructura de la Presentación (15 min)
+                                </h2>
+                                <p className="text-slate-600 mb-6">
+                                    Sigue esta estructura para una presentación efectiva. Cada sección tiene
+                                    duración y tips específicos.
+                                </p>
+
+                                {/* Timeline visual */}
+                                <div className="mb-8 p-4 bg-slate-50 rounded-xl">
+                                    <div className="flex items-center gap-1">
+                                        {presentationTips.map((tip, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="flex-1 relative"
+                                                style={{ flex: parseInt(tip.duracion) }}
+                                            >
+                                                <div className={`h-8 rounded ${
+                                                    idx === 0 ? 'bg-purple-500' :
+                                                    idx === 1 ? 'bg-blue-500' :
+                                                    idx === 2 ? 'bg-green-500' :
+                                                    idx === 3 ? 'bg-orange-500' :
+                                                    'bg-red-500'
+                                                } flex items-center justify-center text-white text-sm font-medium`}>
+                                                    {tip.duracion}
+                                                </div>
+                                                <div className="text-xs text-center mt-1 text-slate-500">
+                                                    {tip.seccion}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {presentationTips.map((tip, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="border rounded-xl p-5 hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex items-start gap-4">
+                                                <div className="text-3xl">{tip.icono}</div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="font-semibold text-slate-800">
+                                                            {tip.seccion}
+                                                        </h3>
+                                                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-sm">
+                                                            {tip.duracion}
+                                                        </span>
+                                                    </div>
+                                                    <ul className="space-y-1 mb-4">
+                                                        {tip.tips.map((t, i) => (
+                                                            <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
+                                                                <span className="text-green-500 mt-0.5">✓</span>
+                                                                {t}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    <div className="bg-indigo-50 p-3 rounded-lg">
+                                                        <span className="text-xs font-medium text-indigo-600 block mb-1">
+                                                            EJEMPLO:
+                                                        </span>
+                                                        <p className="text-sm text-indigo-800 italic">
+                                                            {tip.ejemplo}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Preguntas Tab */}
+                        {activeTab === 'preguntas' && (
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">
+                                    Preparación para Preguntas Difíciles
+                                </h2>
+                                <p className="text-slate-600 mb-6">
+                                    El panel tendrá 5 minutos para preguntas. Prepárate para estas
+                                    preguntas comunes y evita las trampas típicas.
+                                </p>
+
+                                <div className="space-y-4">
+                                    {preguntasDificiles.map((q, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="border rounded-xl overflow-hidden"
+                                        >
+                                            <div className="p-4 bg-red-50">
+                                                <div className="flex items-start gap-3">
+                                                    <span className="text-2xl">❓</span>
+                                                    <div>
+                                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded mb-2 inline-block">
+                                                            {q.categoria}
+                                                        </span>
+                                                        <h3 className="font-semibold text-slate-800">
+                                                            "{q.pregunta}"
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 space-y-3">
+                                                <div>
+                                                    <span className="text-xs font-medium text-green-600 block mb-1">
+                                                        ✅ RESPUESTA MODELO:
+                                                    </span>
+                                                    <p className="text-sm text-slate-700 bg-green-50 p-3 rounded-lg">
+                                                        {q.respuestaModelo}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-xs font-medium text-red-600 block mb-1">
+                                                        ⚠️ TRAMPA A EVITAR:
+                                                    </span>
+                                                    <p className="text-sm text-slate-700 bg-red-50 p-3 rounded-lg">
+                                                        {q.trampa}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <h3 className="font-semibold text-amber-800 flex items-center gap-2 mb-2">
+                                        <span>💡</span> Tips para Responder Preguntas
+                                    </h3>
+                                    <ul className="text-sm text-amber-700 space-y-1">
+                                        <li>• <strong>No inventes:</strong> "Es una excelente pregunta, no lo consideramos pero investigaré"</li>
+                                        <li>• <strong>Sé conciso:</strong> Respuestas de 30-60 segundos máximo</li>
+                                        <li>• <strong>Involucra al equipo:</strong> "Mi compañero Juan trabajó esa parte, ¿puedes expandir?"</li>
+                                        <li>• <strong>Cierra con confianza:</strong> "¿Responde eso tu pregunta?"</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Práctica Tab */}
+                        {activeTab === 'practica' && (
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">
+                                    Modo Práctica de Presentación
+                                </h2>
+                                <p className="text-slate-600 mb-6">
+                                    Usa este temporizador para practicar tu presentación. Mantén el ritmo
+                                    y ajusta el contenido si te pasas de tiempo.
+                                </p>
+
+                                {/* Timer grande */}
+                                <div className="text-center mb-8">
+                                    <div className={`text-7xl font-mono font-bold mb-4 ${
+                                        timeRemaining <= 60 ? 'text-red-500' :
+                                        timeRemaining <= 180 ? 'text-yellow-500' :
+                                        'text-indigo-600'
+                                    }`}>
+                                        {formatTime(timeRemaining)}
+                                    </div>
+                                    <div className="flex justify-center gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setTimerRunning(!timerRunning);
+                                            }}
+                                            className={`px-6 py-3 rounded-lg font-medium ${
+                                                timerRunning
+                                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                                    : 'bg-green-500 text-white hover:bg-green-600'
+                                            }`}
+                                        >
+                                            {timerRunning ? '⏸️ Pausar' : '▶️ Iniciar'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setTimeRemaining(900);
+                                                setTimerRunning(false);
+                                            }}
+                                            className="px-6 py-3 rounded-lg font-medium bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                        >
+                                            🔄 Reiniciar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Presets de tiempo */}
+                                <div className="grid grid-cols-4 gap-3 mb-8">
+                                    {[
+                                        { label: '15 min', seconds: 900 },
+                                        { label: '10 min', seconds: 600 },
+                                        { label: '5 min', seconds: 300 },
+                                        { label: '2 min', seconds: 120 }
+                                    ].map(preset => (
+                                        <button
+                                            key={preset.seconds}
+                                            onClick={() => {
+                                                setTimeRemaining(preset.seconds);
+                                                setTimerRunning(false);
+                                            }}
+                                            className="p-3 bg-slate-100 rounded-lg text-slate-700 hover:bg-slate-200 font-medium"
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Guía de tiempos */}
+                                <div className="bg-slate-50 rounded-xl p-4">
+                                    <h3 className="font-semibold text-slate-800 mb-3">
+                                        Checkpoints de Tiempo (15 min)
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {[
+                                            { time: '13:00', section: 'Terminar Apertura', color: 'purple' },
+                                            { time: '10:00', section: 'Terminar Problema y Contexto', color: 'blue' },
+                                            { time: '05:00', section: 'Terminar Demo Dashboard', color: 'green' },
+                                            { time: '02:00', section: 'Terminar Roadmap', color: 'orange' },
+                                            { time: '00:00', section: 'Cierre y transición a Q&A', color: 'red' }
+                                        ].map((cp, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`flex items-center gap-3 p-2 rounded-lg ${
+                                                    formatTime(timeRemaining) === cp.time
+                                                        ? 'bg-yellow-100 border-2 border-yellow-400'
+                                                        : ''
+                                                }`}
+                                            >
+                                                <span className={`w-16 font-mono font-medium text-${cp.color}-600`}>
+                                                    {cp.time}
+                                                </span>
+                                                <span className="text-slate-700">{cp.section}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Checklist Tab */}
+                        {activeTab === 'checklist' && (
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">
+                                    Checklist Pre-Presentación
+                                </h2>
+                                <p className="text-slate-600 mb-6">
+                                    Verifica estos elementos antes del día de la presentación.
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {/* Contenido */}
+                                    <div className="border rounded-xl p-4">
+                                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                                            <span>📄</span> Contenido
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {[
+                                                'Dashboard publicado en Tableau Public',
+                                                'Todos los filtros e interacciones funcionan',
+                                                'Slides de soporte listos (si aplica)',
+                                                'Roadmap con timeline y presupuesto',
+                                                'Backup de datos por si algo falla'
+                                            ].map((item, idx) => (
+                                                <label key={idx} className="flex items-center gap-2 text-sm">
+                                                    <input type="checkbox" className="w-4 h-4 rounded" />
+                                                    <span className="text-slate-700">{item}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Técnico */}
+                                    <div className="border rounded-xl p-4">
+                                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                                            <span>💻</span> Técnico
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {[
+                                                'Laptop cargada al 100%',
+                                                'Cable HDMI/adaptador probado',
+                                                'WiFi de respaldo (hotspot móvil)',
+                                                'Archivos en local (no solo nube)',
+                                                'Navegador con tabs pre-cargados'
+                                            ].map((item, idx) => (
+                                                <label key={idx} className="flex items-center gap-2 text-sm">
+                                                    <input type="checkbox" className="w-4 h-4 rounded" />
+                                                    <span className="text-slate-700">{item}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Equipo */}
+                                    <div className="border rounded-xl p-4">
+                                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                                            <span>👥</span> Equipo
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {[
+                                                'Roles de presentación asignados',
+                                                'Transiciones practicadas',
+                                                'Código de vestimenta acordado',
+                                                'Ensayo general completado (al menos 2)',
+                                                'Plan B si alguien no puede asistir'
+                                            ].map((item, idx) => (
+                                                <label key={idx} className="flex items-center gap-2 text-sm">
+                                                    <input type="checkbox" className="w-4 h-4 rounded" />
+                                                    <span className="text-slate-700">{item}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Día D */}
+                                    <div className="border rounded-xl p-4">
+                                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                                            <span>📅</span> Día de Presentación
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {[
+                                                'Llegar 15 min antes',
+                                                'Probar conexión al proyector',
+                                                'Agua disponible',
+                                                'Celulares en silencio',
+                                                'Respirar y confiar en la preparación'
+                                            ].map((item, idx) => (
+                                                <label key={idx} className="flex items-center gap-2 text-sm">
+                                                    <input type="checkbox" className="w-4 h-4 rounded" />
+                                                    <span className="text-slate-700">{item}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Orden de presentaciones */}
+                                <div className="mt-6 p-4 bg-indigo-50 rounded-xl">
+                                    <h3 className="font-semibold text-indigo-800 mb-3">
+                                        📋 Orden de Presentaciones
+                                    </h3>
+                                    <p className="text-sm text-indigo-700 mb-3">
+                                        El orden será aleatorio y se anunciará al inicio de la clase.
+                                        Cada equipo tiene exactamente 15 minutos de presentación + 5 minutos de Q&A.
+                                    </p>
+                                    <div className="bg-white rounded-lg p-3">
+                                        <div className="text-sm text-slate-600">
+                                            <strong>Formato:</strong> 15 min presentación + 5 min preguntas = 20 min total por equipo
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <footer className="mt-8 text-center text-slate-500 text-sm">
+                        <p>Sesión 14: Presentaciones Finales del Proyecto</p>
+                        <p className="mt-1">Taller de Tecnología Aplicada - ADEN University Panamá</p>
+                        <div className="mt-3 flex justify-center gap-4">
+                            <a href="laboratorio.html" className="text-indigo-600 hover:underline">
+                                → Laboratorio de Preparación
+                            </a>
+                            <a href="ejercicio-individual.html" className="text-indigo-600 hover:underline">
+                                → Evaluación Final
+                            </a>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

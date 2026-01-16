@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: Disenando un Data Warehouse - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL LABORATORIO
+        // ============================================
+
+        const casoNegocio = {
+            nombre: "SuperMercado Central",
+            descripcion: "Cadena de supermercados con 8 sucursales en Panama. Necesitan analizar ventas, inventario y comportamiento de clientes.",
+            fuentes: [
+                { nombre: "Sistema POS", datos: "Transacciones de venta, productos, precios" },
+                { nombre: "CRM", datos: "Datos de clientes, programas de lealtad" },
+                { nombre: "ERP", datos: "Inventario, proveedores, costos" },
+                { nombre: "RRHH", datos: "Empleados, horarios, sucursales" }
+            ],
+            preguntas_negocio: [
+                "Cual fue la venta total por sucursal el mes pasado?",
+                "Que productos tienen mejor margen de ganancia?",
+                "Cual es el ticket promedio por tipo de cliente?",
+                "Como varian las ventas por dia de la semana?",
+                "Que categorias crecieron vs el ano anterior?"
+            ]
+        };
+
+        const pasos = [
+            { id: 1, titulo: "Identificar Procesos de Negocio", duracion: "15 min" },
+            { id: 2, titulo: "Definir Granularidad", duracion: "15 min" },
+            { id: 3, titulo: "Identificar Dimensiones", duracion: "20 min" },
+            { id: 4, titulo: "Identificar Hechos", duracion: "15 min" },
+            { id: 5, titulo: "Disenar Esquema Estrella", duracion: "25 min" },
+            { id: 6, titulo: "Escribir DDL en SQL", duracion: "30 min" },
+            { id: 7, titulo: "Validar con Consultas", duracion: "20 min" }
+        ];
+
+        const sqlDimensiones = {
+            dim_fecha: `-- Dimension Fecha
+CREATE TABLE dim_fecha (
+    fecha_key INT PRIMARY KEY,
+    fecha DATE NOT NULL,
+    dia INT NOT NULL,
+    mes INT NOT NULL,
+    anio INT NOT NULL,
+    trimestre INT NOT NULL,
+    dia_semana VARCHAR(15) NOT NULL,
+    nombre_mes VARCHAR(15) NOT NULL,
+    es_fin_semana BOOLEAN NOT NULL,
+    es_feriado BOOLEAN DEFAULT FALSE
+);
+
+-- Poblar dimension fecha (2024-2026)
+INSERT INTO dim_fecha
+SELECT
+    TO_CHAR(d, 'YYYYMMDD')::INT as fecha_key,
+    d as fecha,
+    EXTRACT(DAY FROM d) as dia,
+    EXTRACT(MONTH FROM d) as mes,
+    EXTRACT(YEAR FROM d) as anio,
+    EXTRACT(QUARTER FROM d) as trimestre,
+    TO_CHAR(d, 'Day') as dia_semana,
+    TO_CHAR(d, 'Month') as nombre_mes,
+    EXTRACT(DOW FROM d) IN (0, 6) as es_fin_semana,
+    FALSE as es_feriado
+FROM generate_series('2024-01-01'::date, '2026-12-31'::date, '1 day'::interval) d;`,
+
+            dim_producto: `-- Dimension Producto
+CREATE TABLE dim_producto (
+    producto_key SERIAL PRIMARY KEY,
+    producto_id VARCHAR(20) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    categoria VARCHAR(50) NOT NULL,
+    subcategoria VARCHAR(50),
+    marca VARCHAR(50),
+    unidad_medida VARCHAR(20),
+    precio_lista DECIMAL(10,2),
+    costo_unitario DECIMAL(10,2),
+    es_activo BOOLEAN DEFAULT TRUE,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE
+);`,
+
+            dim_cliente: `-- Dimension Cliente
+CREATE TABLE dim_cliente (
+    cliente_key SERIAL PRIMARY KEY,
+    cliente_id VARCHAR(20),
+    nombre VARCHAR(100),
+    tipo_cliente VARCHAR(20) NOT NULL, -- Regular, VIP, Mayorista
+    segmento VARCHAR(30),
+    ciudad VARCHAR(50),
+    provincia VARCHAR(50),
+    fecha_registro DATE,
+    puntos_lealtad INT DEFAULT 0
+);
+
+-- Cliente anonimo para ventas sin identificar
+INSERT INTO dim_cliente (cliente_id, nombre, tipo_cliente, segmento)
+VALUES ('ANONIMO', 'Cliente Anonimo', 'Regular', 'Sin Registro');`,
+
+            dim_sucursal: `-- Dimension Sucursal
+CREATE TABLE dim_sucursal (
+    sucursal_key SERIAL PRIMARY KEY,
+    sucursal_id VARCHAR(10) NOT NULL,
+    nombre VARCHAR(50) NOT NULL,
+    direccion VARCHAR(200),
+    ciudad VARCHAR(50) NOT NULL,
+    provincia VARCHAR(50) NOT NULL,
+    tipo VARCHAR(20), -- Express, Super, Hiper
+    metros_cuadrados INT,
+    gerente VARCHAR(100),
+    fecha_apertura DATE
+);`,
+
+            fact_ventas: `-- Tabla de Hechos: Ventas
+CREATE TABLE fact_ventas (
+    venta_key SERIAL PRIMARY KEY,
+
+    -- Claves foraneas a dimensiones
+    fecha_key INT NOT NULL REFERENCES dim_fecha(fecha_key),
+    producto_key INT NOT NULL REFERENCES dim_producto(producto_key),
+    cliente_key INT NOT NULL REFERENCES dim_cliente(cliente_key),
+    sucursal_key INT NOT NULL REFERENCES dim_sucursal(sucursal_key),
+
+    -- Claves degeneradas
+    ticket_numero VARCHAR(20) NOT NULL,
+    linea_numero INT NOT NULL,
+
+    -- Hechos (medidas)
+    cantidad INT NOT NULL,
+    precio_unitario DECIMAL(10,2) NOT NULL,
+    descuento DECIMAL(10,2) DEFAULT 0,
+    monto_venta DECIMAL(12,2) NOT NULL,
+    costo_total DECIMAL(12,2) NOT NULL,
+    margen DECIMAL(12,2) NOT NULL,
+
+    -- Indices para performance
+    CONSTRAINT pk_venta UNIQUE (fecha_key, sucursal_key, ticket_numero, linea_numero)
+);
+
+-- Indices para consultas frecuentes
+CREATE INDEX idx_fact_ventas_fecha ON fact_ventas(fecha_key);
+CREATE INDEX idx_fact_ventas_producto ON fact_ventas(producto_key);
+CREATE INDEX idx_fact_ventas_sucursal ON fact_ventas(sucursal_key);`
+        };
+
+        const consultasEjemplo = [
+            {
+                pregunta: "Ventas totales por sucursal del mes actual",
+                sql: `SELECT
+    s.nombre as sucursal,
+    SUM(f.monto_venta) as ventas,
+    COUNT(DISTINCT f.ticket_numero) as transacciones
+FROM fact_ventas f
+JOIN dim_sucursal s ON f.sucursal_key = s.sucursal_key
+JOIN dim_fecha d ON f.fecha_key = d.fecha_key
+WHERE d.mes = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND d.anio = EXTRACT(YEAR FROM CURRENT_DATE)
+GROUP BY s.nombre
+ORDER BY ventas DESC;`
+            },
+            {
+                pregunta: "Top 10 productos por margen",
+                sql: `SELECT
+    p.nombre as producto,
+    p.categoria,
+    SUM(f.margen) as margen_total,
+    SUM(f.cantidad) as unidades_vendidas,
+    ROUND(SUM(f.margen) / SUM(f.monto_venta) * 100, 2) as pct_margen
+FROM fact_ventas f
+JOIN dim_producto p ON f.producto_key = p.producto_key
+GROUP BY p.nombre, p.categoria
+ORDER BY margen_total DESC
+LIMIT 10;`
+            },
+            {
+                pregunta: "Ventas por dia de la semana",
+                sql: `SELECT
+    d.dia_semana,
+    SUM(f.monto_venta) as ventas,
+    AVG(f.monto_venta) as ticket_promedio,
+    COUNT(DISTINCT f.ticket_numero) as num_tickets
+FROM fact_ventas f
+JOIN dim_fecha d ON f.fecha_key = d.fecha_key
+GROUP BY d.dia_semana
+ORDER BY
+    CASE d.dia_semana
+        WHEN 'Monday' THEN 1
+        WHEN 'Tuesday' THEN 2
+        WHEN 'Wednesday' THEN 3
+        WHEN 'Thursday' THEN 4
+        WHEN 'Friday' THEN 5
+        WHEN 'Saturday' THEN 6
+        WHEN 'Sunday' THEN 7
+    END;`
+            }
+        ];
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const StepIndicator = ({ currentStep, onStepClick }) => (
+            <div className="flex items-center justify-between mb-6 bg-white rounded-xl p-3 shadow-sm overflow-x-auto">
+                {pasos.map((paso, idx) => (
+                    <React.Fragment key={paso.id}>
+                        <button
+                            onClick={() => onStepClick(paso.id)}
+                            className={`flex flex-col items-center min-w-16 transition-all ${
+                                currentStep >= paso.id ? 'opacity-100' : 'opacity-40'
+                            }`}
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                                currentStep === paso.id
+                                    ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
+                                    : currentStep > paso.id
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-200 text-gray-500'
+                            }`}>
+                                {currentStep > paso.id ? '✓' : paso.id}
+                            </div>
+                        </button>
+                        {idx < pasos.length - 1 && (
+                            <div className={`flex-1 h-0.5 mx-1 ${currentStep > paso.id ? 'bg-green-400' : 'bg-gray-200'}`} />
+                        )}
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+
+        const Paso1Procesos = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 1</span>
+                    <span className="text-gray-400">15 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Identificar Procesos de Negocio</h2>
+
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+                    <h3 className="text-xl font-bold text-indigo-800 mb-2">{casoNegocio.nombre}</h3>
+                    <p className="text-gray-700 mb-4">{casoNegocio.descripcion}</p>
+                    <div className="grid md:grid-cols-2 gap-3">
+                        {casoNegocio.fuentes.map((fuente, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-gray-800">{fuente.nombre}</p>
+                                <p className="text-sm text-gray-500">{fuente.datos}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <h3 className="font-bold text-gray-800 mb-3">Preguntas de Negocio a Responder:</h3>
+                <div className="space-y-2 mb-6">
+                    {casoNegocio.preguntas_negocio.map((preg, idx) => (
+                        <div key={idx} className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
+                            <span className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                                {idx + 1}
+                            </span>
+                            <span className="text-gray-700">{preg}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-6">
+                    <p className="text-green-800">
+                        <strong>Proceso identificado:</strong> Ventas de productos en sucursales.
+                        Este sera el proceso central de nuestro Data Mart.
+                    </p>
+                </div>
+
+                <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso2Granularidad = ({ onComplete }) => {
+            const [seleccion, setSeleccion] = useState(null);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 2</span>
+                        <span className="text-gray-400">15 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Definir Granularidad</h2>
+                    <p className="text-gray-600 mb-6">
+                        La granularidad define el nivel de detalle de cada fila en la tabla de hechos.
+                        Selecciona la granularidad mas apropiada para este caso:
+                    </p>
+
+                    <div className="space-y-3 mb-6">
+                        {[
+                            { id: 'diario', label: 'Ventas diarias por sucursal', desc: 'Una fila por dia por sucursal', adecuado: false },
+                            { id: 'transaccion', label: 'Por transaccion (ticket)', desc: 'Una fila por ticket de venta', adecuado: false },
+                            { id: 'linea', label: 'Por linea de transaccion', desc: 'Una fila por cada producto en cada ticket', adecuado: true }
+                        ].map((opcion) => (
+                            <button
+                                key={opcion.id}
+                                onClick={() => setSeleccion(opcion.id)}
+                                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                                    seleccion === opcion.id
+                                        ? opcion.adecuado
+                                            ? 'border-green-400 bg-green-50'
+                                            : 'border-red-400 bg-red-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <p className="font-bold text-gray-800">{opcion.label}</p>
+                                <p className="text-sm text-gray-500">{opcion.desc}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    {seleccion && (
+                        <div className={`p-4 rounded-xl mb-6 ${seleccion === 'linea' ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                            {seleccion === 'linea' ? (
+                                <p className="text-green-800">
+                                    <strong>Correcto!</strong> La granularidad a nivel de linea permite:
+                                    analizar ventas por producto, calcular margenes, hacer drill-down a cualquier nivel.
+                                </p>
+                            ) : (
+                                <p className="text-amber-800">
+                                    <strong>Considera:</strong> Esta granularidad perderia detalle importante.
+                                    No podrias analizar que productos se venden juntos ni calcular margenes por producto.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={onComplete}
+                        disabled={seleccion !== 'linea'}
+                        className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50"
+                    >
+                        Continuar →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso3Dimensiones = ({ onComplete }) => {
+            const [dimensiones, setDimensiones] = useState(['fecha']);
+
+            const todasDimensiones = [
+                { id: 'fecha', nombre: 'Fecha', correcta: true, porque: 'Siempre necesaria para analisis temporal' },
+                { id: 'producto', nombre: 'Producto', correcta: true, porque: 'Que se vendio' },
+                { id: 'cliente', nombre: 'Cliente', correcta: true, porque: 'A quien se vendio' },
+                { id: 'sucursal', nombre: 'Sucursal', correcta: true, porque: 'Donde se vendio' },
+                { id: 'empleado', nombre: 'Empleado/Cajero', correcta: false, porque: 'Util pero no critica para este caso' },
+                { id: 'proveedor', nombre: 'Proveedor', correcta: false, porque: 'No relevante para analisis de ventas' },
+                { id: 'promocion', nombre: 'Promocion', correcta: false, porque: 'Podria agregarse despues como dimension adicional' }
+            ];
+
+            const toggle = (id) => {
+                if (dimensiones.includes(id)) {
+                    setDimensiones(dimensiones.filter(d => d !== id));
+                } else {
+                    setDimensiones([...dimensiones, id]);
+                }
+            };
+
+            const correctas = ['fecha', 'producto', 'cliente', 'sucursal'];
+            const esCorrecta = correctas.every(c => dimensiones.includes(c)) &&
+                              dimensiones.every(d => correctas.includes(d));
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 3</span>
+                        <span className="text-gray-400">20 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Identificar Dimensiones</h2>
+                    <p className="text-gray-600 mb-6">
+                        Selecciona las dimensiones necesarias para responder las preguntas de negocio.
+                        Recuerda: las dimensiones son los "por" (analizar ventas <strong>por</strong> producto, <strong>por</strong> sucursal, etc.)
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-3 mb-6">
+                        {todasDimensiones.map((dim) => (
+                            <button
+                                key={dim.id}
+                                onClick={() => toggle(dim.id)}
+                                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                                    dimensiones.includes(dim.id)
+                                        ? 'border-indigo-400 bg-indigo-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                        dimensiones.includes(dim.id) ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300'
+                                    }`}>
+                                        {dimensiones.includes(dim.id) && <span className="text-white text-xs">✓</span>}
+                                    </div>
+                                    <span className="font-bold">{dim.nombre}</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+
+                    {dimensiones.length >= 4 && (
+                        <div className={`p-4 rounded-xl mb-6 ${esCorrecta ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                            {esCorrecta ? (
+                                <p className="text-green-800">
+                                    <strong>Perfecto!</strong> Has identificado las 4 dimensiones clave: Fecha, Producto, Cliente y Sucursal.
+                                </p>
+                            ) : (
+                                <p className="text-amber-800">
+                                    <strong>Revisa tu seleccion.</strong> Las dimensiones esenciales son: Fecha (cuando), Producto (que),
+                                    Cliente (quien), Sucursal (donde).
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={onComplete}
+                        disabled={!esCorrecta}
+                        className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50"
+                    >
+                        Continuar →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso4Hechos = ({ onComplete }) => {
+            const [hechos, setHechos] = useState([]);
+
+            const todosHechos = [
+                { id: 'cantidad', nombre: 'Cantidad vendida', tipo: 'aditivo', correcta: true },
+                { id: 'monto', nombre: 'Monto de venta', tipo: 'aditivo', correcta: true },
+                { id: 'costo', nombre: 'Costo total', tipo: 'aditivo', correcta: true },
+                { id: 'margen', nombre: 'Margen (calculado)', tipo: 'aditivo', correcta: true },
+                { id: 'descuento', nombre: 'Descuento aplicado', tipo: 'aditivo', correcta: true },
+                { id: 'precio_lista', nombre: 'Precio de lista', tipo: 'no-aditivo', correcta: false },
+                { id: 'nombre_producto', nombre: 'Nombre del producto', tipo: 'texto', correcta: false }
+            ];
+
+            const toggle = (id) => {
+                if (hechos.includes(id)) {
+                    setHechos(hechos.filter(h => h !== id));
+                } else {
+                    setHechos([...hechos, id]);
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 4</span>
+                        <span className="text-gray-400">15 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Identificar Hechos (Medidas)</h2>
+                    <p className="text-gray-600 mb-6">
+                        Los hechos son valores numericos que se pueden agregar (sumar, promediar, contar).
+                        Selecciona los hechos apropiados para la tabla de hechos de ventas:
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-3 mb-6">
+                        {todosHechos.map((hecho) => (
+                            <button
+                                key={hecho.id}
+                                onClick={() => toggle(hecho.id)}
+                                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                                    hechos.includes(hecho.id)
+                                        ? hecho.correcta
+                                            ? 'border-green-400 bg-green-50'
+                                            : 'border-red-400 bg-red-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold">{hecho.nombre}</span>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                        hecho.tipo === 'aditivo' ? 'bg-green-100 text-green-700' :
+                                        hecho.tipo === 'no-aditivo' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-gray-100 text-gray-700'
+                                    }`}>
+                                        {hecho.tipo}
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
+                        <p className="text-blue-800 text-sm">
+                            <strong>Tipos de hechos:</strong><br/>
+                            • <strong>Aditivo:</strong> Se puede sumar en todas las dimensiones (cantidad, monto)<br/>
+                            • <strong>Semi-aditivo:</strong> Se puede sumar en algunas dimensiones (inventario)<br/>
+                            • <strong>No-aditivo:</strong> No se puede sumar (precios, ratios)
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        disabled={hechos.length < 3}
+                        className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50"
+                    >
+                        Continuar →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso5Esquema = ({ onComplete }) => (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 5</span>
+                    <span className="text-gray-400">25 min</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Disenar Esquema Estrella</h2>
+
+                <div className="bg-slate-800 rounded-xl p-6 mb-6">
+                    <div className="flex justify-center items-center gap-8 flex-wrap">
+                        {/* Dimensiones */}
+                        <div className="space-y-2">
+                            <div className="bg-blue-500 text-white p-3 rounded-lg text-center w-32">
+                                <p className="font-bold text-sm">dim_fecha</p>
+                                <p className="text-xs opacity-80">PK: fecha_key</p>
+                            </div>
+                            <div className="bg-green-500 text-white p-3 rounded-lg text-center w-32">
+                                <p className="font-bold text-sm">dim_producto</p>
+                                <p className="text-xs opacity-80">PK: producto_key</p>
+                            </div>
+                        </div>
+
+                        {/* Lineas de conexion y tabla de hechos */}
+                        <div className="flex items-center">
+                            <div className="w-8 h-0.5 bg-slate-500"></div>
+                            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white p-4 rounded-xl text-center">
+                                <p className="font-bold">fact_ventas</p>
+                                <p className="text-xs opacity-80 mt-1">fecha_key (FK)</p>
+                                <p className="text-xs opacity-80">producto_key (FK)</p>
+                                <p className="text-xs opacity-80">cliente_key (FK)</p>
+                                <p className="text-xs opacity-80">sucursal_key (FK)</p>
+                                <hr className="my-2 border-white/30" />
+                                <p className="text-xs">cantidad, monto</p>
+                                <p className="text-xs">costo, margen</p>
+                            </div>
+                            <div className="w-8 h-0.5 bg-slate-500"></div>
+                        </div>
+
+                        {/* Dimensiones derecha */}
+                        <div className="space-y-2">
+                            <div className="bg-purple-500 text-white p-3 rounded-lg text-center w-32">
+                                <p className="font-bold text-sm">dim_cliente</p>
+                                <p className="text-xs opacity-80">PK: cliente_key</p>
+                            </div>
+                            <div className="bg-rose-500 text-white p-3 rounded-lg text-center w-32">
+                                <p className="font-bold text-sm">dim_sucursal</p>
+                                <p className="text-xs opacity-80">PK: sucursal_key</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-blue-50 rounded-xl p-4">
+                        <h4 className="font-bold text-blue-800 mb-2">Claves Sustitutas (Surrogate Keys)</h4>
+                        <p className="text-sm text-gray-600">
+                            Usamos claves enteras autogeneradas (producto_key, cliente_key) en lugar de
+                            las claves naturales del negocio. Esto permite manejar cambios historicos (SCD).
+                        </p>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-4">
+                        <h4 className="font-bold text-amber-800 mb-2">Claves Degeneradas</h4>
+                        <p className="text-sm text-gray-600">
+                            El numero de ticket se guarda directamente en la tabla de hechos (sin dimension propia)
+                            porque solo identifica la transaccion sin atributos adicionales.
+                        </p>
+                    </div>
+                </div>
+
+                <button onClick={onComplete} className="mt-6 px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                    Continuar →
+                </button>
+            </div>
+        );
+
+        const Paso6SQL = ({ onComplete }) => {
+            const [tablaActiva, setTablaActiva] = useState('dim_fecha');
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 6</span>
+                        <span className="text-gray-400">30 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Escribir DDL en SQL</h2>
+                    <p className="text-gray-600 mb-4">
+                        Explora el codigo SQL para crear cada tabla. Copia el codigo a Supabase para implementar tu DW.
+                    </p>
+
+                    <div className="flex gap-2 mb-4 overflow-x-auto">
+                        {Object.keys(sqlDimensiones).map((tabla) => (
+                            <button
+                                key={tabla}
+                                onClick={() => setTablaActiva(tabla)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                                    tablaActiva === tabla
+                                        ? tabla.startsWith('fact') ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200'
+                                }`}
+                            >
+                                {tabla}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-slate-800 rounded-xl p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-slate-400 text-sm">{tablaActiva}.sql</span>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(sqlDimensiones[tablaActiva])}
+                                className="px-3 py-1 bg-slate-600 text-white rounded text-sm hover:bg-slate-500"
+                            >
+                                Copiar
+                            </button>
+                        </div>
+                        <pre className="text-green-400 text-sm overflow-x-auto max-h-64">
+                            {sqlDimensiones[tablaActiva]}
+                        </pre>
+                    </div>
+
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl mb-6">
+                        <p className="text-emerald-800">
+                            <strong>Instruccion:</strong> Abre Supabase, ve al SQL Editor, y ejecuta cada script en orden:
+                            primero las dimensiones, luego la tabla de hechos.
+                        </p>
+                    </div>
+
+                    <button onClick={onComplete} className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600">
+                        Continuar →
+                    </button>
+                </div>
+            );
+        };
+
+        const Paso7Validar = ({ onComplete }) => {
+            const [consultaActiva, setConsultaActiva] = useState(0);
+            const [completado, setCompletado] = useState(false);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">Paso 7</span>
+                        <span className="text-gray-400">20 min</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Validar con Consultas</h2>
+                    <p className="text-gray-600 mb-6">
+                        Estas consultas demuestran como el esquema estrella responde las preguntas de negocio:
+                    </p>
+
+                    <div className="flex gap-2 mb-4">
+                        {consultasEjemplo.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setConsultaActiva(idx)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                    consultaActiva === idx ? 'bg-indigo-500 text-white' : 'bg-gray-100'
+                                }`}
+                            >
+                                Consulta {idx + 1}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl p-4 mb-4">
+                        <p className="font-bold text-blue-800">{consultasEjemplo[consultaActiva].pregunta}</p>
+                    </div>
+
+                    <div className="bg-slate-800 rounded-xl p-4 mb-6">
+                        <pre className="text-green-400 text-sm overflow-x-auto">
+                            {consultasEjemplo[consultaActiva].sql}
+                        </pre>
+                    </div>
+
+                    {!completado ? (
+                        <button
+                            onClick={() => setCompletado(true)}
+                            className="px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600"
+                        >
+                            Completar Laboratorio
+                        </button>
+                    ) : (
+                        <div className="text-center p-8 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl">
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h3 className="text-2xl font-bold text-green-800 mb-2">Laboratorio Completado!</h3>
+                            <p className="text-green-700 mb-4">
+                                Has disenado un Data Warehouse completo con esquema estrella.
+                            </p>
+                            <a
+                                href="ejercicio-individual.html"
+                                className="inline-block px-6 py-3 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600"
+                            >
+                                Continuar con Ejercicio Individual →
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const DWLab = () => {
+            const [currentStep, setCurrentStep] = useState(1);
+
+            const renderStep = () => {
+                switch(currentStep) {
+                    case 1: return <Paso1Procesos onComplete={() => setCurrentStep(2)} />;
+                    case 2: return <Paso2Granularidad onComplete={() => setCurrentStep(3)} />;
+                    case 3: return <Paso3Dimensiones onComplete={() => setCurrentStep(4)} />;
+                    case 4: return <Paso4Hechos onComplete={() => setCurrentStep(5)} />;
+                    case 5: return <Paso5Esquema onComplete={() => setCurrentStep(6)} />;
+                    case 6: return <Paso6SQL onComplete={() => setCurrentStep(7)} />;
+                    case 7: return <Paso7Validar />;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold mb-1">Laboratorio: Disenando un Data Warehouse</h1>
+                                    <p className="text-emerald-100">Sesion 04 - Modelado Dimensional</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">← Simulador</a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">Inicio</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+                        {renderStep()}
+
+                        <div className="mt-6 text-center text-gray-500 text-sm">
+                            <p>ADEN University - Taller de Tecnologia Aplicada</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DWLab />);
+    </script>
+</body>
+</html>

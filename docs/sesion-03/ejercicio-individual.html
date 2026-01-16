@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Disena KPIs con IA - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .copy-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL EJERCICIO
+        // ============================================
+
+        const empresas = [
+            {
+                id: 'ecommerce',
+                nombre: 'ModaExpress.pa',
+                industria: 'E-commerce Moda',
+                icon: 'SHOP',
+                color: 'from-pink-500 to-rose-500',
+                descripcion: 'Tienda online de moda con 3 anos en Panama. Vende ropa, accesorios y calzado. Tiene 25,000 usuarios registrados y 500 pedidos mensuales promedio. Quiere expandirse a Costa Rica.',
+                contexto: 'El CEO esta preocupado porque las ventas han caido 15% en los ultimos 3 meses pero no sabe exactamente por que. No tienen metricas claras de desempeno.',
+                objetivos: [
+                    'Recuperar el nivel de ventas anterior',
+                    'Reducir el abandono de carrito (actualmente 75%)',
+                    'Aumentar la frecuencia de compra de clientes actuales',
+                    'Preparar la expansion a Costa Rica'
+                ],
+                areas: ['Marketing Digital', 'Operaciones/Logistica', 'Atencion al Cliente', 'Finanzas']
+            },
+            {
+                id: 'restaurante',
+                nombre: 'Cadena Sabor Criollo',
+                industria: 'Restaurantes',
+                icon: 'FOOD',
+                color: 'from-orange-500 to-amber-500',
+                descripcion: 'Cadena de 5 restaurantes de comida tipica panamena. 120 empleados. Facturacion mensual de $180,000. Quiere abrir 3 locales mas en 2026.',
+                contexto: 'La rentabilidad varia mucho entre locales. Algunos tienen margen de 25% y otros apenas 8%. No hay estandarizacion de procesos ni metricas comparables.',
+                objetivos: [
+                    'Estandarizar rentabilidad en todos los locales (minimo 18%)',
+                    'Reducir desperdicio de alimentos (actualmente 12%)',
+                    'Mejorar satisfaccion del cliente para expansion',
+                    'Optimizar costos de personal'
+                ],
+                areas: ['Operaciones', 'Cocina/Produccion', 'Servicio al Cliente', 'Recursos Humanos']
+            },
+            {
+                id: 'clinica',
+                nombre: 'Clinica Dental Sonrisa',
+                industria: 'Salud',
+                icon: 'MED',
+                color: 'from-cyan-500 to-blue-500',
+                descripcion: 'Red de 3 clinicas dentales con 15 odontologos. Atienden 1,200 pacientes mensuales. Quieren implementar un sistema de BI para mejorar la gestion.',
+                contexto: 'El gerente sospecha que pierden muchos pacientes despues de la primera cita pero no tiene datos. Los odontologos tienen productividad muy diferente y no saben por que.',
+                objetivos: [
+                    'Aumentar retencion de pacientes (actualmente 40%)',
+                    'Optimizar agenda de odontologos (ocupacion objetivo: 80%)',
+                    'Reducir tiempos de espera en clinica',
+                    'Incrementar facturacion por paciente'
+                ],
+                areas: ['Atencion al Paciente', 'Produccion Clinica', 'Finanzas', 'Marketing']
+            },
+            {
+                id: 'transporte',
+                nombre: 'TransLog Express',
+                industria: 'Logistica',
+                icon: 'TRUCK',
+                color: 'from-emerald-500 to-green-500',
+                descripcion: 'Empresa de transporte de carga con 40 camiones y 60 empleados. Cubre rutas en Panama, Costa Rica y Nicaragua. Factura $500,000 mensuales.',
+                contexto: 'Los clientes se quejan de entregas tardias pero no hay registro preciso de tiempos. El combustible representa 35% de los costos y sospechan que hay ineficiencias.',
+                objetivos: [
+                    'Reducir entregas tardias (actualmente 20%)',
+                    'Optimizar consumo de combustible',
+                    'Aumentar la utilizacion de la flota (objetivo: 85%)',
+                    'Mejorar satisfaccion del cliente para ganar licitaciones'
+                ],
+                areas: ['Operaciones', 'Mantenimiento de Flota', 'Servicio al Cliente', 'Finanzas']
+            }
+        ];
+
+        const fases = [
+            {
+                id: 1,
+                titulo: 'Analizar Contexto y Objetivos',
+                descripcion: 'Entender la situacion de la empresa y sus metas estrategicas',
+                promptTemplate: `Actua como un consultor de Business Intelligence. Estoy analizando el caso de [EMPRESA], una empresa de [INDUSTRIA].
+
+Contexto: [CONTEXTO]
+
+Objetivos estrategicos:
+[OBJETIVOS]
+
+Areas principales: [AREAS]
+
+Por favor:
+1. Identifica los 3 problemas de negocio mas criticos basandote en el contexto
+2. Para cada problema, sugiere que tipo de KPI podria ayudar a medirlo
+3. Explica como estos KPIs se conectan con los objetivos estrategicos
+
+Responde de forma concisa y practica.`
+            },
+            {
+                id: 2,
+                titulo: 'Proponer KPIs por Area',
+                descripcion: 'Definir KPIs especificos para cada area de la empresa',
+                promptTemplate: `Continuando con el caso de [EMPRESA] ([INDUSTRIA]):
+
+Para cada una de estas areas: [AREAS]
+
+Propone 2-3 KPIs que cumplan criterios SMART:
+- Specific (Especifico): que mide exactamente?
+- Measurable (Medible): cual es la formula?
+- Achievable (Alcanzable): es realista?
+- Relevant (Relevante): conecta con objetivos?
+- Time-bound (Temporal): en que periodo?
+
+Para cada KPI incluye:
+1. Nombre del KPI
+2. Formula de calculo
+3. Fuente de datos probable
+4. Meta sugerida (basada en benchmarks de la industria)
+5. Frecuencia de medicion
+
+Presenta la informacion de forma estructurada.`
+            },
+            {
+                id: 3,
+                titulo: 'Definir Umbrales y Semaforos',
+                descripcion: 'Establecer los niveles verde, amarillo y rojo para cada KPI',
+                promptTemplate: `Para los KPIs que propusiste para [EMPRESA], necesito definir los umbrales del sistema semaforo.
+
+Para cada KPI, define:
+
+1. VERDE (Meta cumplida): Valor o rango que indica buen desempeno
+2. AMARILLO (Alerta): Valor o rango que requiere atencion
+3. ROJO (Critico): Valor o rango que requiere accion inmediata
+
+Tambien indica:
+- Que acciones se deben tomar cuando el KPI esta en amarillo
+- Que acciones se deben tomar cuando el KPI esta en rojo
+- Quien deberia ser el responsable de monitorear cada KPI
+
+Basa los umbrales en benchmarks de la industria de [INDUSTRIA] cuando sea posible.`
+            },
+            {
+                id: 4,
+                titulo: 'Disenar Dashboard Ejecutivo',
+                descripcion: 'Describir como visualizar los KPIs en un tablero de control',
+                promptTemplate: `Necesito disenar un dashboard ejecutivo para [EMPRESA] que muestre los KPIs principales.
+
+Por favor describe:
+
+1. ESTRUCTURA DEL DASHBOARD
+   - Como organizar los KPIs en la pantalla
+   - Que informacion mostrar "above the fold" (sin scroll)
+   - Como agrupar por area o por tipo
+
+2. VISUALIZACIONES RECOMENDADAS
+   - Para cada tipo de KPI, que grafico usar (gauge, linea, barras, numero grande)
+   - Colores y formato de semaforo
+   - Comparaciones (vs mes anterior, vs meta, vs ano anterior)
+
+3. INTERACTIVIDAD
+   - Que filtros deberia tener (fecha, sucursal, producto)
+   - Que drill-downs son importantes
+   - Alertas automaticas sugeridas
+
+4. FRECUENCIA DE ACTUALIZACION
+   - Que datos se actualizan en tiempo real
+   - Que datos se actualizan diariamente
+   - Que datos se actualizan mensualmente
+
+Considera que el usuario principal sera el CEO/Gerente General.`
+            },
+            {
+                id: 5,
+                titulo: 'Documentar con KPI Canvas',
+                descripcion: 'Crear la documentacion formal de los KPIs principales',
+                promptTemplate: `Finaliza el ejercicio creando el KPI Canvas completo para los 3 KPIs mas importantes de [EMPRESA].
+
+Para cada KPI, completa este template:
+
+---
+KPI CANVAS
+
+NOMBRE DEL KPI: [nombre descriptivo]
+
+OBJETIVO DE NEGOCIO QUE SOPORTA: [objetivo estrategico relacionado]
+
+FORMULA DE CALCULO: [formula exacta]
+
+FUENTE DE DATOS: [sistemas/archivos de donde viene]
+
+FRECUENCIA DE MEDICION: [diaria/semanal/mensual]
+
+META / TARGET: [valor objetivo con fecha]
+
+UMBRALES:
+- Verde: [criterio]
+- Amarillo: [criterio]
+- Rojo: [criterio]
+
+RESPONSABLE: [cargo del dueno del KPI]
+
+ACCIONES SI NO SE CUMPLE: [plan de accion]
+---
+
+Al final, proporciona 3 recomendaciones para implementar exitosamente estos KPIs en la organizacion.`
+            }
+        ];
+
+        const recursos = [
+            {
+                titulo: 'Google Skills Boost - Data Analytics',
+                url: 'https://www.cloudskillsboost.google/paths/18',
+                descripcion: 'Curso gratuito de Google sobre analisis de datos y KPIs',
+                tipo: 'Curso'
+            },
+            {
+                titulo: 'KPI Library - KPI Examples',
+                url: 'https://kpilibrary.com/',
+                descripcion: 'Biblioteca de KPIs por industria con formulas y benchmarks',
+                tipo: 'Referencia'
+            },
+            {
+                titulo: 'Bernard Marr - KPI Cheat Sheet',
+                url: 'https://bernardmarr.com/default.asp?contentID=762',
+                descripcion: 'Guia practica para definir KPIs efectivos',
+                tipo: 'Guia'
+            },
+            {
+                titulo: 'Tableau - Dashboard Best Practices',
+                url: 'https://www.tableau.com/learn/whitepapers/tableau-visual-guidebook',
+                descripcion: 'Mejores practicas para visualizar KPIs en dashboards',
+                tipo: 'Whitepaper'
+            }
+        ];
+
+        // ============================================
+        // COMPONENTES
+        // ============================================
+
+        const EmpresaCard = ({ empresa, isSelected, onSelect }) => {
+            return (
+                <button
+                    onClick={onSelect}
+                    className={`w-full text-left p-4 rounded-xl transition-all ${
+                        isSelected
+                            ? `bg-gradient-to-r ${empresa.color} text-white shadow-lg scale-105`
+                            : 'bg-white hover:shadow-md'
+                    }`}
+                >
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className={`text-xl ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                            {empresa.icon}
+                        </span>
+                        <div>
+                            <h3 className="font-bold">{empresa.nombre}</h3>
+                            <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                {empresa.industria}
+                            </p>
+                        </div>
+                    </div>
+                    <p className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-600'}`}>
+                        {empresa.descripcion.substring(0, 100)}...
+                    </p>
+                </button>
+            );
+        };
+
+        const PromptCard = ({ fase, empresa, onCopy }) => {
+            const [copied, setCopied] = useState(false);
+
+            const generarPrompt = () => {
+                return fase.promptTemplate
+                    .replace(/\[EMPRESA\]/g, empresa.nombre)
+                    .replace(/\[INDUSTRIA\]/g, empresa.industria)
+                    .replace(/\[CONTEXTO\]/g, empresa.contexto)
+                    .replace(/\[OBJETIVOS\]/g, empresa.objetivos.map((o, i) => `${i+1}. ${o}`).join('\n'))
+                    .replace(/\[AREAS\]/g, empresa.areas.join(', '));
+            };
+
+            const handleCopy = () => {
+                navigator.clipboard.writeText(generarPrompt());
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <span className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full text-sm font-bold">
+                                Fase {fase.id}
+                            </span>
+                            <h3 className="font-bold text-gray-800">{fase.titulo}</h3>
+                        </div>
+                    </div>
+                    <p className="text-gray-600 mb-4">{fase.descripcion}</p>
+
+                    <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500 font-medium">PROMPT PARA IA</span>
+                            <button
+                                onClick={handleCopy}
+                                className={`copy-btn px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                                    copied
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-violet-500 text-white hover:bg-violet-600'
+                                }`}
+                            >
+                                {copied ? '✓ Copiado!' : 'Copiar Prompt'}
+                            </button>
+                        </div>
+                        <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono bg-white p-3 rounded-lg border max-h-48 overflow-y-auto">
+                            {generarPrompt()}
+                        </pre>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <a
+                            href="https://chat.openai.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600"
+                        >
+                            Abrir ChatGPT
+                        </a>
+                        <a
+                            href="https://claude.ai"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+                        >
+                            Abrir Claude
+                        </a>
+                        <a
+                            href="https://gemini.google.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600"
+                        >
+                            Abrir Gemini
+                        </a>
+                    </div>
+                </div>
+            );
+        };
+
+        const RecursosPanel = () => {
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="font-bold text-gray-800 mb-4">Recursos de Apoyo</h3>
+                    <div className="space-y-3">
+                        {recursos.map((recurso, idx) => (
+                            <a
+                                key={idx}
+                                href={recurso.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-medium text-gray-800">{recurso.titulo}</p>
+                                        <p className="text-sm text-gray-500">{recurso.descripcion}</p>
+                                    </div>
+                                    <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
+                                        {recurso.tipo}
+                                    </span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const EntregablePanel = () => {
+            const [items, setItems] = useState({});
+
+            const checklistItems = [
+                'Analisis del contexto y problemas de negocio',
+                'Lista de KPIs por area (minimo 6 KPIs totales)',
+                'Criterios SMART para cada KPI',
+                'Umbrales verde/amarillo/rojo definidos',
+                'Descripcion del dashboard propuesto',
+                'KPI Canvas para 3 KPIs principales',
+                'Capturas de pantalla de las conversaciones con IA'
+            ];
+
+            const toggleItem = (idx) => {
+                setItems(prev => ({ ...prev, [idx]: !prev[idx] }));
+            };
+
+            const completados = Object.values(items).filter(Boolean).length;
+
+            return (
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-6">
+                    <h3 className="font-bold text-violet-800 mb-4">Checklist de Entregables</h3>
+                    <div className="space-y-2 mb-4">
+                        {checklistItems.map((item, idx) => (
+                            <label key={idx} className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={items[idx] || false}
+                                    onChange={() => toggleItem(idx)}
+                                    className="w-5 h-5 text-violet-600 rounded"
+                                />
+                                <span className={items[idx] ? 'text-gray-500 line-through' : 'text-gray-700'}>
+                                    {item}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                        <div className="flex justify-between text-sm mb-1">
+                            <span>Progreso</span>
+                            <span className="font-bold">{completados}/{checklistItems.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                                className="bg-violet-500 rounded-full h-2 transition-all"
+                                style={{ width: `${(completados / checklistItems.length) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {completados === checklistItems.length && (
+                        <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-lg text-center">
+                            <p className="text-green-800 font-bold">🎉 Ejercicio Listo para Entregar!</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const KPIsExercise = () => {
+            const [empresaSeleccionada, setEmpresaSeleccionada] = useState(null);
+            const [faseActiva, setFaseActiva] = useState(1);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold mb-1">Ejercicio Individual: Disena KPIs con IA</h1>
+                                    <p className="text-violet-100">Sesion 03 - Taller de Tecnologia Aplicada</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="./" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Simulador
+                                    </a>
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm">
+                                        Lab Guiado
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Instrucciones */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-3">Instrucciones</h2>
+                            <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                <div className="bg-violet-50 rounded-lg p-4">
+                                    <p className="font-bold text-violet-800 mb-1">1. Elige una Empresa</p>
+                                    <p className="text-gray-600">Selecciona uno de los 4 casos de estudio disponibles.</p>
+                                </div>
+                                <div className="bg-violet-50 rounded-lg p-4">
+                                    <p className="font-bold text-violet-800 mb-1">2. Usa los Prompts</p>
+                                    <p className="text-gray-600">Copia cada prompt y usalo con ChatGPT, Claude o Gemini.</p>
+                                </div>
+                                <div className="bg-violet-50 rounded-lg p-4">
+                                    <p className="font-bold text-violet-800 mb-1">3. Documenta</p>
+                                    <p className="text-gray-600">Guarda capturas y compila tu entregable final.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Seleccion de Empresa */}
+                        {!empresaSeleccionada ? (
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Selecciona tu Caso de Estudio</h2>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {empresas.map((empresa) => (
+                                        <EmpresaCard
+                                            key={empresa.id}
+                                            empresa={empresa}
+                                            isSelected={false}
+                                            onSelect={() => setEmpresaSeleccionada(empresa)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {/* Panel izquierdo - Info empresa */}
+                                <div className="space-y-6">
+                                    <div className={`bg-gradient-to-r ${empresaSeleccionada.color} text-white p-6 rounded-xl`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold">{empresaSeleccionada.nombre}</h3>
+                                                <p className="text-white/80">{empresaSeleccionada.industria}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setEmpresaSeleccionada(null)}
+                                                className="text-white/60 hover:text-white"
+                                            >
+                                                Cambiar
+                                            </button>
+                                        </div>
+                                        <p className="text-sm text-white/90 mb-4">{empresaSeleccionada.descripcion}</p>
+                                        <div className="bg-white/20 rounded-lg p-3">
+                                            <p className="text-xs text-white/70 mb-1">CONTEXTO</p>
+                                            <p className="text-sm">{empresaSeleccionada.contexto}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm p-4">
+                                        <h4 className="font-bold text-gray-800 mb-3">Objetivos Estrategicos</h4>
+                                        <ul className="space-y-2">
+                                            {empresaSeleccionada.objetivos.map((obj, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                                    <span className="text-indigo-500">•</span>
+                                                    {obj}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <EntregablePanel />
+                                </div>
+
+                                {/* Panel central - Fases */}
+                                <div className="md:col-span-2 space-y-6">
+                                    {/* Navegacion de fases */}
+                                    <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm overflow-x-auto">
+                                        {fases.map((fase) => (
+                                            <button
+                                                key={fase.id}
+                                                onClick={() => setFaseActiva(fase.id)}
+                                                className={`flex-shrink-0 py-2 px-4 rounded-lg font-medium transition-all ${
+                                                    faseActiva === fase.id
+                                                        ? 'bg-violet-500 text-white'
+                                                        : 'text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                Fase {fase.id}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Contenido de la fase */}
+                                    <PromptCard
+                                        fase={fases.find(f => f.id === faseActiva)}
+                                        empresa={empresaSeleccionada}
+                                    />
+
+                                    <RecursosPanel />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className="mt-8 text-center text-gray-500 text-sm">
+                            <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 03</p>
+                            <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<KPIsExercise />);
+    </script>
+</body>
+</html>

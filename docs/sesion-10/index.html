@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 10: Principios de Visualizacion y Dashboards - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Principios Gestalt
+        const gestaltPrinciples = [
+            { name: 'Proximidad', desc: 'Elementos cercanos se perciben como grupo', icon: '⬛⬛  ⬛⬛', example: 'Agrupar metricas relacionadas' },
+            { name: 'Similitud', desc: 'Elementos similares se perciben como grupo', icon: '🔵🔵🔴🔴', example: 'Mismo color para misma categoria' },
+            { name: 'Continuidad', desc: 'El ojo sigue lineas y curvas naturalmente', icon: '➡️', example: 'Lineas de tendencia' },
+            { name: 'Cierre', desc: 'La mente completa formas incompletas', icon: '◐', example: 'Graficos de dona' },
+            { name: 'Figura-Fondo', desc: 'Separar elementos del fondo', icon: '🖼️', example: 'Destacar KPI principal' }
+        ];
+
+        // Atributos pre-atentivos
+        const preattentiveAttrs = [
+            { name: 'Color', example: 'Resaltar valor anomalo en rojo' },
+            { name: 'Tamaño', example: 'Barra mas grande = mayor valor' },
+            { name: 'Posicion', example: 'Top-left = mas importante' },
+            { name: 'Orientacion', example: 'Flecha arriba = crecimiento' },
+            { name: 'Forma', example: 'Circulo vs cuadrado para diferenciar' },
+            { name: 'Intensidad', example: 'Color mas intenso = mayor impacto' }
+        ];
+
+        // Tipos de graficos por pregunta
+        const chartTypes = [
+            {
+                question: '¿Como cambia algo en el tiempo?',
+                charts: ['Linea', 'Area', 'Barras (temporal)'],
+                recommended: 'Linea',
+                icon: '📈',
+                example: 'Ventas mensuales, tendencia de usuarios'
+            },
+            {
+                question: '¿Como se comparan categorias?',
+                charts: ['Barras horizontales', 'Barras verticales', 'Lollipop'],
+                recommended: 'Barras horizontales',
+                icon: '📊',
+                example: 'Ventas por region, productos top'
+            },
+            {
+                question: '¿Como se distribuye un todo?',
+                charts: ['Pie (max 5 cat)', 'Dona', 'Treemap', 'Stacked bar'],
+                recommended: 'Dona o Treemap',
+                icon: '🍩',
+                example: 'Market share, composicion de ingresos'
+            },
+            {
+                question: '¿Existe correlacion entre variables?',
+                charts: ['Scatter plot', 'Bubble chart'],
+                recommended: 'Scatter plot',
+                icon: '⭕',
+                example: 'Precio vs cantidad, edad vs gasto'
+            },
+            {
+                question: '¿Como se distribuyen los valores?',
+                charts: ['Histograma', 'Box plot', 'Violin'],
+                recommended: 'Histograma',
+                icon: '📊',
+                example: 'Distribucion de edades, rangos de precios'
+            },
+            {
+                question: '¿Cual es un valor puntual clave?',
+                charts: ['KPI Card', 'Gauge', 'Bullet'],
+                recommended: 'KPI Card',
+                icon: '🎯',
+                example: 'Revenue total, NPS actual'
+            }
+        ];
+
+        // Layout patterns
+        const layoutPatterns = [
+            {
+                name: 'Z-Pattern',
+                desc: 'Usuarios escanean de izquierda a derecha, luego diagonal abajo',
+                usage: 'Dashboards ejecutivos, landing pages',
+                zones: ['KPI Principal', 'KPI Secundario', 'Detalle 1', 'Detalle 2']
+            },
+            {
+                name: 'F-Pattern',
+                desc: 'Usuarios escanean intensamente arriba, menos hacia abajo',
+                usage: 'Dashboards con listas, reportes',
+                zones: ['Header con filtros', 'Metricas top', 'Graficos principales', 'Detalles']
+            },
+            {
+                name: 'Dashboard Grid',
+                desc: 'Cuadricula flexible con jerarquia visual',
+                usage: 'Dashboards operativos',
+                zones: ['KPIs (1 fila)', 'Charts principales (2 filas)', 'Tablas detalle (1 fila)']
+            }
+        ];
+
+        // Color palettes
+        const colorPalettes = {
+            sequential: {
+                name: 'Secuencial',
+                desc: 'Para valores ordenados de menor a mayor',
+                colors: ['#e3f2fd', '#90caf9', '#42a5f5', '#1976d2', '#0d47a1'],
+                example: 'Intensidad de ventas por region'
+            },
+            divergent: {
+                name: 'Divergente',
+                desc: 'Para valores con punto medio significativo',
+                colors: ['#d32f2f', '#ef5350', '#ffffff', '#66bb6a', '#388e3c'],
+                example: 'Variacion vs objetivo (negativo/positivo)'
+            },
+            categorical: {
+                name: 'Categorica',
+                desc: 'Para categorias sin orden',
+                colors: ['#42a5f5', '#66bb6a', '#ffca28', '#ef5350', '#ab47bc'],
+                example: 'Regiones, tipos de producto'
+            }
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedChart, setSelectedChart] = useState(null);
+            const [selectedLayout, setSelectedLayout] = useState(0);
+            const [selectedPalette, setSelectedPalette] = useState('categorical');
+            const [quizAnswers, setQuizAnswers] = useState({});
+            const [showQuizResults, setShowQuizResults] = useState(false);
+
+            const tabs = [
+                { id: 0, label: 'Principios Visuales', icon: '👁️' },
+                { id: 1, label: 'Seleccion de Graficos', icon: '📊' },
+                { id: 2, label: 'Layout y Color', icon: '🎨' },
+                { id: 3, label: 'Quiz', icon: '✅' }
+            ];
+
+            const quizQuestions = [
+                {
+                    q: '¿Cual grafico es mejor para mostrar tendencia mensual de ventas?',
+                    options: ['Pie chart', 'Linea', 'Scatter plot', 'Treemap'],
+                    correct: 1
+                },
+                {
+                    q: 'Para comparar 15 productos por ingresos, ¿cual grafico usarias?',
+                    options: ['Pie chart', 'Barras verticales', 'Barras horizontales', 'Dona'],
+                    correct: 2
+                },
+                {
+                    q: '¿Que principio Gestalt aplica al usar el mismo color para elementos relacionados?',
+                    options: ['Proximidad', 'Similitud', 'Continuidad', 'Cierre'],
+                    correct: 1
+                },
+                {
+                    q: 'Para mostrar % de crecimiento vs meta, ¿que paleta de colores usarias?',
+                    options: ['Secuencial', 'Divergente', 'Categorica', 'Monocromatica'],
+                    correct: 1
+                },
+                {
+                    q: '¿Donde colocarias el KPI mas importante en un dashboard?',
+                    options: ['Centro', 'Esquina inferior derecha', 'Esquina superior izquierda', 'Footer'],
+                    correct: 2
+                }
+            ];
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-teal-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 10: Principios de Visualizacion y Dashboards</h1>
+                        <p className="text-teal-100">Diseño efectivo de visualizaciones para comunicar datos</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-teal-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-teal-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: Principios Visuales */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Principios de Percepcion Visual</h2>
+                                    <p className="text-gray-600">
+                                        La visualizacion efectiva aprovecha como el cerebro procesa informacion visual.
+                                    </p>
+                                </div>
+
+                                {/* Gestalt Principles */}
+                                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Principios Gestalt</h3>
+                                    <div className="grid md:grid-cols-5 gap-3">
+                                        {gestaltPrinciples.map((p, idx) => (
+                                            <div key={idx} className="bg-white p-4 rounded-lg text-center shadow-sm">
+                                                <div className="text-2xl mb-2">{p.icon}</div>
+                                                <div className="font-bold text-sm">{p.name}</div>
+                                                <div className="text-xs text-gray-500 mt-1">{p.desc}</div>
+                                                <div className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded mt-2">
+                                                    {p.example}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Pre-attentive attributes */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Atributos Pre-Atentivos</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        Caracteristicas que el cerebro procesa automaticamente en milisegundos.
+                                    </p>
+                                    <div className="grid md:grid-cols-3 gap-3">
+                                        {preattentiveAttrs.map((attr, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                <span className="w-8 h-8 bg-teal-500 rounded flex items-center justify-center text-white font-bold">
+                                                    {attr.name[0]}
+                                                </span>
+                                                <div>
+                                                    <div className="font-medium">{attr.name}</div>
+                                                    <div className="text-xs text-gray-500">{attr.example}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Visual Demo */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Demo: Encuentra el valor diferente</h3>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="text-center">
+                                            <p className="text-sm text-gray-500 mb-2">Sin atributos pre-atentivos</p>
+                                            <div className="flex flex-wrap gap-2 justify-center p-4 bg-gray-50 rounded">
+                                                {[5,8,3,9,2,7,4,6,1,42,8,3].map((n, i) => (
+                                                    <span key={i} className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded text-sm">
+                                                        {n}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-2">Tardaste en encontrar el 42</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm text-gray-500 mb-2">Con color pre-atentivo</p>
+                                            <div className="flex flex-wrap gap-2 justify-center p-4 bg-gray-50 rounded">
+                                                {[5,8,3,9,2,7,4,6,1,42,8,3].map((n, i) => (
+                                                    <span key={i} className={`w-8 h-8 flex items-center justify-center rounded text-sm ${
+                                                        n === 42 ? 'bg-red-500 text-white font-bold' : 'bg-gray-200'
+                                                    }`}>
+                                                        {n}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-2">Encontraste el 42 instantaneamente</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Data-Ink Ratio */}
+                                <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                    <h4 className="font-bold text-amber-800">Principio de Tufte: Data-Ink Ratio</h4>
+                                    <p className="text-gray-700 mt-2">
+                                        "Maximiza la proporcion de tinta dedicada a mostrar datos vs decoracion."
+                                    </p>
+                                    <div className="flex gap-4 mt-3">
+                                        <div className="flex-1 bg-white p-3 rounded text-center">
+                                            <div className="text-red-500 font-medium">❌ Evitar</div>
+                                            <div className="text-sm text-gray-600">Gridlines, 3D, bordes, sombras</div>
+                                        </div>
+                                        <div className="flex-1 bg-white p-3 rounded text-center">
+                                            <div className="text-green-500 font-medium">✓ Preferir</div>
+                                            <div className="text-sm text-gray-600">Minimalismo, foco en datos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: Seleccion de Graficos */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">¿Que Grafico Usar?</h2>
+                                    <p className="text-gray-600">
+                                        La pregunta que quieres responder determina el tipo de grafico.
+                                    </p>
+                                </div>
+
+                                {/* Chart Selection Grid */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {chartTypes.map((ct, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedChart(selectedChart === idx ? null : idx)}
+                                            className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                                                selectedChart === idx
+                                                    ? 'border-teal-500 bg-teal-50 shadow-md'
+                                                    : 'hover:border-gray-300 hover:shadow'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <span className="text-3xl">{ct.icon}</span>
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-gray-800">{ct.question}</h4>
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {ct.charts.map((c, i) => (
+                                                            <span key={i} className={`text-xs px-2 py-0.5 rounded ${
+                                                                c === ct.recommended
+                                                                    ? 'bg-teal-500 text-white'
+                                                                    : 'bg-gray-200 text-gray-700'
+                                                            }`}>
+                                                                {c}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    {selectedChart === idx && (
+                                                        <div className="mt-3 pt-3 border-t">
+                                                            <div className="text-sm text-gray-600">
+                                                                <strong>Ejemplo:</strong> {ct.example}
+                                                            </div>
+                                                            <div className="text-sm text-teal-700 mt-1">
+                                                                <strong>Recomendado:</strong> {ct.recommended}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Common Mistakes */}
+                                <div className="border rounded-xl p-6 bg-red-50">
+                                    <h3 className="font-bold text-lg text-red-800 mb-4">Errores Comunes a Evitar</h3>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold text-red-700">🍕 Pie charts con muchas categorias</h5>
+                                            <p className="text-sm text-gray-600">Mas de 5-6 categorias es ilegible. Usa barras.</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold text-red-700">📊 3D en cualquier grafico</h5>
+                                            <p className="text-sm text-gray-600">Distorsiona la percepcion. Siempre 2D.</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold text-red-700">✂️ Eje Y truncado</h5>
+                                            <p className="text-sm text-gray-600">No empezar en 0 exagera diferencias.</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg">
+                                            <h5 className="font-bold text-red-700">🔴🟢 Solo rojo/verde</h5>
+                                            <p className="text-sm text-gray-600">8% de hombres son daltonicos. Usa iconos tambien.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Best Practices */}
+                                <div className="border rounded-xl p-6 bg-green-50">
+                                    <h3 className="font-bold text-lg text-green-800 mb-4">Mejores Practicas</h3>
+                                    <ul className="space-y-2">
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Titulo descriptivo que responda la pregunta del usuario</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Ordenar categorias de mayor a menor (o cronologicamente)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Etiquetas directas en lugar de leyendas separadas</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-500">✓</span>
+                                            <span>Resaltar el insight principal (color, anotacion)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Layout y Color */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Layout y Teoria del Color</h2>
+                                    <p className="text-gray-600">
+                                        La organizacion espacial y el color guian la atencion del usuario.
+                                    </p>
+                                </div>
+
+                                {/* Layout Patterns */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Patrones de Layout</h3>
+                                    <div className="flex gap-2 mb-4">
+                                        {layoutPatterns.map((lp, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setSelectedLayout(idx)}
+                                                className={`px-4 py-2 rounded-lg font-medium ${
+                                                    selectedLayout === idx
+                                                        ? 'bg-teal-500 text-white'
+                                                        : 'bg-gray-100 text-gray-600'
+                                                }`}
+                                            >
+                                                {lp.name}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h4 className="font-medium mb-2">{layoutPatterns[selectedLayout].name}</h4>
+                                            <p className="text-sm text-gray-600 mb-3">{layoutPatterns[selectedLayout].desc}</p>
+                                            <p className="text-sm"><strong>Uso ideal:</strong> {layoutPatterns[selectedLayout].usage}</p>
+                                        </div>
+                                        <div className="bg-gray-100 p-4 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {layoutPatterns[selectedLayout].zones.map((zone, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`p-3 rounded text-center text-sm font-medium ${
+                                                            i === 0 ? 'bg-teal-200 text-teal-800' :
+                                                            i === 1 ? 'bg-teal-100 text-teal-700' :
+                                                            'bg-gray-200 text-gray-600'
+                                                        }`}
+                                                    >
+                                                        {zone}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Color Palettes */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Paletas de Color</h3>
+                                    <div className="flex gap-2 mb-4">
+                                        {Object.entries(colorPalettes).map(([key, palette]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => setSelectedPalette(key)}
+                                                className={`px-4 py-2 rounded-lg font-medium ${
+                                                    selectedPalette === key
+                                                        ? 'bg-teal-500 text-white'
+                                                        : 'bg-gray-100 text-gray-600'
+                                                }`}
+                                            >
+                                                {palette.name}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <h4 className="font-medium mb-2">{colorPalettes[selectedPalette].name}</h4>
+                                        <p className="text-sm text-gray-600 mb-3">{colorPalettes[selectedPalette].desc}</p>
+
+                                        <div className="flex gap-1 mb-3">
+                                            {colorPalettes[selectedPalette].colors.map((color, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex-1 h-12 rounded"
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        <p className="text-sm"><strong>Ejemplo:</strong> {colorPalettes[selectedPalette].example}</p>
+                                    </div>
+                                </div>
+
+                                {/* Accessibility */}
+                                <div className="bg-purple-50 border-l-4 border-purple-500 p-4">
+                                    <h4 className="font-bold text-purple-800">Accesibilidad en Color</h4>
+                                    <div className="grid md:grid-cols-2 gap-4 mt-3">
+                                        <div>
+                                            <h5 className="font-medium text-sm">Daltonismo</h5>
+                                            <ul className="text-sm text-gray-600 mt-1">
+                                                <li>• No depender solo de rojo/verde</li>
+                                                <li>• Usar iconos + color</li>
+                                                <li>• Probar con simuladores</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h5 className="font-medium text-sm">Contraste</h5>
+                                            <ul className="text-sm text-gray-600 mt-1">
+                                                <li>• Ratio minimo 4.5:1 para texto</li>
+                                                <li>• Evitar gris claro sobre blanco</li>
+                                                <li>• Verificar con herramientas WCAG</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Dashboard Hierarchy */}
+                                <div className="border rounded-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Jerarquia Visual en Dashboards</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-4 p-3 bg-teal-100 rounded-lg">
+                                            <span className="text-2xl font-bold text-teal-600">1</span>
+                                            <div>
+                                                <h5 className="font-bold">KPIs Principales</h5>
+                                                <p className="text-sm text-gray-600">Grande, arriba, colores destacados</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 bg-teal-50 rounded-lg">
+                                            <span className="text-xl font-bold text-teal-500">2</span>
+                                            <div>
+                                                <h5 className="font-bold">Graficos de Tendencia</h5>
+                                                <p className="text-sm text-gray-600">Tamaño mediano, centro del dashboard</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 bg-gray-100 rounded-lg">
+                                            <span className="text-lg font-bold text-gray-500">3</span>
+                                            <div>
+                                                <h5 className="font-bold">Tablas de Detalle</h5>
+                                                <p className="text-sm text-gray-600">Parte inferior, para drill-down</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Quiz */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz: Principios de Visualizacion</h2>
+                                    <p className="text-gray-600">Verifica tu comprension de los conceptos clave.</p>
+                                </div>
+
+                                {!showQuizResults ? (
+                                    <div className="space-y-4">
+                                        {quizQuestions.map((q, idx) => (
+                                            <div key={idx} className="border rounded-xl p-4">
+                                                <h4 className="font-medium mb-3">{idx + 1}. {q.q}</h4>
+                                                <div className="grid md:grid-cols-2 gap-2">
+                                                    {q.options.map((opt, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setQuizAnswers({...quizAnswers, [idx]: i})}
+                                                            className={`p-3 rounded-lg text-left transition-all ${
+                                                                quizAnswers[idx] === i
+                                                                    ? 'bg-teal-100 border-2 border-teal-500'
+                                                                    : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                                                            }`}
+                                                        >
+                                                            {opt}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            onClick={() => setShowQuizResults(true)}
+                                            disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                                            className={`w-full py-3 rounded-lg font-medium ${
+                                                Object.keys(quizAnswers).length < quizQuestions.length
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-teal-600 text-white hover:bg-teal-700'
+                                            }`}
+                                        >
+                                            Ver Resultados
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {quizQuestions.map((q, idx) => {
+                                            const isCorrect = quizAnswers[idx] === q.correct;
+                                            return (
+                                                <div key={idx} className={`border-2 rounded-xl p-4 ${
+                                                    isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+                                                }`}>
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-xl">{isCorrect ? '✅' : '❌'}</span>
+                                                        <div>
+                                                            <h4 className="font-medium">{q.q}</h4>
+                                                            <p className="text-sm mt-1">
+                                                                Tu respuesta: <strong>{q.options[quizAnswers[idx]]}</strong>
+                                                            </p>
+                                                            {!isCorrect && (
+                                                                <p className="text-sm text-green-700 mt-1">
+                                                                    Correcta: <strong>{q.options[q.correct]}</strong>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        <div className="text-center p-6 bg-gray-100 rounded-xl">
+                                            <div className="text-4xl mb-2">
+                                                {quizQuestions.filter((q, i) => quizAnswers[i] === q.correct).length}/{quizQuestions.length}
+                                            </div>
+                                            <p className="text-gray-600">Respuestas correctas</p>
+                                            <button
+                                                onClick={() => { setQuizAnswers({}); setShowQuizResults(false); }}
+                                                className="mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700"
+                                            >
+                                                Reintentar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a href="laboratorio.html" className="bg-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-teal-700">
+                            Ir al Laboratorio →
+                        </a>
+                        <a href="ejercicio-individual.html" className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700">
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 10 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

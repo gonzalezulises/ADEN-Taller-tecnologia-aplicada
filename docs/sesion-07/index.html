@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesion 07: Data Mining - CRISP-DM y EDA - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Fases de CRISP-DM
+        const crispPhases = [
+            {
+                id: 1,
+                name: 'Business Understanding',
+                nameEs: 'Comprension del Negocio',
+                icon: '🎯',
+                color: 'blue',
+                description: 'Entender los objetivos del negocio y definir el problema de data mining.',
+                tasks: [
+                    'Determinar objetivos del negocio',
+                    'Evaluar la situacion actual',
+                    'Determinar objetivos de data mining',
+                    'Producir plan del proyecto'
+                ],
+                outputs: ['Informe de requisitos', 'Objetivos medibles', 'Plan de proyecto'],
+                questions: ['¿Cual es el problema de negocio?', '¿Como se mide el exito?', '¿Que decisiones tomara el negocio?']
+            },
+            {
+                id: 2,
+                name: 'Data Understanding',
+                nameEs: 'Comprension de los Datos',
+                icon: '📊',
+                color: 'cyan',
+                description: 'Recolectar datos iniciales, explorar y verificar la calidad.',
+                tasks: [
+                    'Recolectar datos iniciales',
+                    'Describir los datos',
+                    'Explorar los datos (EDA)',
+                    'Verificar calidad de datos'
+                ],
+                outputs: ['Diccionario de datos', 'Informe de EDA', 'Informe de calidad'],
+                questions: ['¿Que datos tenemos?', '¿Cuantos registros?', '¿Hay datos faltantes?']
+            },
+            {
+                id: 3,
+                name: 'Data Preparation',
+                nameEs: 'Preparacion de Datos',
+                icon: '🔧',
+                color: 'amber',
+                description: 'Preparar el dataset final para el modelado.',
+                tasks: [
+                    'Seleccionar datos relevantes',
+                    'Limpiar datos',
+                    'Construir nuevas variables',
+                    'Integrar datos de multiples fuentes',
+                    'Formatear datos'
+                ],
+                outputs: ['Dataset limpio', 'Variables derivadas', 'Documentacion de transformaciones'],
+                questions: ['¿Que variables usar?', '¿Como manejar nulos?', '¿Que features crear?']
+            },
+            {
+                id: 4,
+                name: 'Modeling',
+                nameEs: 'Modelado',
+                icon: '🤖',
+                color: 'purple',
+                description: 'Seleccionar y aplicar tecnicas de modelado, calibrar parametros.',
+                tasks: [
+                    'Seleccionar tecnica de modelado',
+                    'Generar diseno de pruebas',
+                    'Construir modelo',
+                    'Evaluar modelo'
+                ],
+                outputs: ['Modelo entrenado', 'Metricas de evaluacion', 'Parametros optimos'],
+                questions: ['¿Clasificacion o regresion?', '¿Que algoritmo usar?', '¿Como dividir train/test?']
+            },
+            {
+                id: 5,
+                name: 'Evaluation',
+                nameEs: 'Evaluacion',
+                icon: '✅',
+                color: 'green',
+                description: 'Evaluar si el modelo cumple los objetivos del negocio.',
+                tasks: [
+                    'Evaluar resultados',
+                    'Revisar el proceso',
+                    'Determinar proximos pasos'
+                ],
+                outputs: ['Informe de evaluacion', 'Recomendaciones', 'Decision de despliegue'],
+                questions: ['¿Cumple objetivos?', '¿Que aprendimos?', '¿Pasamos a produccion?']
+            },
+            {
+                id: 6,
+                name: 'Deployment',
+                nameEs: 'Despliegue',
+                icon: '🚀',
+                color: 'rose',
+                description: 'Organizar y presentar el conocimiento obtenido, desplegar el modelo.',
+                tasks: [
+                    'Planificar despliegue',
+                    'Planificar monitoreo y mantenimiento',
+                    'Producir informe final',
+                    'Revisar proyecto'
+                ],
+                outputs: ['Modelo en produccion', 'Documentacion', 'Plan de mantenimiento'],
+                questions: ['¿Como integramos?', '¿Cada cuanto reentrenar?', '¿Como monitorear?']
+            }
+        ];
+
+        // Tecnicas de EDA
+        const edaTechniques = {
+            univariate: [
+                { name: 'Histograma', desc: 'Distribucion de una variable numerica', code: 'df["columna"].hist()' },
+                { name: 'Boxplot', desc: 'Detectar outliers y cuartiles', code: 'df["columna"].plot(kind="box")' },
+                { name: 'Value Counts', desc: 'Frecuencia de categorias', code: 'df["columna"].value_counts()' },
+                { name: 'Describe', desc: 'Estadisticas descriptivas', code: 'df["columna"].describe()' }
+            ],
+            bivariate: [
+                { name: 'Scatter Plot', desc: 'Relacion entre 2 numericas', code: 'df.plot.scatter(x="col1", y="col2")' },
+                { name: 'Correlation', desc: 'Correlacion entre variables', code: 'df.corr()' },
+                { name: 'Heatmap', desc: 'Matriz de correlacion visual', code: 'sns.heatmap(df.corr())' },
+                { name: 'Groupby', desc: 'Agregar por categoria', code: 'df.groupby("cat")["num"].mean()' }
+            ],
+            quality: [
+                { name: 'Nulls', desc: 'Detectar valores nulos', code: 'df.isnull().sum()' },
+                { name: 'Dtypes', desc: 'Tipos de datos', code: 'df.dtypes' },
+                { name: 'Duplicates', desc: 'Filas duplicadas', code: 'df.duplicated().sum()' },
+                { name: 'Shape', desc: 'Dimensiones del dataset', code: 'df.shape' }
+            ]
+        };
+
+        // Quiz de CRISP-DM
+        const quizQuestions = [
+            {
+                question: '¿En que fase de CRISP-DM se realiza el Analisis Exploratorio de Datos (EDA)?',
+                options: ['Business Understanding', 'Data Understanding', 'Data Preparation', 'Modeling'],
+                correct: 1,
+                explanation: 'El EDA se realiza en Data Understanding para conocer los datos antes de prepararlos.'
+            },
+            {
+                question: '¿Cual fase viene despues de evaluar el modelo y antes del despliegue?',
+                options: ['Data Preparation', 'Modeling', 'Evaluation', 'Ninguna'],
+                correct: 2,
+                explanation: 'Evaluation es la fase 5, justo antes de Deployment.'
+            },
+            {
+                question: '¿En que fase se crea el dataset limpio para modelar?',
+                options: ['Data Understanding', 'Data Preparation', 'Modeling', 'Evaluation'],
+                correct: 1,
+                explanation: 'Data Preparation produce el dataset limpio y transformado.'
+            },
+            {
+                question: '¿Cual es una caracteristica clave de CRISP-DM?',
+                options: ['Es lineal', 'Es iterativo', 'Solo aplica a Big Data', 'Requiere Python'],
+                correct: 1,
+                explanation: 'CRISP-DM es iterativo: puedes volver a fases anteriores segun los hallazgos.'
+            }
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [selectedPhase, setSelectedPhase] = useState(null);
+            const [selectedCategory, setSelectedCategory] = useState('univariate');
+            const [quizAnswers, setQuizAnswers] = useState({});
+            const [showQuizResults, setShowQuizResults] = useState(false);
+
+            const tabs = [
+                { id: 0, label: 'CRISP-DM', icon: '🔄' },
+                { id: 1, label: 'EDA con Python', icon: '🐍' },
+                { id: 2, label: 'Caso Practico', icon: '📈' },
+                { id: 3, label: 'Quiz', icon: '❓' }
+            ];
+
+            const handleQuizAnswer = (questionIdx, answerIdx) => {
+                setQuizAnswers({ ...quizAnswers, [questionIdx]: answerIdx });
+            };
+
+            const calculateScore = () => {
+                let correct = 0;
+                quizQuestions.forEach((q, idx) => {
+                    if (quizAnswers[idx] === q.correct) correct++;
+                });
+                return correct;
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto p-6">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                        <div className="flex items-center gap-2 text-amber-100 mb-2">
+                            <a href="../" className="hover:text-white">← Volver al inicio</a>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2">Sesion 07: Data Mining - CRISP-DM y EDA</h1>
+                        <p className="text-amber-100">Metodologia CRISP-DM y Analisis Exploratorio de Datos con Python</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-amber-600 text-white shadow-lg'
+                                        : 'bg-white text-gray-600 hover:bg-amber-50'
+                                }`}
+                            >
+                                <span className="mr-2">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Tab 0: CRISP-DM */}
+                        {activeTab === 0 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">CRISP-DM</h2>
+                                    <p className="text-gray-600">
+                                        Cross-Industry Standard Process for Data Mining - Metodologia estandar para proyectos de mineria de datos.
+                                    </p>
+                                </div>
+
+                                {/* Diagram */}
+                                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4 text-center">Las 6 Fases de CRISP-DM</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {crispPhases.map((phase) => (
+                                            <div
+                                                key={phase.id}
+                                                onClick={() => setSelectedPhase(selectedPhase === phase.id ? null : phase.id)}
+                                                className={`p-4 rounded-xl cursor-pointer transition-all ${
+                                                    selectedPhase === phase.id
+                                                        ? `bg-${phase.color}-100 border-2 border-${phase.color}-500 shadow-lg`
+                                                        : 'bg-white border border-gray-200 hover:shadow-md'
+                                                }`}
+                                            >
+                                                <div className="text-3xl mb-2">{phase.icon}</div>
+                                                <div className="font-bold text-sm">{phase.id}. {phase.nameEs}</div>
+                                                <div className="text-xs text-gray-500">{phase.name}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="text-center mt-4 text-gray-500 text-sm">
+                                        🔄 El proceso es <strong>iterativo</strong>: puedes volver a cualquier fase segun los hallazgos
+                                    </div>
+                                </div>
+
+                                {/* Phase Details */}
+                                {selectedPhase && (
+                                    <div className={`border-2 rounded-xl p-6 ${
+                                        crispPhases[selectedPhase - 1].color === 'blue' ? 'border-blue-300 bg-blue-50' :
+                                        crispPhases[selectedPhase - 1].color === 'cyan' ? 'border-cyan-300 bg-cyan-50' :
+                                        crispPhases[selectedPhase - 1].color === 'amber' ? 'border-amber-300 bg-amber-50' :
+                                        crispPhases[selectedPhase - 1].color === 'purple' ? 'border-purple-300 bg-purple-50' :
+                                        crispPhases[selectedPhase - 1].color === 'green' ? 'border-green-300 bg-green-50' :
+                                        'border-rose-300 bg-rose-50'
+                                    }`}>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <span className="text-4xl">{crispPhases[selectedPhase - 1].icon}</span>
+                                            <div>
+                                                <h3 className="text-xl font-bold">{crispPhases[selectedPhase - 1].nameEs}</h3>
+                                                <p className="text-gray-600">{crispPhases[selectedPhase - 1].name}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-gray-700 mb-4">{crispPhases[selectedPhase - 1].description}</p>
+
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div className="bg-white p-4 rounded-lg">
+                                                <h4 className="font-bold mb-2">📋 Tareas</h4>
+                                                <ul className="text-sm space-y-1">
+                                                    {crispPhases[selectedPhase - 1].tasks.map((task, idx) => (
+                                                        <li key={idx} className="text-gray-600">• {task}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-lg">
+                                                <h4 className="font-bold mb-2">📦 Outputs</h4>
+                                                <ul className="text-sm space-y-1">
+                                                    {crispPhases[selectedPhase - 1].outputs.map((output, idx) => (
+                                                        <li key={idx} className="text-gray-600">• {output}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-lg">
+                                                <h4 className="font-bold mb-2">❓ Preguntas Clave</h4>
+                                                <ul className="text-sm space-y-1">
+                                                    {crispPhases[selectedPhase - 1].questions.map((q, idx) => (
+                                                        <li key={idx} className="text-gray-600">• {q}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Data Mining Definition */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="border rounded-xl p-4">
+                                        <h4 className="font-bold text-lg mb-2">¿Que es Data Mining?</h4>
+                                        <p className="text-gray-600 text-sm">
+                                            Proceso de descubrir patrones, correlaciones y anomalias en grandes
+                                            conjuntos de datos usando tecnicas estadisticas y de machine learning.
+                                        </p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">Clasificacion</span>
+                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Clustering</span>
+                                            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">Regresion</span>
+                                            <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs">Asociacion</span>
+                                        </div>
+                                    </div>
+                                    <div className="border rounded-xl p-4">
+                                        <h4 className="font-bold text-lg mb-2">¿Por que CRISP-DM?</h4>
+                                        <ul className="text-sm text-gray-600 space-y-1">
+                                            <li>✓ Estandar de la industria desde 1996</li>
+                                            <li>✓ Aplicable a cualquier herramienta</li>
+                                            <li>✓ Proceso iterativo y flexible</li>
+                                            <li>✓ Enfocado en objetivos de negocio</li>
+                                            <li>✓ Documentacion estructurada</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 1: EDA con Python */}
+                        {activeTab === 1 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Analisis Exploratorio de Datos (EDA)</h2>
+                                    <p className="text-gray-600">
+                                        Tecnicas para explorar, visualizar y entender los datos antes de modelar.
+                                    </p>
+                                </div>
+
+                                {/* Setup */}
+                                <div className="bg-gray-800 text-gray-100 p-4 rounded-xl">
+                                    <div className="text-gray-400 text-sm mb-2"># Imports basicos para EDA</div>
+                                    <pre className="text-sm">
+{`import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Cargar datos
+df = pd.read_csv('datos.csv')
+
+# Vista inicial
+df.head()
+df.info()
+df.describe()`}
+                                    </pre>
+                                </div>
+
+                                {/* Category selector */}
+                                <div className="flex gap-2">
+                                    {Object.keys(edaTechniques).map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setSelectedCategory(cat)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                                selectedCategory === cat
+                                                    ? 'bg-amber-500 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-amber-100'
+                                            }`}
+                                        >
+                                            {cat === 'univariate' ? '📊 Univariado' :
+                                             cat === 'bivariate' ? '📈 Bivariado' : '🔍 Calidad'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Techniques grid */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {edaTechniques[selectedCategory].map((tech, idx) => (
+                                        <div key={idx} className="border rounded-xl p-4 hover:shadow-md transition-all">
+                                            <h4 className="font-bold text-gray-800">{tech.name}</h4>
+                                            <p className="text-sm text-gray-600 mb-2">{tech.desc}</p>
+                                            <div className="bg-gray-800 text-green-400 p-2 rounded font-mono text-sm">
+                                                {tech.code}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Complete EDA workflow */}
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl">
+                                    <h3 className="font-bold text-lg mb-4">Flujo Completo de EDA</h3>
+                                    <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+                                        {[
+                                            { step: '1. Shape', desc: 'Dimensiones' },
+                                            { step: '2. Info', desc: 'Tipos de datos' },
+                                            { step: '3. Nulls', desc: 'Valores faltantes' },
+                                            { step: '4. Describe', desc: 'Estadisticas' },
+                                            { step: '5. Histograms', desc: 'Distribuciones' },
+                                            { step: '6. Correlations', desc: 'Relaciones' }
+                                        ].map((item, idx) => (
+                                            <React.Fragment key={idx}>
+                                                <div className="bg-white p-3 rounded-lg shadow text-center">
+                                                    <div className="font-bold text-amber-700">{item.step}</div>
+                                                    <div className="text-xs text-gray-500">{item.desc}</div>
+                                                </div>
+                                                {idx < 5 && <span className="text-gray-400">→</span>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 2: Caso Practico */}
+                        {activeTab === 2 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Caso Practico: Prediccion de Churn</h2>
+                                    <p className="text-gray-600">
+                                        Aplicaremos CRISP-DM para predecir que clientes cancelaran su suscripcion.
+                                    </p>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                                    <h3 className="font-bold text-blue-800">📋 Contexto del Negocio</h3>
+                                    <p className="text-gray-700 mt-2">
+                                        TelecomPanama S.A. tiene 100,000 clientes de telefonia movil. En el ultimo año,
+                                        15% de los clientes cancelaron su servicio (churn). El costo de adquirir un cliente
+                                        nuevo es 5x mayor que retener uno existente.
+                                    </p>
+                                </div>
+
+                                {/* CRISP-DM applied */}
+                                <div className="space-y-4">
+                                    {[
+                                        {
+                                            phase: 'Business Understanding',
+                                            icon: '🎯',
+                                            content: `
+                                                <strong>Objetivo:</strong> Identificar clientes con alta probabilidad de churn para intervenir proactivamente.
+                                                <br/><strong>Exito:</strong> Reducir churn del 15% al 10% en 6 meses.
+                                                <br/><strong>Accion:</strong> Ofrecer promociones personalizadas a clientes en riesgo.
+                                            `
+                                        },
+                                        {
+                                            phase: 'Data Understanding',
+                                            icon: '📊',
+                                            content: `
+                                                <strong>Datos disponibles:</strong>
+                                                <ul class="list-disc list-inside mt-1 text-sm">
+                                                    <li>Demograficos: edad, genero, ubicacion</li>
+                                                    <li>Cuenta: antiguedad, tipo de plan, metodo de pago</li>
+                                                    <li>Uso: minutos, datos, SMS, llamadas al call center</li>
+                                                    <li>Facturacion: monto mensual, pagos atrasados</li>
+                                                </ul>
+                                            `
+                                        },
+                                        {
+                                            phase: 'Data Preparation',
+                                            icon: '🔧',
+                                            content: `
+                                                <strong>Transformaciones:</strong>
+                                                <ul class="list-disc list-inside mt-1 text-sm">
+                                                    <li>Crear variable: ratio_uso = datos/minutos</li>
+                                                    <li>Encodificar: genero, ubicacion (one-hot)</li>
+                                                    <li>Normalizar: monto_mensual, antiguedad</li>
+                                                    <li>Manejar nulos: imputar con mediana</li>
+                                                </ul>
+                                            `
+                                        }
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="border rounded-xl p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-2xl">{item.icon}</span>
+                                                <h4 className="font-bold">{item.phase}</h4>
+                                            </div>
+                                            <div className="text-gray-700 text-sm" dangerouslySetInnerHTML={{ __html: item.content }} />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* EDA Code Example */}
+                                <div className="bg-gray-800 text-gray-100 p-4 rounded-xl">
+                                    <div className="text-gray-400 text-sm mb-2"># EDA para Churn</div>
+                                    <pre className="text-sm overflow-x-auto">
+{`# Cargar datos
+df = pd.read_csv('telecom_churn.csv')
+
+# Distribucion de churn
+print(df['churn'].value_counts(normalize=True))
+
+# Visualizar churn por antiguedad
+plt.figure(figsize=(10, 5))
+df.groupby('antiguedad_meses')['churn'].mean().plot()
+plt.title('Tasa de Churn por Antiguedad')
+plt.xlabel('Meses como cliente')
+plt.ylabel('Tasa de Churn')
+plt.show()
+
+# Correlacion con churn
+correlations = df.corr()['churn'].sort_values()
+print(correlations)
+
+# Variables mas correlacionadas con churn
+# llamadas_soporte: 0.45 (mas llamadas = mas churn)
+# pagos_atrasados:  0.38
+# antiguedad:      -0.32 (mas antiguedad = menos churn)`}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab 3: Quiz */}
+                        {activeTab === 3 && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz: CRISP-DM</h2>
+                                    <p className="text-gray-600">Evalua tu comprension de la metodologia CRISP-DM.</p>
+                                </div>
+
+                                {quizQuestions.map((q, qIdx) => (
+                                    <div key={qIdx} className="border rounded-xl p-4">
+                                        <h4 className="font-bold mb-3">{qIdx + 1}. {q.question}</h4>
+                                        <div className="grid md:grid-cols-2 gap-2">
+                                            {q.options.map((option, oIdx) => (
+                                                <button
+                                                    key={oIdx}
+                                                    onClick={() => handleQuizAnswer(qIdx, oIdx)}
+                                                    className={`p-3 rounded-lg text-left transition-all ${
+                                                        quizAnswers[qIdx] === oIdx
+                                                            ? showQuizResults
+                                                                ? oIdx === q.correct
+                                                                    ? 'bg-green-100 border-2 border-green-500'
+                                                                    : 'bg-red-100 border-2 border-red-500'
+                                                                : 'bg-amber-100 border-2 border-amber-500'
+                                                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                                                    }`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {showQuizResults && quizAnswers[qIdx] !== undefined && (
+                                            <div className={`mt-3 p-3 rounded-lg text-sm ${
+                                                quizAnswers[qIdx] === q.correct
+                                                    ? 'bg-green-50 text-green-800'
+                                                    : 'bg-red-50 text-red-800'
+                                            }`}>
+                                                {quizAnswers[qIdx] === q.correct ? '✓ Correcto! ' : '✗ Incorrecto. '}
+                                                {q.explanation}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setShowQuizResults(true)}
+                                        className="bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700"
+                                    >
+                                        Ver Resultados
+                                    </button>
+                                    {showQuizResults && (
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                                            <span className="font-bold">Puntaje:</span>
+                                            <span className={`text-xl font-bold ${
+                                                calculateScore() >= 3 ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                                {calculateScore()}/{quizQuestions.length}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <a
+                            href="laboratorio.html"
+                            className="bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center gap-2"
+                        >
+                            Ir al Laboratorio →
+                        </a>
+                        <a
+                            href="ejercicio-individual.html"
+                            className="bg-violet-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-700 transition-colors flex items-center gap-2"
+                        >
+                            Ejercicio Individual →
+                        </a>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 07 - Taller de Tecnologia Aplicada</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

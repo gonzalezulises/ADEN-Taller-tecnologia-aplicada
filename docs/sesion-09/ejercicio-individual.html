@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio Individual: Arquitectura Big Data - Sesion 09</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-violet-50 to-purple-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Casos de empresa para el ejercicio
+        const companyCases = [
+            {
+                id: 'streaming',
+                name: 'StreamMax Panama',
+                industry: 'Streaming/Entretenimiento',
+                icon: '🎬',
+                color: 'red',
+                context: `StreamMax Panama es una plataforma de streaming con 500,000 usuarios.
+                Generan 2TB de logs de visualizacion diarios: reproducciones, pausas,
+                saltos, buffering, dispositivos. Necesitan analizar patrones de consumo
+                en tiempo real para personalizar recomendaciones.`,
+                dataVolume: '2TB logs diarios',
+                sources: ['App movil', 'Smart TV', 'Web browser', 'Dispositivos IoT'],
+                challenge: 'Procesamiento real-time para recomendaciones personalizadas',
+                requirements: [
+                    'Latencia < 100ms para recomendaciones',
+                    'Analisis de patrones de visualizacion',
+                    'Deteccion de problemas de calidad (buffering)',
+                    'Segmentacion de audiencias'
+                ]
+            },
+            {
+                id: 'logistics',
+                name: 'LogiPanama Express',
+                industry: 'Logistica/Transporte',
+                icon: '🚚',
+                color: 'blue',
+                context: `LogiPanama Express opera 2,000 vehiculos con sensores IoT que
+                transmiten ubicacion, velocidad, combustible y temperatura cada 30 segundos.
+                Son 5.7M de eventos diarios. Necesitan optimizar rutas y predecir
+                mantenimiento preventivo.`,
+                dataVolume: '5.7M eventos IoT diarios',
+                sources: ['Sensores GPS', 'OBD-II vehicular', 'Sensores de carga', 'Weather API'],
+                challenge: 'Ingesta masiva de streaming IoT + analytics predictivo',
+                requirements: [
+                    'Ingesta de 200 eventos/segundo',
+                    'Alertas real-time por anomalias',
+                    'Prediccion de mantenimiento',
+                    'Optimizacion de rutas dinamica'
+                ]
+            },
+            {
+                id: 'fintech',
+                name: 'CriptoExchange PA',
+                industry: 'Fintech/Criptomonedas',
+                icon: '💰',
+                color: 'amber',
+                context: `CriptoExchange PA procesa 100,000 transacciones de criptomonedas
+                diarias con picos de 1,000 TPS durante volatilidad. Necesitan deteccion de
+                fraude en tiempo real, cumplimiento regulatorio (AML/KYC) y analisis de
+                mercado para trading algoritmico.`,
+                dataVolume: '100K transacciones/dia, picos 1K TPS',
+                sources: ['Trading engine', 'Blockchain nodes', 'Market feeds', 'KYC system'],
+                challenge: 'Baja latencia para trading + compliance regulatorio',
+                requirements: [
+                    'Procesamiento < 10ms por transaccion',
+                    'Deteccion de fraude real-time',
+                    'Reportes regulatorios automatizados',
+                    'Analisis de patrones de mercado'
+                ]
+            },
+            {
+                id: 'agro',
+                name: 'AgroTech Chiriqui',
+                industry: 'Agricultura/IoT',
+                icon: '🌾',
+                color: 'green',
+                context: `AgroTech Chiriqui gestiona 50,000 hectareas con sensores de humedad,
+                temperatura, drones con camaras multiespectrales e imagenes satelitales.
+                Generan 500GB de datos diarios. Necesitan prediccion de cosechas, deteccion
+                de plagas y optimizacion de riego.`,
+                dataVolume: '500GB datos mixtos diarios',
+                sources: ['Sensores suelo', 'Drones', 'Satelites', 'Estaciones meteo'],
+                challenge: 'Datos heterogeneos (sensores + imagenes) + ML para prediccion',
+                requirements: [
+                    'Procesamiento de imagenes satelitales',
+                    'Fusion de datos de sensores',
+                    'Modelos predictivos de rendimiento',
+                    'Alertas por condiciones adversas'
+                ]
+            }
+        ];
+
+        // Fases del ejercicio
+        const exercisePhases = [
+            {
+                id: 1,
+                title: 'Evaluacion de Requisitos Big Data',
+                description: 'Determinar si el caso realmente necesita tecnologias Big Data.',
+                prompt: (company) => `Actua como arquitecto de datos senior. Evalua si "${company.name}" realmente necesita Big Data:
+
+CONTEXTO:
+${company.context}
+
+Volumen: ${company.dataVolume}
+Fuentes: ${company.sources.join(', ')}
+Desafio principal: ${company.challenge}
+
+ANALIZA:
+1. Aplicando las 5 Vs (Volumen, Velocidad, Variedad, Veracidad, Valor):
+   - ¿Cual V es el driver principal?
+   - ¿Cuales Vs son secundarias?
+
+2. ¿Por que herramientas tradicionales (PostgreSQL, pandas) NO serian suficientes?
+
+3. Trade-off: ¿El costo de infraestructura Big Data se justifica con el valor de negocio?
+
+Proporciona una evaluacion estructurada con recomendacion final: SI/NO requiere Big Data y por que.`,
+                deliverable: 'Documento de evaluacion 5 Vs con justificacion'
+            },
+            {
+                id: 2,
+                title: 'Diseno de Arquitectura',
+                description: 'Disenar la arquitectura Big Data apropiada (Lambda, Kappa, Lakehouse).',
+                prompt: (company) => `Actua como arquitecto de soluciones Big Data. Disena la arquitectura para "${company.name}":
+
+REQUISITOS:
+${company.requirements.map(r => '- ' + r).join('\n')}
+
+PREGUNTA CLAVE: ¿Lambda, Kappa o Lakehouse?
+
+DISEÑA:
+1. Justificacion de arquitectura elegida:
+   - ¿Por que esta arquitectura y no las otras?
+   - ¿Como cumple con los requisitos especificos?
+
+2. Componentes por capa:
+   - Ingestion Layer: Tecnologias y patrones
+   - Storage Layer: Data Lake/Warehouse/Lakehouse
+   - Processing Layer: Batch vs Stream
+   - Serving Layer: APIs, dashboards, ML
+
+3. Diagrama conceptual (describelo textualmente para que pueda dibujarlo)
+
+4. Stack tecnologico recomendado (AWS/GCP/Azure o open source)
+
+Se especifico con nombres de servicios/herramientas.`,
+                deliverable: 'Diagrama de arquitectura + stack tecnologico'
+            },
+            {
+                id: 3,
+                title: 'Pipeline de Datos',
+                description: 'Disenar el flujo de datos end-to-end.',
+                prompt: (company) => `Actua como data engineer senior. Diseña el pipeline de datos para "${company.name}":
+
+FUENTES DE DATOS: ${company.sources.join(', ')}
+VOLUMEN: ${company.dataVolume}
+
+DISEÑA EL PIPELINE:
+
+1. Ingestion:
+   - ¿Batch, streaming o hibrido?
+   - Conectores especificos por fuente
+   - Formato de mensajes (Avro, JSON, Parquet)
+   - Manejo de schema evolution
+
+2. Transformacion:
+   - Capas de datos (Bronze/Silver/Gold o Raw/Curated/Aggregated)
+   - Transformaciones clave en cada capa
+   - Calidad de datos: validaciones y alertas
+
+3. Orquestacion:
+   - Herramienta de orquestacion (Airflow, Prefect, Dagster)
+   - Frecuencia de ejecucion
+   - Manejo de errores y reintentos
+
+4. Ejemplo de codigo PySpark para una transformacion clave
+
+Incluye consideraciones de escalabilidad y tolerancia a fallos.`,
+                deliverable: 'Especificacion de pipeline + codigo ejemplo'
+            },
+            {
+                id: 4,
+                title: 'Estrategia de Storage',
+                description: 'Definir como almacenar los datos para diferentes casos de uso.',
+                prompt: (company) => `Actua como data architect. Define la estrategia de storage para "${company.name}":
+
+CASOS DE USO:
+- Analisis historico (batch)
+- Consultas operacionales (baja latencia)
+- Machine Learning (features)
+- Reportes ejecutivos
+
+DEFINE:
+
+1. Data Lake:
+   - Estructura de directorios (particionado)
+   - Formato de archivos por capa
+   - Politicas de retencion
+   - Compresion
+
+2. Bases de Datos complementarias:
+   - ¿Cual para consultas OLAP?
+   - ¿Cual para baja latencia?
+   - ¿Cual para series temporales (si aplica)?
+
+3. Catalo y Gobernanza:
+   - Herramienta de catalogo de datos
+   - Clasificacion de datos sensibles
+   - Control de acceso
+
+4. Costos estimados:
+   - Storage mensual aproximado
+   - Compute para procesamiento
+   - Optimizaciones para reducir costos
+
+Se especifico con servicios cloud o herramientas open source.`,
+                deliverable: 'Estrategia de storage + estimacion de costos'
+            },
+            {
+                id: 5,
+                title: 'Plan de Implementacion',
+                description: 'Crear roadmap de implementacion por fases.',
+                prompt: (company) => `Actua como project manager tecnico. Crea el plan de implementacion para "${company.name}":
+
+ARQUITECTURA YA DEFINIDA (resumen de fases anteriores)
+
+CREA UN ROADMAP:
+
+1. Fase 1 - MVP (Semanas 1-4):
+   - Componentes minimos para valor inicial
+   - Quick wins para stakeholders
+   - Metricas de exito del MVP
+
+2. Fase 2 - Expansion (Semanas 5-8):
+   - Agregar fuentes de datos adicionales
+   - Primeros casos de ML
+   - Dashboards operacionales
+
+3. Fase 3 - Optimizacion (Semanas 9-12):
+   - Performance tuning
+   - Automatizacion de operaciones
+   - Capacitacion de usuarios
+
+4. Riesgos y Mitigacion:
+   - Top 5 riesgos tecnicos
+   - Estrategias de mitigacion
+   - Plan de rollback
+
+5. Equipo Requerido:
+   - Roles necesarios
+   - Skills criticos
+   - Opcion de outsourcing vs interno
+
+Incluye timeline visual (describelo para que pueda representarlo).`,
+                deliverable: 'Roadmap de 12 semanas + analisis de riesgos'
+            }
+        ];
+
+        function App() {
+            const [selectedCompany, setSelectedCompany] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(1);
+            const [completedPhases, setCompletedPhases] = useState([]);
+            const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+            const copyPrompt = (prompt) => {
+                navigator.clipboard.writeText(prompt);
+                setCopiedPrompt(true);
+                setTimeout(() => setCopiedPrompt(false), 2000);
+            };
+
+            const currentPhaseData = exercisePhases.find(p => p.id === currentPhase);
+
+            if (!selectedCompany) {
+                return (
+                    <div className="max-w-5xl mx-auto p-6">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+                            <div className="flex items-center gap-2 text-violet-200 mb-2">
+                                <a href="../" className="hover:text-white">← Inicio</a>
+                                <span>/</span>
+                                <a href="index.html" className="hover:text-white">Sesion 09</a>
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2">Ejercicio Individual: Arquitectura Big Data</h1>
+                            <p className="text-violet-200">Diseño de arquitectura con asistencia de IA</p>
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Instrucciones</h2>
+                            <div className="grid md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">1️⃣</div>
+                                    <div className="font-medium">Selecciona un caso</div>
+                                    <div className="text-sm text-gray-600">Elige una empresa</div>
+                                </div>
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">2️⃣</div>
+                                    <div className="font-medium">Usa los prompts</div>
+                                    <div className="text-sm text-gray-600">Con Claude o ChatGPT</div>
+                                </div>
+                                <div className="bg-violet-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl mb-2">3️⃣</div>
+                                    <div className="font-medium">Documenta</div>
+                                    <div className="text-sm text-gray-600">Entrega arquitectura completa</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
+                                <h4 className="font-bold text-amber-800">Importante</h4>
+                                <p className="text-gray-700 text-sm">
+                                    Este ejercicio te prepara para la Fase 3 del proyecto integrador.
+                                    Si tu equipo maneja grandes volumenes de datos, aplicaras estos conceptos.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Company selection */}
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Selecciona tu Caso de Estudio</h2>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {companyCases.map(company => (
+                                <div
+                                    key={company.id}
+                                    onClick={() => setSelectedCompany(company)}
+                                    className={`bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-${company.color}-500`}
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="text-4xl">{company.icon}</span>
+                                        <div>
+                                            <h3 className="font-bold text-lg">{company.name}</h3>
+                                            <span className={`text-sm bg-${company.color}-100 text-${company.color}-800 px-2 py-0.5 rounded`}>
+                                                {company.industry}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-600 text-sm mb-3">{company.context}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="bg-gray-100 text-xs px-2 py-1 rounded">{company.dataVolume}</span>
+                                        <span className="bg-gray-100 text-xs px-2 py-1 rounded">{company.sources.length} fuentes</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-8 text-center text-gray-500 text-sm">
+                            <p>Sesion 09 - Ejercicio Individual</p>
+                            <p>ADEN University - Cuatrimestre I 2026</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    {/* Header with company */}
+                    <div className={`bg-gradient-to-r from-${selectedCompany.color}-600 to-${selectedCompany.color}-500 text-white p-6 rounded-xl shadow-lg mb-6`}>
+                        <div className="flex items-center gap-2 text-white/80 mb-2">
+                            <button onClick={() => setSelectedCompany(null)} className="hover:text-white">← Cambiar caso</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-4xl">{selectedCompany.icon}</span>
+                            <div>
+                                <h1 className="text-2xl font-bold">{selectedCompany.name}</h1>
+                                <p className="text-white/80">{selectedCompany.industry} - Arquitectura Big Data</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="bg-white rounded-xl p-4 shadow mb-6">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium">Progreso</span>
+                            <span className="text-sm text-gray-500">{completedPhases.length}/{exercisePhases.length} fases</span>
+                        </div>
+                        <div className="flex gap-2">
+                            {exercisePhases.map(phase => (
+                                <div
+                                    key={phase.id}
+                                    onClick={() => setCurrentPhase(phase.id)}
+                                    className={`flex-1 h-2 rounded cursor-pointer ${
+                                        completedPhases.includes(phase.id)
+                                            ? 'bg-green-500'
+                                            : currentPhase === phase.id
+                                            ? 'bg-violet-500'
+                                            : 'bg-gray-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        {/* Phase selector */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <h3 className="font-bold text-gray-800 mb-3">Fases del Ejercicio</h3>
+                                <div className="space-y-2">
+                                    {exercisePhases.map(phase => (
+                                        <button
+                                            key={phase.id}
+                                            onClick={() => setCurrentPhase(phase.id)}
+                                            className={`w-full text-left p-3 rounded-lg transition-all ${
+                                                currentPhase === phase.id
+                                                    ? 'bg-violet-100 border-2 border-violet-500'
+                                                    : completedPhases.includes(phase.id)
+                                                    ? 'bg-green-50 border border-green-300'
+                                                    : 'bg-gray-50 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                    completedPhases.includes(phase.id)
+                                                        ? 'bg-green-500 text-white'
+                                                        : currentPhase === phase.id
+                                                        ? 'bg-violet-500 text-white'
+                                                        : 'bg-gray-300 text-white'
+                                                }`}>
+                                                    {completedPhases.includes(phase.id) ? '✓' : phase.id}
+                                                </span>
+                                                <span className="text-sm font-medium">{phase.title}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Company summary */}
+                            <div className="bg-white rounded-xl shadow p-4 mt-4">
+                                <h4 className="font-bold text-gray-800 mb-2">Resumen del Caso</h4>
+                                <div className="text-sm space-y-2">
+                                    <div>
+                                        <span className="text-gray-500">Volumen:</span>
+                                        <span className="ml-2 font-medium">{selectedCompany.dataVolume}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Desafio:</span>
+                                        <p className="text-gray-700 mt-1">{selectedCompany.challenge}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Main content */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-2">
+                                    Fase {currentPhase}: {currentPhaseData.title}
+                                </h2>
+                                <p className="text-gray-600 mb-4">{currentPhaseData.description}</p>
+
+                                {/* Prompt */}
+                                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="font-medium text-gray-700">Prompt para IA</span>
+                                        <button
+                                            onClick={() => copyPrompt(currentPhaseData.prompt(selectedCompany))}
+                                            className={`px-3 py-1 rounded text-sm transition-all ${
+                                                copiedPrompt
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-violet-600 text-white hover:bg-violet-700'
+                                            }`}
+                                        >
+                                            {copiedPrompt ? '✓ Copiado!' : 'Copiar prompt'}
+                                        </button>
+                                    </div>
+                                    <div className="bg-white border rounded-lg p-4 max-h-80 overflow-y-auto">
+                                        <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                                            {currentPhaseData.prompt(selectedCompany)}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Deliverable */}
+                                <div className="bg-violet-50 border-l-4 border-violet-500 p-4 mb-4">
+                                    <h4 className="font-bold text-violet-800">Entregable de esta fase</h4>
+                                    <p className="text-gray-700">{currentPhaseData.deliverable}</p>
+                                </div>
+
+                                {/* Tips by phase */}
+                                {currentPhase === 1 && (
+                                    <div className="bg-amber-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-amber-800 mb-2">Criterios de Evaluacion</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>• ¿Identificaste correctamente las 5 Vs relevantes?</li>
+                                            <li>• ¿Justificaste por que herramientas tradicionales no sirven?</li>
+                                            <li>• ¿Consideraste el trade-off costo/beneficio?</li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {currentPhase === 2 && (
+                                    <div className="bg-sky-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-sky-800 mb-2">Recuerda</h4>
+                                        <div className="grid grid-cols-3 gap-2 text-sm">
+                                            <div className="text-center p-2 bg-white rounded">
+                                                <div className="font-bold">Lambda</div>
+                                                <div className="text-xs text-gray-500">Batch + Real-time</div>
+                                            </div>
+                                            <div className="text-center p-2 bg-white rounded">
+                                                <div className="font-bold">Kappa</div>
+                                                <div className="text-xs text-gray-500">Solo Streaming</div>
+                                            </div>
+                                            <div className="text-center p-2 bg-white rounded">
+                                                <div className="font-bold">Lakehouse</div>
+                                                <div className="text-xs text-gray-500">Lake + DW unificado</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentPhase === 5 && (
+                                    <div className="bg-green-50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-green-800 mb-2">Tip para el Roadmap</h4>
+                                        <p className="text-sm text-gray-700">
+                                            Un buen MVP de Big Data debe demostrar valor en 4 semanas.
+                                            No intentes construir toda la arquitectura desde el inicio.
+                                            Empieza con un caso de uso critico y expande.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Navigation */}
+                                <div className="flex justify-between mt-6 pt-4 border-t">
+                                    <button
+                                        onClick={() => setCurrentPhase(Math.max(1, currentPhase - 1))}
+                                        disabled={currentPhase === 1}
+                                        className={`px-4 py-2 rounded-lg ${
+                                            currentPhase === 1
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        ← Anterior
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            if (!completedPhases.includes(currentPhase)) {
+                                                setCompletedPhases([...completedPhases, currentPhase]);
+                                            }
+                                            if (currentPhase < exercisePhases.length) {
+                                                setCurrentPhase(currentPhase + 1);
+                                            }
+                                        }}
+                                        className="bg-violet-600 text-white px-6 py-2 rounded-lg hover:bg-violet-700"
+                                    >
+                                        {currentPhase === exercisePhases.length ? 'Finalizar' : 'Siguiente fase →'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Completion */}
+                            {completedPhases.length === exercisePhases.length && (
+                                <div className="mt-6 bg-green-100 border-2 border-green-500 p-6 rounded-xl text-center">
+                                    <div className="text-4xl mb-2">🏆</div>
+                                    <h3 className="text-xl font-bold text-green-800 mb-2">Ejercicio Completado</h3>
+                                    <p className="text-gray-700 mb-4">
+                                        Has disenado una arquitectura Big Data completa para {selectedCompany.name}.
+                                    </p>
+                                    <div className="bg-white p-4 rounded-lg text-left mb-4">
+                                        <h4 className="font-bold text-gray-800 mb-2">Entregable Final</h4>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li>✓ Evaluacion de requisitos (5 Vs)</li>
+                                            <li>✓ Diagrama de arquitectura</li>
+                                            <li>✓ Especificacion de pipeline</li>
+                                            <li>✓ Estrategia de storage</li>
+                                            <li>✓ Roadmap de implementacion</li>
+                                        </ul>
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                        Sube tu documento a la plataforma del curso.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-gray-500 text-sm">
+                        <p>Sesion 09 - Ejercicio Individual Big Data</p>
+                        <p>ADEN University - Cuatrimestre I 2026</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Warehouse - Modelado Dimensional - ADEN University</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .table-hover:hover { transform: scale(1.02); }
+        .star-line { stroke-dasharray: 5, 5; animation: dash 0.5s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -10; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // ============================================
+        // DATOS DEL MODELADO DIMENSIONAL
+        // ============================================
+
+        const conceptosDW = {
+            definicion: "Un Data Warehouse es un repositorio central de datos integrados de multiples fuentes, optimizado para consultas analiticas y reportes.",
+            caracteristicas: [
+                { nombre: "Orientado a temas", descripcion: "Organizado por areas de negocio (ventas, inventario, clientes), no por aplicaciones" },
+                { nombre: "Integrado", descripcion: "Datos de multiples fuentes con formatos consistentes y unificados" },
+                { nombre: "No volatil", descripcion: "Los datos no se modifican una vez cargados, solo se agregan nuevos" },
+                { nombre: "Variante en el tiempo", descripcion: "Mantiene historial de cambios para analisis de tendencias" }
+            ],
+            inmon_vs_kimball: {
+                inmon: {
+                    nombre: "Bill Inmon (Top-Down)",
+                    enfoque: "Primero el Data Warehouse corporativo, luego Data Marts",
+                    modelo: "Modelo normalizado (3NF)",
+                    ventajas: ["Consistencia empresarial", "Una sola fuente de verdad", "Menor redundancia"],
+                    desventajas: ["Implementacion larga", "Alto costo inicial", "Complejidad"]
+                },
+                kimball: {
+                    nombre: "Ralph Kimball (Bottom-Up)",
+                    enfoque: "Primero Data Marts departamentales, luego se integran",
+                    modelo: "Modelo dimensional (Star Schema)",
+                    ventajas: ["Implementacion rapida", "ROI temprano", "Facil de entender"],
+                    desventajas: ["Posible inconsistencia", "Integracion posterior compleja"]
+                }
+            }
+        };
+
+        const tablaHechos = {
+            definicion: "Tabla central que contiene las medidas cuantitativas del negocio y las claves foraneas a las dimensiones.",
+            caracteristicas: [
+                "Contiene metricas numericas (hechos)",
+                "Claves foraneas a todas las dimensiones",
+                "Granularidad definida (nivel de detalle)",
+                "Gran volumen de registros"
+            ],
+            tipos: [
+                { tipo: "Transaccional", descripcion: "Un registro por transaccion", ejemplo: "Cada venta individual" },
+                { tipo: "Snapshot Periodico", descripcion: "Foto del estado en un momento", ejemplo: "Inventario al fin de mes" },
+                { tipo: "Snapshot Acumulativo", descripcion: "Ciclo de vida completo", ejemplo: "Pipeline de ventas" }
+            ],
+            ejemplo: {
+                nombre: "fact_ventas",
+                columnas: [
+                    { nombre: "venta_key", tipo: "INT", descripcion: "Clave sustituta (PK)" },
+                    { nombre: "fecha_key", tipo: "INT", descripcion: "FK a dim_fecha" },
+                    { nombre: "producto_key", tipo: "INT", descripcion: "FK a dim_producto" },
+                    { nombre: "cliente_key", tipo: "INT", descripcion: "FK a dim_cliente" },
+                    { nombre: "tienda_key", tipo: "INT", descripcion: "FK a dim_tienda" },
+                    { nombre: "cantidad", tipo: "INT", descripcion: "Hecho: unidades vendidas" },
+                    { nombre: "monto", tipo: "DECIMAL", descripcion: "Hecho: valor de la venta" },
+                    { nombre: "costo", tipo: "DECIMAL", descripcion: "Hecho: costo del producto" },
+                    { nombre: "descuento", tipo: "DECIMAL", descripcion: "Hecho: descuento aplicado" }
+                ]
+            }
+        };
+
+        const dimensiones = [
+            {
+                nombre: "dim_fecha",
+                descripcion: "Dimension temporal para analisis por periodos",
+                icono: "CAL",
+                columnas: [
+                    { nombre: "fecha_key", tipo: "INT", es_pk: true },
+                    { nombre: "fecha", tipo: "DATE" },
+                    { nombre: "dia", tipo: "INT" },
+                    { nombre: "mes", tipo: "INT" },
+                    { nombre: "anio", tipo: "INT" },
+                    { nombre: "trimestre", tipo: "INT" },
+                    { nombre: "dia_semana", tipo: "VARCHAR" },
+                    { nombre: "es_feriado", tipo: "BOOLEAN" }
+                ]
+            },
+            {
+                nombre: "dim_producto",
+                descripcion: "Atributos descriptivos de productos",
+                icono: "PROD",
+                columnas: [
+                    { nombre: "producto_key", tipo: "INT", es_pk: true },
+                    { nombre: "producto_id", tipo: "VARCHAR" },
+                    { nombre: "nombre", tipo: "VARCHAR" },
+                    { nombre: "categoria", tipo: "VARCHAR" },
+                    { nombre: "subcategoria", tipo: "VARCHAR" },
+                    { nombre: "marca", tipo: "VARCHAR" },
+                    { nombre: "precio_lista", tipo: "DECIMAL" }
+                ]
+            },
+            {
+                nombre: "dim_cliente",
+                descripcion: "Informacion de clientes para segmentacion",
+                icono: "USER",
+                columnas: [
+                    { nombre: "cliente_key", tipo: "INT", es_pk: true },
+                    { nombre: "cliente_id", tipo: "VARCHAR" },
+                    { nombre: "nombre", tipo: "VARCHAR" },
+                    { nombre: "segmento", tipo: "VARCHAR" },
+                    { nombre: "ciudad", tipo: "VARCHAR" },
+                    { nombre: "pais", tipo: "VARCHAR" },
+                    { nombre: "fecha_registro", tipo: "DATE" }
+                ]
+            },
+            {
+                nombre: "dim_tienda",
+                descripcion: "Ubicaciones de venta",
+                icono: "STORE",
+                columnas: [
+                    { nombre: "tienda_key", tipo: "INT", es_pk: true },
+                    { nombre: "tienda_id", tipo: "VARCHAR" },
+                    { nombre: "nombre", tipo: "VARCHAR" },
+                    { nombre: "tipo", tipo: "VARCHAR" },
+                    { nombre: "region", tipo: "VARCHAR" },
+                    { nombre: "gerente", tipo: "VARCHAR" }
+                ]
+            }
+        ];
+
+        const granularidad = {
+            definicion: "El nivel de detalle de los datos almacenados en la tabla de hechos.",
+            ejemplos: [
+                { nivel: "Alta (detalle)", ejemplo: "Una fila por cada item de cada transaccion", pros: "Maximo detalle, flexibilidad", cons: "Mayor volumen, consultas lentas" },
+                { nivel: "Media", ejemplo: "Una fila por transaccion (resumen)", pros: "Balance detalle/rendimiento", cons: "Pierde detalle de items" },
+                { nivel: "Baja (agregada)", ejemplo: "Ventas diarias por tienda", pros: "Rapido, poco espacio", cons: "No permite drill-down" }
+            ],
+            regla: "Siempre almacenar al nivel mas bajo posible y agregar on-demand"
+        };
+
+        // ============================================
+        // COMPONENTE: CONCEPTOS DW
+        // ============================================
+
+        const ConceptosDW = () => {
+            const [enfoqueActivo, setEnfoqueActivo] = useState('kimball');
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Que es un Data Warehouse?</h2>
+                    <p className="text-gray-600 mb-6">{conceptosDW.definicion}</p>
+
+                    <h3 className="font-bold text-gray-800 mb-3">Caracteristicas (Segun Bill Inmon)</h3>
+                    <div className="grid md:grid-cols-2 gap-4 mb-8">
+                        {conceptosDW.caracteristicas.map((car, idx) => (
+                            <div key={idx} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4">
+                                <h4 className="font-bold text-indigo-800">{car.nombre}</h4>
+                                <p className="text-gray-600 text-sm">{car.descripcion}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <h3 className="font-bold text-gray-800 mb-4">Enfoques de Arquitectura</h3>
+                    <div className="flex gap-2 mb-4">
+                        <button
+                            onClick={() => setEnfoqueActivo('inmon')}
+                            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                                enfoqueActivo === 'inmon'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                        >
+                            Inmon (Top-Down)
+                        </button>
+                        <button
+                            onClick={() => setEnfoqueActivo('kimball')}
+                            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                                enfoqueActivo === 'kimball'
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                        >
+                            Kimball (Bottom-Up)
+                        </button>
+                    </div>
+
+                    <div className={`rounded-xl p-6 ${enfoqueActivo === 'inmon' ? 'bg-blue-50' : 'bg-purple-50'}`}>
+                        <h4 className="text-xl font-bold mb-2">
+                            {conceptosDW.inmon_vs_kimball[enfoqueActivo].nombre}
+                        </h4>
+                        <p className="text-gray-700 mb-4">
+                            <strong>Enfoque:</strong> {conceptosDW.inmon_vs_kimball[enfoqueActivo].enfoque}
+                        </p>
+                        <p className="text-gray-700 mb-4">
+                            <strong>Modelo:</strong> {conceptosDW.inmon_vs_kimball[enfoqueActivo].modelo}
+                        </p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-green-700 mb-2">Ventajas</p>
+                                <ul className="text-sm space-y-1">
+                                    {conceptosDW.inmon_vs_kimball[enfoqueActivo].ventajas.map((v, i) => (
+                                        <li key={i} className="text-gray-600">✓ {v}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-bold text-red-700 mb-2">Desventajas</p>
+                                <ul className="text-sm space-y-1">
+                                    {conceptosDW.inmon_vs_kimball[enfoqueActivo].desventajas.map((d, i) => (
+                                        <li key={i} className="text-gray-600">✗ {d}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-amber-800">
+                            <strong>En este curso:</strong> Usaremos el enfoque de Kimball con modelos dimensionales
+                            (esquema estrella) por su facilidad de aprendizaje y rapida implementacion.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: ESQUEMA ESTRELLA
+        // ============================================
+
+        const EsquemaEstrella = () => {
+            const [dimensionActiva, setDimensionActiva] = useState(null);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Esquema Estrella (Star Schema)</h2>
+                    <p className="text-gray-600 mb-6">
+                        Modelo dimensional donde una tabla de hechos central se conecta directamente
+                        a todas las tablas de dimensiones, formando una estrella.
+                    </p>
+
+                    {/* Visualizacion interactiva del esquema */}
+                    <div className="relative bg-slate-800 rounded-xl p-8 mb-6" style={{minHeight: '400px'}}>
+                        {/* Tabla de hechos central */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white p-4 rounded-xl shadow-lg text-center w-40">
+                                <p className="font-bold text-lg">fact_ventas</p>
+                                <p className="text-xs text-white/80">Tabla de Hechos</p>
+                                <div className="mt-2 text-xs text-left bg-white/20 rounded p-2">
+                                    <p>cantidad</p>
+                                    <p>monto</p>
+                                    <p>costo</p>
+                                    <p>descuento</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Dimensiones en las puntas */}
+                        {dimensiones.map((dim, idx) => {
+                            const positions = [
+                                { top: '5%', left: '50%', transform: 'translateX(-50%)' },
+                                { top: '50%', right: '5%', transform: 'translateY(-50%)' },
+                                { bottom: '5%', left: '50%', transform: 'translateX(-50%)' },
+                                { top: '50%', left: '5%', transform: 'translateY(-50%)' }
+                            ];
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => setDimensionActiva(dimensionActiva === idx ? null : idx)}
+                                    className={`absolute table-hover transition-all ${
+                                        dimensionActiva === idx ? 'z-20 scale-110' : ''
+                                    }`}
+                                    style={positions[idx]}
+                                >
+                                    <div className={`bg-gradient-to-br ${
+                                        idx === 0 ? 'from-blue-400 to-blue-600' :
+                                        idx === 1 ? 'from-green-400 to-green-600' :
+                                        idx === 2 ? 'from-purple-400 to-purple-600' :
+                                        'from-rose-400 to-rose-600'
+                                    } text-white p-3 rounded-xl shadow-lg text-center w-32`}>
+                                        <p className="font-bold text-sm">{dim.nombre}</p>
+                                        <p className="text-xs text-white/80">{dim.icono}</p>
+                                    </div>
+                                </button>
+                            );
+                        })}
+
+                        {/* Lineas de conexion (SVG) */}
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{zIndex: 5}}>
+                            <line x1="50%" y1="20%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" className="star-line"/>
+                            <line x1="80%" y1="50%" x2="65%" y2="50%" stroke="#94a3b8" strokeWidth="2" className="star-line"/>
+                            <line x1="50%" y1="80%" x2="50%" y2="65%" stroke="#94a3b8" strokeWidth="2" className="star-line"/>
+                            <line x1="20%" y1="50%" x2="35%" y2="50%" stroke="#94a3b8" strokeWidth="2" className="star-line"/>
+                        </svg>
+                    </div>
+
+                    {/* Detalle de dimension seleccionada */}
+                    {dimensionActiva !== null && (
+                        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                            <h3 className="font-bold text-gray-800 mb-2">{dimensiones[dimensionActiva].nombre}</h3>
+                            <p className="text-gray-600 text-sm mb-3">{dimensiones[dimensionActiva].descripcion}</p>
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="px-3 py-2 text-left">Columna</th>
+                                        <th className="px-3 py-2 text-left">Tipo</th>
+                                        <th className="px-3 py-2 text-left">Clave</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dimensiones[dimensionActiva].columnas.map((col, i) => (
+                                        <tr key={i} className="border-b">
+                                            <td className="px-3 py-2 font-mono">{col.nombre}</td>
+                                            <td className="px-3 py-2 text-gray-500">{col.tipo}</td>
+                                            <td className="px-3 py-2">{col.es_pk && <span className="bg-yellow-200 px-2 py-0.5 rounded text-xs">PK</span>}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {!dimensionActiva && (
+                        <div className="text-center text-gray-500 mb-4">
+                            <p>Haz clic en una dimension para ver su estructura</p>
+                        </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-green-50 rounded-xl p-4">
+                            <h4 className="font-bold text-green-800 mb-2">Ventajas del Esquema Estrella</h4>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li>✓ Facil de entender para usuarios de negocio</li>
+                                <li>✓ Consultas SQL simples con pocos JOINs</li>
+                                <li>✓ Excelente rendimiento de lectura</li>
+                                <li>✓ Compatible con herramientas BI</li>
+                            </ul>
+                        </div>
+                        <div className="bg-red-50 rounded-xl p-4">
+                            <h4 className="font-bold text-red-800 mb-2">Consideraciones</h4>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li>• Redundancia de datos en dimensiones</li>
+                                <li>• No es optimo para actualizaciones frecuentes</li>
+                                <li>• Requiere proceso ETL bien disenado</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: TABLA DE HECHOS
+        // ============================================
+
+        const TablaHechos = () => {
+            const [tipoActivo, setTipoActivo] = useState(0);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Tabla de Hechos (Fact Table)</h2>
+                    <p className="text-gray-600 mb-6">{tablaHechos.definicion}</p>
+
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h3 className="font-bold text-gray-800 mb-3">Caracteristicas</h3>
+                            <ul className="space-y-2">
+                                {tablaHechos.caracteristicas.map((car, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-gray-600">
+                                        <span className="text-indigo-500 mt-1">•</span>
+                                        {car}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-800 mb-3">Tipos de Tablas de Hechos</h3>
+                            <div className="space-y-2">
+                                {tablaHechos.tipos.map((tipo, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setTipoActivo(idx)}
+                                        className={`w-full text-left p-3 rounded-lg transition-all ${
+                                            tipoActivo === idx
+                                                ? 'bg-indigo-100 border-2 border-indigo-400'
+                                                : 'bg-gray-50 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <p className="font-bold text-gray-800">{tipo.tipo}</p>
+                                        <p className="text-sm text-gray-500">{tipo.ejemplo}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 rounded-xl p-4 mb-6">
+                        <h4 className="font-bold text-amber-800 mb-2">{tablaHechos.tipos[tipoActivo].tipo}</h4>
+                        <p className="text-gray-700">{tablaHechos.tipos[tipoActivo].descripcion}</p>
+                        <p className="text-sm text-amber-700 mt-1">
+                            <strong>Ejemplo:</strong> {tablaHechos.tipos[tipoActivo].ejemplo}
+                        </p>
+                    </div>
+
+                    <h3 className="font-bold text-gray-800 mb-3">Ejemplo: {tablaHechos.ejemplo.nombre}</h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-gradient-to-r from-amber-100 to-orange-100">
+                                    <th className="px-4 py-2 text-left">Columna</th>
+                                    <th className="px-4 py-2 text-left">Tipo</th>
+                                    <th className="px-4 py-2 text-left">Descripcion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tablaHechos.ejemplo.columnas.map((col, idx) => (
+                                    <tr key={idx} className={`border-b ${col.descripcion.includes('FK') ? 'bg-blue-50' : col.descripcion.includes('Hecho') ? 'bg-green-50' : ''}`}>
+                                        <td className="px-4 py-2 font-mono font-bold">{col.nombre}</td>
+                                        <td className="px-4 py-2 text-gray-500">{col.tipo}</td>
+                                        <td className="px-4 py-2 text-gray-600">{col.descripcion}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-4 flex gap-4 text-sm">
+                        <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 bg-blue-100 rounded"></span> Claves foraneas
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 bg-green-100 rounded"></span> Hechos (medidas)
+                        </span>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE: GRANULARIDAD
+        // ============================================
+
+        const Granularidad = () => {
+            const [nivelActivo, setNivelActivo] = useState(1);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Granularidad</h2>
+                    <p className="text-gray-600 mb-6">{granularidad.definicion}</p>
+
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+                        <h3 className="font-bold text-indigo-800 mb-4">Niveles de Granularidad</h3>
+                        <div className="flex gap-4 mb-4">
+                            {granularidad.ejemplos.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setNivelActivo(idx)}
+                                    className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+                                        nivelActivo === idx
+                                            ? 'bg-indigo-500 text-white'
+                                            : 'bg-white hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {granularidad.ejemplos[idx].nivel}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="bg-white rounded-lg p-4">
+                            <p className="font-bold text-gray-800 mb-2">{granularidad.ejemplos[nivelActivo].ejemplo}</p>
+                            <div className="grid md:grid-cols-2 gap-4 mt-3">
+                                <div className="bg-green-50 rounded-lg p-3">
+                                    <p className="font-bold text-green-700 text-sm">Pros</p>
+                                    <p className="text-sm text-gray-600">{granularidad.ejemplos[nivelActivo].pros}</p>
+                                </div>
+                                <div className="bg-red-50 rounded-lg p-3">
+                                    <p className="font-bold text-red-700 text-sm">Cons</p>
+                                    <p className="text-sm text-gray-600">{granularidad.ejemplos[nivelActivo].cons}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="font-bold text-gray-800 mb-3">Visualizacion del Impacto</h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div className={`p-4 rounded-xl border-2 transition-all ${nivelActivo === 0 ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`}>
+                                <p className="font-bold text-gray-800">Alta (Item)</p>
+                                <div className="mt-2 space-y-1">
+                                    {['Venta #1, Item A', 'Venta #1, Item B', 'Venta #1, Item C', 'Venta #2, Item A', '...'].map((row, i) => (
+                                        <div key={i} className="bg-white px-2 py-1 rounded text-xs">{row}</div>
+                                    ))}
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">~10M filas/mes</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border-2 transition-all ${nivelActivo === 1 ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`}>
+                                <p className="font-bold text-gray-800">Media (Transaccion)</p>
+                                <div className="mt-2 space-y-1">
+                                    {['Venta #1 (3 items)', 'Venta #2 (1 item)', 'Venta #3 (5 items)', '...'].map((row, i) => (
+                                        <div key={i} className="bg-white px-2 py-1 rounded text-xs">{row}</div>
+                                    ))}
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">~3M filas/mes</p>
+                            </div>
+                            <div className={`p-4 rounded-xl border-2 transition-all ${nivelActivo === 2 ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'}`}>
+                                <p className="font-bold text-gray-800">Baja (Diario)</p>
+                                <div className="mt-2 space-y-1">
+                                    {['2026-01-01: $50K', '2026-01-02: $45K', '2026-01-03: $62K', '...'].map((row, i) => (
+                                        <div key={i} className="bg-white px-2 py-1 rounded text-xs">{row}</div>
+                                    ))}
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">~90 filas/mes</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <p className="text-green-800">
+                            <strong>Regla de Oro:</strong> {granularidad.regla}
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================
+        // COMPONENTE PRINCIPAL
+        // ============================================
+
+        const DWSimulator = () => {
+            const [activeTab, setActiveTab] = useState('conceptos');
+
+            const tabs = [
+                { id: 'conceptos', label: 'Conceptos DW' },
+                { id: 'estrella', label: 'Esquema Estrella' },
+                { id: 'hechos', label: 'Tabla de Hechos' },
+                { id: 'granularidad', label: 'Granularidad' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold mb-2">Data Warehouse - Modelado Dimensional</h1>
+                                    <p className="text-indigo-100">ADEN University - Taller de Tecnologia Aplicada - Sesion 04</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <a href="laboratorio.html" className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Lab Guiado
+                                    </a>
+                                    <a href="ejercicio-individual.html" className="bg-violet-500 hover:bg-violet-600 px-4 py-2 rounded-lg text-sm font-medium">
+                                        Ejercicio Individual
+                                    </a>
+                                    <a href="../" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm">
+                                        ← Inicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mb-4">
+                        <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-500 text-white shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto">
+                        {activeTab === 'conceptos' && <ConceptosDW />}
+                        {activeTab === 'estrella' && <EsquemaEstrella />}
+                        {activeTab === 'hechos' && <TablaHechos />}
+                        {activeTab === 'granularidad' && <Granularidad />}
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mt-6 text-center text-gray-500 text-sm">
+                        <p>ADEN University - Taller de Tecnologia Aplicada - Sesion 04</p>
+                        <p className="mt-1">Docente: Ulises Javier Gonzalez Diaz</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DWSimulator />);
+    </script>
+</body>
+</html>
