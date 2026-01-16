@@ -143,6 +143,27 @@
         /* Footer */
         .footer { text-align: center; padding: 20px; color: #64748b; font-size: 14px; }
 
+        /* Resources Section */
+        .resources-section { background: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden; margin-bottom: 20px; }
+        .resources-header { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 20px 24px; }
+        .resources-header h3 { color: white; font-size: 20px; display: flex; align-items: center; gap: 12px; }
+        .resources-header p { color: #bae6fd; margin-top: 4px; font-size: 14px; }
+        .resources-grid { padding: 20px; display: grid; gap: 16px; }
+        .resource-card { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; transition: all 0.3s; }
+        .resource-card:hover { border-color: #0ea5e9; transform: translateY(-2px); }
+        .resource-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .resource-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .resource-icon.google { background: linear-gradient(135deg, #4285f4, #34a853); }
+        .resource-icon.harvard { background: linear-gradient(135deg, #a51c30, #8c1515); }
+        .resource-icon.tableau { background: linear-gradient(135deg, #e97627, #c72037); }
+        .resource-title { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+        .resource-provider { font-size: 12px; color: #64748b; }
+        .resource-description { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+        .resource-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .resource-tag { background: #334155; color: #94a3b8; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
+        .resource-link { display: inline-flex; align-items: center; gap: 8px; background: #0ea5e9; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .resource-link:hover { background: #0284c7; }
+
         /* Responsive */
         @media (max-width: 768px) {
             .diagram-content { flex-direction: column; }
@@ -730,6 +751,91 @@ Por favor genera SOLO el código SQL, sin explicaciones adicionales.`;
                         onClick: function() { setCurrentStep(currentStep + 1); }
                     }, currentStep === steps.length - 1 ? '📤 Listo para entregar' : 'Siguiente →')
                 ),
+
+                // Sección "Ir más allá"
+                createElement('div', { className: 'resources-section' },
+                    createElement('div', { className: 'resources-header' },
+                        createElement('h3', null, '🚀 Ir más allá'),
+                        createElement('p', null, 'Recursos gratuitos para profundizar en SQL y visualización de datos')
+                    ),
+                    createElement('div', { className: 'resources-grid' },
+                        // Google Skills Boost
+                        createElement('div', { className: 'resource-card' },
+                            createElement('div', { className: 'resource-card-header' },
+                                createElement('div', { className: 'resource-icon google' }, '☁️'),
+                                createElement('div', null,
+                                    createElement('div', { className: 'resource-title' }, 'Introduction to SQL for BigQuery and Cloud SQL'),
+                                    createElement('div', { className: 'resource-provider' }, 'Google Skills Boost')
+                                )
+                            ),
+                            createElement('p', { className: 'resource-description' },
+                                'Curso técnico e interactivo de Google Cloud. Aprende a escribir consultas SQL (SELECT, FROM, WHERE) usando la consola real de BigQuery y Cloud SQL.'
+                            ),
+                            createElement('div', { className: 'resource-tags' },
+                                createElement('span', { className: 'resource-tag' }, 'SQL'),
+                                createElement('span', { className: 'resource-tag' }, 'BigQuery'),
+                                createElement('span', { className: 'resource-tag' }, 'Hands-on'),
+                                createElement('span', { className: 'resource-tag' }, 'Gratuito')
+                            ),
+                            createElement('a', {
+                                href: 'https://www.cloudskillsboost.google/focuses/2802?locale=es&parent=catalog',
+                                target: '_blank',
+                                className: 'resource-link'
+                            }, '↗ Acceder al curso')
+                        ),
+
+                        // Harvard CS50
+                        createElement('div', { className: 'resource-card' },
+                            createElement('div', { className: 'resource-card-header' },
+                                createElement('div', { className: 'resource-icon harvard' }, '🎓'),
+                                createElement('div', null,
+                                    createElement('div', { className: 'resource-title' }, "CS50's Introduction to Databases with SQL"),
+                                    createElement('div', { className: 'resource-provider' }, 'HarvardX / edX')
+                                )
+                            ),
+                            createElement('p', { className: 'resource-description' },
+                                'Curso de Harvard sobre bases de datos y SQL. Aprende a diseñar, crear y consultar bases de datos relacionales con uno de los mejores programas de CS del mundo.'
+                            ),
+                            createElement('div', { className: 'resource-tags' },
+                                createElement('span', { className: 'resource-tag' }, 'SQL'),
+                                createElement('span', { className: 'resource-tag' }, 'Databases'),
+                                createElement('span', { className: 'resource-tag' }, 'Harvard'),
+                                createElement('span', { className: 'resource-tag' }, 'Certificado opcional')
+                            ),
+                            createElement('a', {
+                                href: 'https://www.edx.org/learn/sql/harvard-university-cs50-s-introduction-to-databases-with-sql',
+                                target: '_blank',
+                                className: 'resource-link'
+                            }, '↗ Ver en edX')
+                        ),
+
+                        // Tableau for Students
+                        createElement('div', { className: 'resource-card' },
+                            createElement('div', { className: 'resource-card-header' },
+                                createElement('div', { className: 'resource-icon tableau' }, '📊'),
+                                createElement('div', null,
+                                    createElement('div', { className: 'resource-title' }, 'Tableau for Students'),
+                                    createElement('div', { className: 'resource-provider' }, 'Tableau Academic Program')
+                                )
+                            ),
+                            createElement('p', { className: 'resource-description' },
+                                'Acceso gratuito a Tableau Desktop para estudiantes. Construye habilidades en visualización de datos, avanza tu carrera y conecta con la comunidad de analistas.'
+                            ),
+                            createElement('div', { className: 'resource-tags' },
+                                createElement('span', { className: 'resource-tag' }, 'Visualización'),
+                                createElement('span', { className: 'resource-tag' }, 'BI'),
+                                createElement('span', { className: 'resource-tag' }, 'Licencia gratis'),
+                                createElement('span', { className: 'resource-tag' }, 'Estudiantes')
+                            ),
+                            createElement('a', {
+                                href: 'https://www.tableau.com/academic/students',
+                                target: '_blank',
+                                className: 'resource-link'
+                            }, '↗ Solicitar acceso')
+                        )
+                    )
+                ),
+
                 createElement('div', { className: 'footer' },
                     'ADEN University - Taller de Tecnología Aplicada - Sesión 01'
                 )
