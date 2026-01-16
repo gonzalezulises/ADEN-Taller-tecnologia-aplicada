@@ -156,6 +156,7 @@
         .resource-icon.google { background: linear-gradient(135deg, #4285f4, #34a853); }
         .resource-icon.harvard { background: linear-gradient(135deg, #a51c30, #8c1515); }
         .resource-icon.tableau { background: linear-gradient(135deg, #e97627, #c72037); }
+        .resource-icon.notebooklm { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
         .resource-title { font-size: 16px; font-weight: 600; color: #f1f5f9; }
         .resource-provider { font-size: 12px; color: #64748b; }
         .resource-description { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
@@ -832,6 +833,31 @@ Por favor genera SOLO el código SQL, sin explicaciones adicionales.`;
                                 target: '_blank',
                                 className: 'resource-link'
                             }, '↗ Solicitar acceso')
+                        ),
+
+                        // NotebookLM - Material de apoyo
+                        createElement('div', { className: 'resource-card' },
+                            createElement('div', { className: 'resource-card-header' },
+                                createElement('div', { className: 'resource-icon notebooklm' }, '🤖'),
+                                createElement('div', null,
+                                    createElement('div', { className: 'resource-title' }, 'Material de Apoyo - Sesión 01'),
+                                    createElement('div', { className: 'resource-provider' }, 'Google NotebookLM')
+                                )
+                            ),
+                            createElement('p', { className: 'resource-description' },
+                                'Notebook interactivo con IA para repasar los conceptos de la sesión. Genera resúmenes, haz preguntas y profundiza en OLTP, modelos de datos y diseño de bases de datos.'
+                            ),
+                            createElement('div', { className: 'resource-tags' },
+                                createElement('span', { className: 'resource-tag' }, 'IA'),
+                                createElement('span', { className: 'resource-tag' }, 'Repaso'),
+                                createElement('span', { className: 'resource-tag' }, 'Audio'),
+                                createElement('span', { className: 'resource-tag' }, 'Interactivo')
+                            ),
+                            createElement('a', {
+                                href: 'https://notebooklm.google.com/notebook/73b0c9ea-c388-40e6-a2cc-3086673f8d50',
+                                target: '_blank',
+                                className: 'resource-link'
+                            }, '↗ Abrir NotebookLM')
                         )
                     )
                 ),
