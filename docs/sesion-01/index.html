@@ -557,14 +557,22 @@ FROM resumen_reproducciones;`,
           const [currentStep, setCurrentStep] = useState(0);
           const [showSimulation, setShowSimulation] = useState(false);
           const [simulationStep, setSimulationStep] = useState(0);
+          const [showIntro, setShowIntro] = useState(true);
 
           const steps = [
-            { id: 0, title: "El Problema: Por que tantas tablas?", subtitle: "La razon de ser del OLTP" },
-            { id: 1, title: "Principio 1: Una Sola Verdad", subtitle: "Single Source of Truth" },
-            { id: 2, title: "Principio 2: Eficiencia de Escritura", subtitle: "IDs vs Texto repetitivo" },
-            { id: 3, title: "La Cascada de Tablas", subtitle: "La jerarquia del OLTP" },
-            { id: 4, title: "OLAP: La Pizza ya Cocinada", subtitle: "Por que es diferente" },
+            { id: 0, system: "OLTP", title: "El Problema de las Muchas Tablas", subtitle: "Por que OLTP usa tantas tablas?" },
+            { id: 1, system: "OLTP", title: "Principio de Integridad", subtitle: "Single Source of Truth - Una sola verdad" },
+            { id: 2, system: "OLTP", title: "Eficiencia con IDs Numericos", subtitle: "Por que usamos claves en lugar de texto" },
+            { id: 3, system: "OLTP", title: "Jerarquia de Tablas", subtitle: "Organizacion por niveles de cambio" },
+            { id: 4, system: "ETL", title: "El Puente Entre Mundos", subtitle: "Como viajan los datos de OLTP a OLAP" },
+            { id: 5, system: "OLAP", title: "Modelo Desnormalizado", subtitle: "La pizza ya cocinada, lista para analizar" },
           ];
+
+          const systemColors = {
+            OLTP: { badge: 'bg-blue-500', bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-800' },
+            ETL: { badge: 'bg-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-800' },
+            OLAP: { badge: 'bg-purple-500', bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-800' },
+          };
 
           const runSimulation = () => {
             setShowSimulation(true);
@@ -580,43 +588,130 @@ FROM resumen_reproducciones;`,
             }, 2000);
           };
 
+          const currentSystem = steps[currentStep].system;
+          const colors = systemColors[currentSystem];
+
+          // Pantalla introductoria
+          if (showIntro) {
+            return (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="p-6">
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl mb-6">
+                    <h2 className="text-2xl font-bold mb-3">Modelos de Datos: OLTP vs OLAP</h2>
+                    <p className="text-indigo-100 text-lg">
+                      Entendiendo como se estructuran los datos en cada sistema
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 mb-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">Que vas a aprender en esta seccion?</h3>
+                    <p className="text-gray-700 mb-4">
+                      Los sistemas <strong>OLTP</strong> y <strong>OLAP</strong> organizan los datos de manera completamente diferente.
+                      Esta diferencia no es accidental: cada modelo esta <em>optimizado</em> para un proposito especifico.
+                    </p>
+                    <p className="text-gray-700 mb-4">
+                      <strong>OLTP</strong> (bases de datos transaccionales) usa muchas tablas pequenas y conectadas porque prioriza
+                      la <em>integridad</em> y la <em>velocidad de escritura</em>. Cuando Netflix registra que diste play,
+                      necesita hacerlo en milisegundos sin errores.
+                    </p>
+                    <p className="text-gray-700 mb-4">
+                      <strong>OLAP</strong> (Data Warehouse) usa pocas tablas grandes y "aplanadas" porque prioriza
+                      la <em>velocidad de lectura</em> y el <em>analisis</em>. Cuando un analista pregunta "que genero crecio
+                      mas en 2024?", necesita respuesta en segundos sobre billones de registros.
+                    </p>
+                    <p className="text-gray-700">
+                      El proceso <strong>ETL</strong> es el puente que transforma los datos del formato OLTP al formato OLAP.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+                      <div className="inline-block px-3 py-1 bg-blue-500 text-white rounded-full text-sm font-bold mb-2">OLTP</div>
+                      <p className="text-blue-800 font-semibold">4 pasos</p>
+                      <p className="text-sm text-gray-600">Normalizacion e integridad</p>
+                    </div>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 text-center">
+                      <div className="inline-block px-3 py-1 bg-yellow-500 text-white rounded-full text-sm font-bold mb-2">ETL</div>
+                      <p className="text-yellow-800 font-semibold">1 paso</p>
+                      <p className="text-sm text-gray-600">Transformacion</p>
+                    </div>
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center">
+                      <div className="inline-block px-3 py-1 bg-purple-500 text-white rounded-full text-sm font-bold mb-2">OLAP</div>
+                      <p className="text-purple-800 font-semibold">1 paso</p>
+                      <p className="text-sm text-gray-600">Desnormalizacion</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowIntro(false)}
+                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-bold text-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+                  >
+                    Comenzar el Recorrido →
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="h-2 bg-gray-200">
-                <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-500" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
+                <div className={`h-full ${colors.badge} transition-all duration-500`} style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
               </div>
 
+              {/* Navegacion con badges de sistema */}
               <div className="flex justify-between px-4 py-3 bg-gray-50 border-b">
                 {steps.map((step, idx) => (
                   <button
                     key={step.id}
                     onClick={() => setCurrentStep(idx)}
-                    className={`flex-1 mx-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`flex-1 mx-1 py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
                       idx === currentStep
-                        ? 'bg-violet-500 text-white shadow-md'
+                        ? `${systemColors[step.system].badge} text-white shadow-md`
                         : idx < currentStep
                           ? 'bg-green-100 text-green-700'
                           : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                     }`}
                   >
-                    Paso {idx + 1}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${idx === currentStep ? 'bg-white/30' : systemColors[step.system].badge + ' text-white'}`}>
+                      {step.system}
+                    </span>
+                    <span>Paso {idx + 1}</span>
                   </button>
                 ))}
               </div>
 
               <div className="p-6">
-                <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-violet-100 border-2 border-violet-300">
-                  <div className="p-4 rounded-xl bg-violet-500 text-white text-2xl font-bold">
+                {/* Header del paso con badge del sistema */}
+                <div className={`flex items-center gap-4 mb-6 p-4 rounded-xl ${colors.bg} border-2 ${colors.border}`}>
+                  <div className={`p-4 rounded-xl ${colors.badge} text-white text-2xl font-bold`}>
                     {currentStep + 1}
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-violet-800">{steps[currentStep].title}</h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-3 py-1 ${colors.badge} text-white text-xs font-bold rounded-full`}>
+                        {currentSystem}
+                      </span>
+                    </div>
+                    <h2 className={`text-2xl font-bold ${colors.text}`}>{steps[currentStep].title}</h2>
                     <p className="text-gray-600">{steps[currentStep].subtitle}</p>
                   </div>
+                  <button
+                    onClick={() => setShowIntro(true)}
+                    className="px-3 py-1 bg-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-300"
+                  >
+                    Ver intro
+                  </button>
                 </div>
 
                 {currentStep === 0 && (
                   <div className="space-y-4">
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-blue-800">
+                        <strong>Contexto:</strong> Estamos viendo como <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span> organiza
+                        los datos para operaciones transaccionales (el sistema que registra cada play, pause, like en tiempo real).
+                      </p>
+                    </div>
                     <div className="bg-red-50 border-2 border-red-200 p-6 rounded-xl">
                       <p className="text-xl text-red-800 font-bold mb-4">Cuando ves un diagrama OLTP por primera vez...</p>
                       <div className="grid grid-cols-5 gap-2 mb-4">
@@ -628,50 +723,59 @@ FROM resumen_reproducciones;`,
                     </div>
                     <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl">
                       <p className="text-green-800 font-bold text-lg mb-2">La respuesta: INTEGRIDAD DE DATOS</p>
-                      <p className="text-gray-700">OLTP no esta disenado para ser facil de ver. Esta disenado para que los datos NUNCA esten mal.</p>
+                      <p className="text-gray-700">
+                        <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span> no esta disenado para ser facil de ver.
+                        Esta disenado para que los datos <strong>NUNCA</strong> esten mal, incluso con millones de escrituras por segundo.
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {currentStep === 1 && (
                   <div className="space-y-4">
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-blue-800">
+                        <strong>Contexto:</strong> Este es el principio fundamental de <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span>:
+                        la normalizacion garantiza que cada dato exista en un solo lugar.
+                      </p>
+                    </div>
                     <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
-                      <p className="text-lg text-blue-800 mb-4"><strong>Regla de Oro:</strong> Cada pieza de informacion existe en UN SOLO lugar.</p>
+                      <p className="text-lg text-blue-800 mb-4"><strong>Regla de Oro en OLTP:</strong> Cada pieza de informacion existe en UN SOLO lugar.</p>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-red-100 p-4 rounded-lg border-2 border-red-300">
-                          <p className="font-bold text-red-800 mb-2">MAL: Direccion repetida</p>
+                          <p className="font-bold text-red-800 mb-2">MAL: Direccion repetida (NO es OLTP)</p>
                           <div className="text-xs space-y-1 bg-white p-2 rounded">
                             <div>Maria Garcia | Av. Reforma 123, CDMX</div>
                             <div>Maria Garcia | Av. Reforma 123, CDMX</div>
                             <div>Maria Garcia | Av Reforma 123, CDMX</div>
                           </div>
-                          <p className="text-red-600 text-sm mt-2">Inconsistencia!</p>
+                          <p className="text-red-600 text-sm mt-2">Inconsistencia! Error de tipeo no detectado</p>
                         </div>
                         <div className="bg-green-100 p-4 rounded-lg border-2 border-green-300">
-                          <p className="font-bold text-green-800 mb-2">BIEN: ID unico</p>
+                          <p className="font-bold text-green-800 mb-2">BIEN: ID unico (asi es OLTP)</p>
                           <div className="text-xs space-y-1 bg-white p-2 rounded">
                             <div>Reproduccion 1: usuario_id = 1</div>
                             <div>Reproduccion 2: usuario_id = 1</div>
                             <div>Reproduccion 3: usuario_id = 1</div>
                           </div>
-                          <p className="text-green-600 text-sm mt-2">Siempre consistente</p>
+                          <p className="text-green-600 text-sm mt-2">Siempre consistente - apunta a tabla usuarios</p>
                         </div>
                       </div>
                     </div>
                     <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl">
-                      <p className="font-bold text-amber-800 mb-3">Simulacion: Maria se muda de ciudad</p>
+                      <p className="font-bold text-amber-800 mb-3">Simulacion: Maria se muda de ciudad (ventaja de OLTP)</p>
                       <button onClick={runSimulation} className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 mb-4">
                         {showSimulation ? 'Reiniciar' : 'Ejecutar Simulacion'}
                       </button>
                       {showSimulation && (
                         <div className="space-y-3">
-                          <div className={`p-3 rounded-lg transition-all ${simulationStep >= 0 ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-100'}`}>
-                            <p className="font-semibold">Sin normalizacion (Excel):</p>
+                          <div className={`p-3 rounded-lg transition-all ${simulationStep >= 0 ? 'bg-red-100 border-2 border-red-300' : 'bg-gray-100'}`}>
+                            <p className="font-semibold">Sin normalizacion (Excel/tabla plana):</p>
                             <p className="text-sm text-gray-600">Actualizar {simulationStep >= 1 ? <span className="text-red-600 font-bold">847 registros</span> : '...'}</p>
                             {simulationStep >= 2 && <p className="text-red-600">3 registros quedaron con la direccion vieja!</p>}
                           </div>
                           <div className={`p-3 rounded-lg transition-all ${simulationStep >= 3 ? 'bg-green-100 border-2 border-green-300' : 'bg-gray-100'}`}>
-                            <p className="font-semibold">Con normalizacion (OLTP):</p>
+                            <p className="font-semibold">Con normalizacion <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">OLTP</span>:</p>
                             {simulationStep >= 3 && (
                               <>
                                 <p className="text-sm text-green-600">Actualizar <span className="font-bold">1 registro</span> en tabla usuarios</p>
@@ -687,11 +791,17 @@ FROM resumen_reproducciones;`,
 
                 {currentStep === 2 && (
                   <div className="space-y-4">
-                    <div className="bg-indigo-50 border-2 border-indigo-200 p-6 rounded-xl">
-                      <p className="text-lg text-indigo-800 mb-4"><strong>Por que IDs numericos?</strong></p>
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-blue-800">
+                        <strong>Contexto:</strong> En <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span>,
+                        usamos IDs numericos en lugar de texto para optimizar velocidad y espacio. Esto es parte de la normalizacion.
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
+                      <p className="text-lg text-blue-800 mb-4"><strong>Por que OLTP usa IDs numericos en lugar de texto?</strong></p>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-red-100 p-4 rounded-lg">
-                          <p className="font-bold text-red-800 mb-2">Sin normalizar (cada fila):</p>
+                          <p className="font-bold text-red-800 mb-2">Sin normalizar (NO es OLTP):</p>
                           <code className="text-xs bg-white block p-2 rounded">
                             "Ciudad de Mexico, Mexico, LATAM"<br/>
                             = 35 caracteres x 1M filas<br/>
@@ -699,7 +809,7 @@ FROM resumen_reproducciones;`,
                           </code>
                         </div>
                         <div className="bg-green-100 p-4 rounded-lg">
-                          <p className="font-bold text-green-800 mb-2">Normalizado (ID):</p>
+                          <p className="font-bold text-green-800 mb-2">Normalizado <span className="bg-blue-500 text-white px-1 py-0.5 rounded text-xs">OLTP</span>:</p>
                           <code className="text-xs bg-white block p-2 rounded">
                             ciudad_id = 1<br/>
                             = 4 bytes x 1M filas<br/>
@@ -707,15 +817,27 @@ FROM resumen_reproducciones;`,
                           </code>
                         </div>
                       </div>
-                      <p className="text-center mt-4 text-indigo-700 font-bold">88% menos espacio + escrituras mas rapidas!</p>
+                      <p className="text-center mt-4 text-blue-700 font-bold">88% menos espacio + escrituras mas rapidas!</p>
+                    </div>
+                    <div className="bg-blue-100 border border-blue-300 p-4 rounded-xl">
+                      <p className="text-blue-800 text-sm">
+                        <strong>Nota importante:</strong> Esta optimizacion es critica para <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">OLTP</span> porque
+                        procesa millones de escrituras por segundo. Cada byte cuenta cuando escribes 5 millones de eventos cada segundo.
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {currentStep === 3 && (
                   <div className="space-y-4">
-                    <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-xl">
-                      <p className="text-lg text-purple-800 mb-4">Las tablas OLTP forman una jerarquia de especificidad:</p>
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-blue-800">
+                        <strong>Contexto:</strong> Las tablas en <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span> se organizan
+                        en una jerarquia segun que tan frecuentemente cambian. Esto optimiza las operaciones de escritura.
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
+                      <p className="text-lg text-blue-800 mb-4">Las tablas <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span> forman una jerarquia de especificidad:</p>
                       <div className="space-y-3">
                         <div className="p-3 rounded-lg bg-blue-100 border border-blue-200">
                           <div className="flex justify-between items-center">
@@ -726,7 +848,7 @@ FROM resumen_reproducciones;`,
                             {['Paises', 'Generos', 'Idiomas'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-indigo-100 border border-indigo-200">
+                        <div className="p-3 rounded-lg bg-blue-100 border border-blue-200">
                           <div className="flex justify-between items-center">
                             <span className="font-bold">Nivel 2 (Referencias)</span>
                             <span className="text-sm text-gray-600">Cambian poco</span>
@@ -735,7 +857,7 @@ FROM resumen_reproducciones;`,
                             {['Ciudades', 'Planes', 'Categorias'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-purple-100 border border-purple-200">
+                        <div className="p-3 rounded-lg bg-blue-100 border border-blue-200">
                           <div className="flex justify-between items-center">
                             <span className="font-bold">Nivel 3 (Entidades)</span>
                             <span className="text-sm text-gray-600">El "que"</span>
@@ -744,7 +866,7 @@ FROM resumen_reproducciones;`,
                             {['Usuarios', 'Peliculas', 'Actores'].map((t, i) => <span key={i} className="bg-white px-2 py-1 rounded text-sm">{t}</span>)}
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-pink-100 border border-pink-200">
+                        <div className="p-3 rounded-lg bg-blue-200 border border-blue-300">
                           <div className="flex justify-between items-center">
                             <span className="font-bold">Nivel 4 (Transacciones)</span>
                             <span className="text-sm text-gray-600">Millones por segundo</span>
@@ -755,46 +877,125 @@ FROM resumen_reproducciones;`,
                         </div>
                       </div>
                     </div>
-                    <div className="bg-amber-100 p-4 rounded-xl text-center">
-                      <p className="text-amber-800"><strong>Por eso hay tantas tablas:</strong> Cada nivel existe por una razon de integridad y eficiencia</p>
+                    <div className="bg-blue-100 p-4 rounded-xl text-center">
+                      <p className="text-blue-800"><strong>Resumen de OLTP:</strong> Muchas tablas pequenas, conectadas por IDs, organizadas para maxima integridad y velocidad de escritura.</p>
+                    </div>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-xl">
+                      <p className="text-yellow-800 text-center">
+                        <strong>Siguiente paso:</strong> Pero este formato NO es eficiente para analisis.
+                        Necesitamos transformar los datos... eso es el trabajo de <span className="bg-yellow-500 text-white px-2 py-0.5 rounded text-sm">ETL</span>
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {currentStep === 4 && (
                   <div className="space-y-4">
-                    <div className="bg-orange-50 border-2 border-orange-200 p-6 rounded-xl">
-                      <p className="text-xl text-orange-800 mb-4">La Analogia de la Pizza</p>
+                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-yellow-800">
+                        <strong>Contexto:</strong> <span className="bg-yellow-500 text-white px-2 py-0.5 rounded text-sm">ETL</span> (Extract, Transform, Load)
+                        es el proceso que convierte los datos del formato OLTP al formato OLAP. Es el puente entre ambos mundos.
+                      </p>
+                    </div>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-xl">
+                      <p className="text-xl text-yellow-800 mb-4">El Proceso de Transformacion</p>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="bg-blue-100 p-4 rounded-lg text-center border-2 border-blue-300">
+                          <div className="text-3xl mb-2">1</div>
+                          <p className="font-bold text-blue-800">EXTRACT</p>
+                          <p className="text-sm text-gray-600">Sacar datos de <span className="bg-blue-500 text-white px-1 py-0.5 rounded text-xs">OLTP</span></p>
+                        </div>
+                        <div className="bg-yellow-100 p-4 rounded-lg text-center border-2 border-yellow-300">
+                          <div className="text-3xl mb-2">2</div>
+                          <p className="font-bold text-yellow-800">TRANSFORM</p>
+                          <p className="text-sm text-gray-600">Limpiar, unir tablas, pre-agregar</p>
+                        </div>
+                        <div className="bg-purple-100 p-4 rounded-lg text-center border-2 border-purple-300">
+                          <div className="text-3xl mb-2">3</div>
+                          <p className="font-bold text-purple-800">LOAD</p>
+                          <p className="text-sm text-gray-600">Cargar en <span className="bg-purple-500 text-white px-1 py-0.5 rounded text-xs">OLAP</span></p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center gap-4 py-4">
+                        <div className="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold">OLTP</div>
+                        <div className="text-yellow-500 text-2xl">→→→</div>
+                        <div className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold">ETL</div>
+                        <div className="text-yellow-500 text-2xl">→→→</div>
+                        <div className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold">OLAP</div>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-100 border-2 border-yellow-300 p-4 rounded-xl">
+                      <p className="font-bold text-yellow-800 mb-2">Que hace ETL exactamente?</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="bg-white p-3 rounded-lg">
+                          <p className="font-semibold text-blue-800 mb-1">Entrada (desde OLTP):</p>
+                          <code className="text-xs">reproducciones.usuario_id = 1<br/>usuarios.nombre = "Maria"<br/>peliculas.genero_id = 5<br/>generos.nombre = "Sci-Fi"</code>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg">
+                          <p className="font-semibold text-purple-800 mb-1">Salida (hacia OLAP):</p>
+                          <code className="text-xs">usuario: "Maria"<br/>genero: "Sci-Fi"<br/>mes: "Dic 2024"<br/>total_minutos: 150</code>
+                        </div>
+                      </div>
+                      <p className="text-yellow-700 text-center mt-3 text-sm">ETL "aplana" y pre-calcula los datos para que OLAP pueda analizarlos rapido</p>
+                    </div>
+                    <div className="bg-purple-50 border-2 border-purple-200 p-4 rounded-xl">
+                      <p className="text-purple-800 text-center">
+                        <strong>Siguiente:</strong> Veamos como queda el resultado final en <span className="bg-purple-500 text-white px-2 py-0.5 rounded text-sm">OLAP</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 5 && (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-xl mb-4">
+                      <p className="text-purple-800">
+                        <strong>Contexto:</strong> <span className="bg-purple-500 text-white px-2 py-0.5 rounded text-sm">OLAP</span> (Data Warehouse)
+                        almacena datos desnormalizados y pre-agregados, optimizados para analisis rapido sobre grandes volumenes.
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-xl">
+                      <p className="text-xl text-purple-800 mb-4">La Analogia de la Pizza</p>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-indigo-100 p-4 rounded-lg">
-                          <p className="font-bold text-indigo-800 mb-2">OLTP = Ingredientes separados</p>
+                        <div className="bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
+                          <p className="font-bold text-blue-800 mb-2"><span className="bg-blue-500 text-white px-2 py-0.5 rounded text-sm">OLTP</span> = Ingredientes separados</p>
                           <div className="text-center text-2xl my-2">Queso + Tomate + Aceitunas</div>
                           <p className="text-sm text-gray-600 mt-2">Organizados, frescos, sin mezclar. Puedes cambiar cualquier ingrediente.</p>
                         </div>
-                        <div className="bg-orange-100 p-4 rounded-lg">
-                          <p className="font-bold text-orange-800 mb-2">OLAP = Pizza horneada</p>
+                        <div className="bg-purple-100 p-4 rounded-lg border-2 border-purple-300">
+                          <p className="font-bold text-purple-800 mb-2"><span className="bg-purple-500 text-white px-2 py-0.5 rounded text-sm">OLAP</span> = Pizza horneada</p>
                           <div className="text-center text-4xl my-2">PIZZA</div>
                           <p className="text-sm text-gray-600 mt-2">Todo junto, listo para consumir. No puedes quitar solo el queso.</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-green-50 border-2 border-green-200 p-4 rounded-xl">
-                      <p className="font-bold text-green-800 mb-2">Resumen Final:</p>
+                    <div className="bg-gradient-to-r from-blue-50 via-yellow-50 to-purple-50 border-2 border-gray-200 p-4 rounded-xl">
+                      <p className="font-bold text-gray-800 mb-2 text-center">Resumen Final: El Viaje Completo de los Datos</p>
                       <table className="w-full text-sm">
-                        <thead className="bg-green-200">
+                        <thead className="bg-gray-200">
                           <tr>
                             <th className="p-2 text-left">Aspecto</th>
-                            <th className="p-2 text-left">OLTP (Ingredientes)</th>
-                            <th className="p-2 text-left">OLAP (Pizza)</th>
+                            <th className="p-2 text-left bg-blue-100"><span className="bg-blue-500 text-white px-1 py-0.5 rounded text-xs">OLTP</span></th>
+                            <th className="p-2 text-left bg-yellow-100"><span className="bg-yellow-500 text-white px-1 py-0.5 rounded text-xs">ETL</span></th>
+                            <th className="p-2 text-left bg-purple-100"><span className="bg-purple-500 text-white px-1 py-0.5 rounded text-xs">OLAP</span></th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="border-b"><td className="p-2">Tablas</td><td>Muchas, pequenas</td><td>Pocas, grandes</td></tr>
-                          <tr className="border-b"><td className="p-2">Duplicacion</td><td>Prohibida</td><td>Necesaria</td></tr>
-                          <tr className="border-b"><td className="p-2">Actualizar</td><td>Facil</td><td>Reconstruir todo</td></tr>
-                          <tr><td className="p-2">Analizar</td><td>Lento (JOINs)</td><td>Rapido (pre-agregado)</td></tr>
+                          <tr className="border-b"><td className="p-2 font-medium">Proposito</td><td className="bg-blue-50">Registrar transacciones</td><td className="bg-yellow-50">Transformar</td><td className="bg-purple-50">Analizar</td></tr>
+                          <tr className="border-b"><td className="p-2 font-medium">Tablas</td><td className="bg-blue-50">Muchas, pequenas</td><td className="bg-yellow-50">-</td><td className="bg-purple-50">Pocas, grandes</td></tr>
+                          <tr className="border-b"><td className="p-2 font-medium">Duplicacion</td><td className="bg-blue-50">Prohibida</td><td className="bg-yellow-50">Crea</td><td className="bg-purple-50">Necesaria</td></tr>
+                          <tr className="border-b"><td className="p-2 font-medium">Actualizacion</td><td className="bg-blue-50">Constante</td><td className="bg-yellow-50">Periodica</td><td className="bg-purple-50">Batch</td></tr>
+                          <tr><td className="p-2 font-medium">Velocidad</td><td className="bg-blue-50">Escribe rapido</td><td className="bg-yellow-50">Procesa</td><td className="bg-purple-50">Lee rapido</td></tr>
                         </tbody>
                       </table>
+                    </div>
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-4 rounded-xl text-center">
+                      <p className="text-lg font-bold">
+                        Conclusion: <span className="bg-blue-600 px-2 py-0.5 rounded">OLTP</span> captura,
+                        <span className="bg-yellow-600 px-2 py-0.5 rounded mx-1">ETL</span> transforma,
+                        <span className="bg-purple-600 px-2 py-0.5 rounded">OLAP</span> analiza.
+                      </p>
+                      <p className="text-indigo-100 mt-2">Los tres trabajan juntos para convertir datos en decisiones.</p>
                     </div>
                   </div>
                 )}

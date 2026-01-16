@@ -5,6 +5,16 @@
 **Periodo:** Cuatrimestre I - 2026
 **Modalidad:** Presencial - Panama
 
+## 🚀 Recursos Interactivos
+
+Accede a los simuladores y herramientas interactivas del curso:
+
+**[👉 Ver Recursos Interactivos](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/)**
+
+| Sesion | Recurso | Descripcion |
+|--------|---------|-------------|
+| 01 | [Simulador OLTP vs OLAP](https://gonzalezulises.github.io/ADEN-Taller-tecnologia-aplicada/sesion-01/) | Ciclo del dato, modelos de datos, comparativa interactiva |
+
 ## Documentacion
 
 - [Planificacion Academica (PDF)](planificacion-academica.pdf) - Syllabus oficial del curso
